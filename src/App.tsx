@@ -468,54 +468,54 @@ function liveEquationsFor(lab:Lab,v:Record<string,number>,p:Point,t:number):{tit
   if(lab.id==="projectile"){
     const th=(v.angle??0),rad=th*Math.PI/180,v0=v.speed??0;
     return [
-      {title:"Posisi horizontal",formula:"x(t)="+n(v0)+"\\\\cos("+n(th)+"^\\\\circ)\\\\cdot "+n(t)+" = "+n(p.x)+"\\\\;\\\\mathrm{m}"},
-      {title:"Posisi vertikal",formula:"y(t)="+n(v.height??0)+"+"+n(v0)+"\\\\sin("+n(th)+"^\\\\circ)\\\\cdot "+n(t)+"-\\\\frac12("+n(g)+")("+n(t)+")^2="+n(p.y)+"\\\\;\\\\mathrm{m}"},
-      {title:"Komponen kecepatan",formula:"v_x="+n(v0*Math.cos(rad))+"\\\\;\\\\mathrm{m/s},\\\\quad v_y="+n(p.vy)+"\\\\;\\\\mathrm{m/s}"},
-      {title:"Energi kinetik",formula:"E_k=\\\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"}
+      {title:"Posisi horizontal",formula:"x(t)="+n(v0)+"\\cos("+n(th)+"^\\circ)\\cdot "+n(t)+" = "+n(p.x)+"\\;\\mathrm{m}"},
+      {title:"Posisi vertikal",formula:"y(t)="+n(v.height??0)+"+"+n(v0)+"\\sin("+n(th)+"^\\circ)\\cdot "+n(t)+"-\\frac12("+n(g)+")("+n(t)+")^2="+n(p.y)+"\\;\\mathrm{m}"},
+      {title:"Komponen kecepatan",formula:"v_x="+n(v0*Math.cos(rad))+"\\;\\mathrm{m/s},\\quad v_y="+n(p.vy)+"\\;\\mathrm{m/s}"},
+      {title:"Energi kinetik",formula:"E_k=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
     ];
   }
   if(lab.id==="mru") return [
-    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"\\\\cdot "+n(t)+"="+n(p.x)+"\\\\;\\\\mathrm{m}"},
-    {title:"Kecepatan tetap",formula:"v(t)=v_0="+n(v.speed??0)+"\\\\;\\\\mathrm{m/s}"},
-    {title:"Percepatan",formula:"a(t)=\\\\frac{\\\\Delta v}{\\\\Delta t}=0\\\\;\\\\mathrm{m/s^2}"},
-    {title:"Energi kinetik",formula:"E_k=\\\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"}
+    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"\\cdot "+n(t)+"="+n(p.x)+"\\;\\mathrm{m}"},
+    {title:"Kecepatan tetap",formula:"v(t)=v_0="+n(v.speed??0)+"\\;\\mathrm{m/s}"},
+    {title:"Percepatan",formula:"a(t)=\\frac{\\Delta v}{\\Delta t}=0\\;\\mathrm{m/s^2}"},
+    {title:"Energi kinetik",formula:"E_k=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
   ];
   if(lab.id==="mrua") return [
-    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"t+\\\\frac12("+n(v.acceleration??0)+")t^2="+n(p.x)+"\\\\;\\\\mathrm{m}"},
-    {title:"Kecepatan",formula:"v(t)="+n(v.speed??0)+"+("+n(v.acceleration??0)+")("+n(t)+")="+n(p.vx)+"\\\\;\\\\mathrm{m/s}"},
-    {title:"Hukum II Newton",formula:"\\\\sum F=ma=("+n(m)+")("+n(v.acceleration??0)+")="+n(m*(v.acceleration??0))+"\\\\;\\\\mathrm{N}"},
-    {title:"Energi kinetik",formula:"E_k=\\\\frac12mv^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"}
+    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"t+\\frac12("+n(v.acceleration??0)+")t^2="+n(p.x)+"\\;\\mathrm{m}"},
+    {title:"Kecepatan",formula:"v(t)="+n(v.speed??0)+"+("+n(v.acceleration??0)+")("+n(t)+")="+n(p.vx)+"\\;\\mathrm{m/s}"},
+    {title:"Hukum II Newton",formula:"\\sum F=ma=("+n(m)+")("+n(v.acceleration??0)+")="+n(m*(v.acceleration??0))+"\\;\\mathrm{N}"},
+    {title:"Energi kinetik",formula:"E_k=\\frac12mv^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
   ];
   if(lab.id==="circular") return [
-    {title:"Posisi sudut",formula:"\\\\theta(t)=\\\\omega t=("+n(v.omega??0)+")("+n(t)+")="+n((v.omega??0)*t)+"\\\\;\\\\mathrm{rad}"},
-    {title:"Kelajuan tangensial",formula:"v=\\\\omega r=("+n(v.omega??0)+")("+n(v.radius??0)+")="+n(p.speed)+"\\\\;\\\\mathrm{m/s}"},
-    {title:"Percepatan sentripetal",formula:"a_c=\\\\omega^2r=("+n(v.omega??0)+")^2("+n(v.radius??0)+")="+n((v.omega??0)**2*(v.radius??0))+"\\\\;\\\\mathrm{m/s^2}"},
-    {title:"Periode",formula:"T=\\\\frac{2\\\\pi}{\\\\omega}= "+n(2*Math.PI/(v.omega??1))+"\\\\;\\\\mathrm{s}"}
+    {title:"Posisi sudut",formula:"\\theta(t)=\\omega t=("+n(v.omega??0)+")("+n(t)+")="+n((v.omega??0)*t)+"\\;\\mathrm{rad}"},
+    {title:"Kelajuan tangensial",formula:"v=\\omega r=("+n(v.omega??0)+")("+n(v.radius??0)+")="+n(p.speed)+"\\;\\mathrm{m/s}"},
+    {title:"Percepatan sentripetal",formula:"a_c=\\omega^2r=("+n(v.omega??0)+")^2("+n(v.radius??0)+")="+n((v.omega??0)**2*(v.radius??0))+"\\;\\mathrm{m/s^2}"},
+    {title:"Periode",formula:"T=\\frac{2\\pi}{\\omega}= "+n(2*Math.PI/(v.omega??1))+"\\;\\mathrm{s}"}
   ];
   if(lab.id==="energy"){
     const alpha=Math.PI/6,s=(v.height??0)/Math.sin(alpha)-p.x/Math.cos(alpha),mu=v.friction??0;
     return [
-      {title:"Energi potensial",formula:"E_p=mgh=("+n(m)+")("+n(g)+")("+n(p.y)+")="+n(p.potential)+"\\\\;\\\\mathrm{J}"},
-      {title:"Energi kinetik",formula:"E_k=\\\\frac12mv^2=\\\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"},
-      {title:"Usaha gesekan",formula:"W_f=-\\\\mu_kmg\\\\cos 30^\\\\circ\\\\,s="+n(-mu*m*g*Math.cos(alpha)*Math.max(0,s))+"\\\\;\\\\mathrm{J}"},
-      {title:"Energi mekanik",formula:"E_m=E_k+E_p="+n(p.kinetic+p.potential)+"\\\\;\\\\mathrm{J}"}
+      {title:"Energi potensial",formula:"E_p=mgh=("+n(m)+")("+n(g)+")("+n(p.y)+")="+n(p.potential)+"\\;\\mathrm{J}"},
+      {title:"Energi kinetik",formula:"E_k=\\frac12mv^2=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"},
+      {title:"Usaha gesekan",formula:"W_f=-\\mu_kmg\\cos 30^\\circ\\,s="+n(-mu*m*g*Math.cos(alpha)*Math.max(0,s))+"\\;\\mathrm{J}"},
+      {title:"Energi mekanik",formula:"E_m=E_k+E_p="+n(p.kinetic+p.potential)+"\\;\\mathrm{J}"}
     ];
   }
   if(lab.id==="incline"){
     const th=(v.angle??0)*Math.PI/180,holds=Math.tan(th)<=(v.staticFriction??0),acc=holds?0:Math.max(0,g*(Math.sin(th)-(v.friction??0)*Math.cos(th)));
     return [
-      {title:"Komponen berat sejajar",formula:"F_{\\\\parallel}=mg\\\\sin\\\\theta="+n(m*g*Math.sin(th))+"\\\\;\\\\mathrm{N}"},
-      {title:"Gaya normal",formula:"N=mg\\\\cos\\\\theta="+n(m*g*Math.cos(th))+"\\\\;\\\\mathrm{N}"},
-      {title:"Percepatan sepanjang bidang",formula:"a="+(holds?"0":"g(\\\\sin\\\\theta-\\\\mu_k\\\\cos\\\\theta)")+"="+n(acc)+"\\\\;\\\\mathrm{m/s^2}"},
-      {title:"Resultan gaya",formula:"\\\\sum F_{\\\\parallel}=ma="+n(m*acc)+"\\\\;\\\\mathrm{N}"}
+      {title:"Komponen berat sejajar",formula:"F_{\\parallel}=mg\\sin\\theta="+n(m*g*Math.sin(th))+"\\;\\mathrm{N}"},
+      {title:"Gaya normal",formula:"N=mg\\cos\\theta="+n(m*g*Math.cos(th))+"\\;\\mathrm{N}"},
+      {title:"Percepatan sepanjang bidang",formula:"a="+(holds?"0":"g(\\sin\\theta-\\mu_k\\cos\\theta)")+"="+n(acc)+"\\;\\mathrm{m/s^2}"},
+      {title:"Resultan gaya",formula:"\\sum F_{\\parallel}=ma="+n(m*acc)+"\\;\\mathrm{N}"}
     ];
   }
   const omega=Math.sqrt((v.spring??0)/m);
   return [
-    {title:"Frekuensi sudut",formula:"\\\\omega=\\\\sqrt{\\\\frac{k}{m}}=\\\\sqrt{\\\\frac{"+n(v.spring??0)+"}{"+n(m)+"}}="+n(omega)+"\\\\;\\\\mathrm{rad/s}"},
-    {title:"Posisi massa",formula:"x(t)="+n(v.amplitude??0)+"\\\\cos("+n(omega)+"t)="+n(p.x)+"\\\\;\\\\mathrm{m}"},
-    {title:"Gaya pemulih",formula:"F=-kx=-("+n(v.spring??0)+")("+n(p.x)+")="+n(-(v.spring??0)*p.x)+"\\\\;\\\\mathrm{N}"},
-    {title:"Energi mekanik",formula:"E=\\\\frac12kA^2="+n(.5*(v.spring??0)*(v.amplitude??0)**2)+"\\\\;\\\\mathrm{J}"}
+    {title:"Frekuensi sudut",formula:"\\omega=\\sqrt{\\frac{k}{m}}=\\sqrt{\\frac{"+n(v.spring??0)+"}{"+n(m)+"}}="+n(omega)+"\\;\\mathrm{rad/s}"},
+    {title:"Posisi massa",formula:"x(t)="+n(v.amplitude??0)+"\\cos("+n(omega)+"t)="+n(p.x)+"\\;\\mathrm{m}"},
+    {title:"Gaya pemulih",formula:"F=-kx=-("+n(v.spring??0)+")("+n(p.x)+")="+n(-(v.spring??0)*p.x)+"\\;\\mathrm{N}"},
+    {title:"Energi mekanik",formula:"E=\\frac12kA^2="+n(.5*(v.spring??0)*(v.amplitude??0)**2)+"\\;\\mathrm{J}"}
   ];
 }
 
@@ -526,30 +526,30 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
   const en=language==="EN";
   if(id==="projectile"){
     const v=r(14,28,1),a=r(25,65,1),g=9.81,rad=a*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
-    return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"\\\\Delta h_{max}=\\\\frac{v_0^2\\\\sin^2\\\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\\\Delta h=\\\\frac{("+v+")^2\\\\sin^2("+a+"^\\\\circ)}{2(9.81)}","\\\\Delta h="+f(answer)+"\\\\;\\\\mathrm{m}"]};
+    return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"\\Delta h_{max}=\\frac{v_0^2\\sin^2\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\Delta h=\\frac{("+v+")^2\\sin^2("+a+"^\\circ)}{2(9.81)}","\\Delta h="+f(answer)+"\\;\\mathrm{m}"]};
   }
   if(id==="mru"){
     const v=r(3,18,1),t=r(2,12,1),answer=v*t;
-    return {prompt:en?"How far does the object travel in the given time?":"Berapa perpindahan benda selama waktu tersebut?",given:"v = "+v+" m/s, t = "+t+" s, x₀ = 0",formula:"\\\\Delta x=vt",answer,unit:"m",resultLabel:en?"Displacement":"Perpindahan",steps:["\\\\Delta x=("+v+")("+t+")","\\\\Delta x="+f(answer)+"\\\\;\\\\mathrm{m}"]};
+    return {prompt:en?"How far does the object travel in the given time?":"Berapa perpindahan benda selama waktu tersebut?",given:"v = "+v+" m/s, t = "+t+" s, x₀ = 0",formula:"\\Delta x=vt",answer,unit:"m",resultLabel:en?"Displacement":"Perpindahan",steps:["\\Delta x=("+v+")("+t+")","\\Delta x="+f(answer)+"\\;\\mathrm{m}"]};
   }
   if(id==="mrua"){
     const v0=r(0,8,1),a=r(.5,3,.5),t=r(2,8,1),answer=v0+a*t;
-    return {prompt:en?"Determine the velocity after the stated time.":"Tentukan kecepatan setelah selang waktu tersebut.",given:"v₀ = "+v0+" m/s, a = "+a+" m/s², t = "+t+" s",formula:"v=v_0+at",answer,unit:"m/s",resultLabel:en?"Final velocity":"Kecepatan akhir",steps:["v="+v0+"+("+a+")("+t+")","v="+f(answer)+"\\\\;\\\\mathrm{m/s}"]};
+    return {prompt:en?"Determine the velocity after the stated time.":"Tentukan kecepatan setelah selang waktu tersebut.",given:"v₀ = "+v0+" m/s, a = "+a+" m/s², t = "+t+" s",formula:"v=v_0+at",answer,unit:"m/s",resultLabel:en?"Final velocity":"Kecepatan akhir",steps:["v="+v0+"+("+a+")("+t+")","v="+f(answer)+"\\;\\mathrm{m/s}"]};
   }
   if(id==="circular"){
     const omega=r(.5,4,.5),radius=r(1,8,1),answer=omega*omega*radius;
-    return {prompt:en?"Calculate the centripetal acceleration.":"Hitung percepatan sentripetal benda.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"a_c=\\\\omega^2r",answer,unit:"m/s²",resultLabel:en?"Centripetal acceleration":"Percepatan sentripetal",steps:["a_c=("+omega+")^2("+radius+")","a_c="+f(answer)+"\\\\;\\\\mathrm{m/s^2}"]};
+    return {prompt:en?"Calculate the centripetal acceleration.":"Hitung percepatan sentripetal benda.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"a_c=\\omega^2r",answer,unit:"m/s²",resultLabel:en?"Centripetal acceleration":"Percepatan sentripetal",steps:["a_c=("+omega+")^2("+radius+")","a_c="+f(answer)+"\\;\\mathrm{m/s^2}"]};
   }
   if(id==="energy"){
     const h=r(1,15,.5),g=9.81,answer=Math.sqrt(2*g*h);
-    return {prompt:en?"Find the speed after a frictionless drop from rest.":"Tentukan kelajuan setelah benda turun tanpa gesekan dari keadaan diam.",given:"Δh = "+h+" m, v₀ = 0, g = 9.81 m/s²",formula:"v=\\\\sqrt{2g\\\\Delta h}",answer,unit:"m/s",resultLabel:en?"Speed":"Kelajuan",steps:["\\\\frac12mv^2=mg\\\\Delta h","v=\\\\sqrt{2(9.81)("+h+")}","v="+f(answer)+"\\\\;\\\\mathrm{m/s}"]};
+    return {prompt:en?"Find the speed after a frictionless drop from rest.":"Tentukan kelajuan setelah benda turun tanpa gesekan dari keadaan diam.",given:"Δh = "+h+" m, v₀ = 0, g = 9.81 m/s²",formula:"v=\\sqrt{2g\\Delta h}",answer,unit:"m/s",resultLabel:en?"Speed":"Kelajuan",steps:["\\frac12mv^2=mg\\Delta h","v=\\sqrt{2(9.81)("+h+")}","v="+f(answer)+"\\;\\mathrm{m/s}"]};
   }
   if(id==="incline"){
     const angle=r(28,55,1),mu=r(.05,.2,.01),g=9.81,rad=angle*Math.PI/180,answer=g*(Math.sin(rad)-mu*Math.cos(rad));
-    return {prompt:en?"A block is already sliding downhill. Find its acceleration.":"Balok sudah meluncur menuruni bidang. Hitung percepatannya.",given:"θ = "+angle+"°, μₖ = "+mu.toFixed(2)+", g = 9.81 m/s²",formula:"a=g(\\\\sin\\\\theta-\\\\mu_k\\\\cos\\\\theta)",answer,unit:"m/s²",resultLabel:en?"Down-slope acceleration":"Percepatan turun bidang",steps:["a=9.81(\\\\sin "+angle+"^\\\\circ-"+mu.toFixed(2)+"\\\\cos "+angle+"^\\\\circ)","a="+f(answer)+"\\\\;\\\\mathrm{m/s^2}"]};
+    return {prompt:en?"A block is already sliding downhill. Find its acceleration.":"Balok sudah meluncur menuruni bidang. Hitung percepatannya.",given:"θ = "+angle+"°, μₖ = "+mu.toFixed(2)+", g = 9.81 m/s²",formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta)",answer,unit:"m/s²",resultLabel:en?"Down-slope acceleration":"Percepatan turun bidang",steps:["a=9.81(\\sin "+angle+"^\\circ-"+mu.toFixed(2)+"\\cos "+angle+"^\\circ)","a="+f(answer)+"\\;\\mathrm{m/s^2}"]};
   }
   const m=r(.5,5,.5),k=r(10,100,5),answer=2*Math.PI*Math.sqrt(m/k);
-  return {prompt:en?"Calculate the period of an ideal mass–spring oscillator.":"Hitung periode osilasi sistem massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"T=2\\\\pi\\\\sqrt{\\\\frac{m}{k}}",answer,unit:"s",resultLabel:en?"Oscillation period":"Periode osilasi",steps:["T=2\\\\pi\\\\sqrt{\\\\frac{"+m+"}{"+k+"}}","T="+f(answer)+"\\\\;\\\\mathrm{s}"]};
+  return {prompt:en?"Calculate the period of an ideal mass–spring oscillator.":"Hitung periode osilasi sistem massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"T=2\\pi\\sqrt{\\frac{m}{k}}",answer,unit:"s",resultLabel:en?"Oscillation period":"Periode osilasi",steps:["T=2\\pi\\sqrt{\\frac{"+m+"}{"+k+"}}","T="+f(answer)+"\\;\\mathrm{s}"]};
 }
 function PracticePanel({labId,language}:{labId:LabId;language:Language}) {
   const en=language==="EN";
@@ -607,7 +607,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const duration=points[points.length-1]?.t??1;
   const current=points[Math.min(points.length-1,Math.round(time/duration*(points.length-1)))]??points[0];
   const metrics=metricsFor(lab,values,current,points,language);
-  const liveEquations=liveEquationsFor(lab,values,current,time,points);
+  const liveEquations=liveEquationsFor(lab,values,current,time);
 
   useEffect(()=>{
     const initial=Object.fromEntries(lab.params.map(p=>[p.key,p.initial]));
@@ -641,7 +641,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       const pw=width-left-right,ph=height-top-bottom;
       ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
       const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
-        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
+        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan((values.angle??0)*Math.PI/180)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
         return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
       });
       const plottedIndex=Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)));
@@ -748,7 +748,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
             tag(label,color,base.x+dx*unit+offsetX,base.y-dy*unit+offsetY);
           };
           forceArrow(0,-mass*g,"#d36f72","mg",5,14);
-          forceArrow(-Math.sin(theta)*normal,Math.cos(theta)*normal,"#4da786","N",-15,-5);
+          forceArrow(Math.sin(theta)*normal,Math.cos(theta)*normal,"#4da786","N",8,-5);
           forceArrow(Math.cos(theta)*parallel,-Math.sin(theta)*parallel,"#d99a46","mg∥",5,10);
           if(friction>0)forceArrow(-Math.cos(theta)*friction,Math.sin(theta)*friction,"#8b6bd6","f",-14,12);
         }else{

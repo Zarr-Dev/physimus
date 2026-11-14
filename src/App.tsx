@@ -660,6 +660,12 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       }
       const padX=Math.max((maxX-minX)*.08,.5),padY=Math.max((maxY-minY)*.08,.5);
       minX-=padX;maxX+=padX;minY-=padY;maxY+=padY;
+      if(graphMode==="trajectory"&&["projectile","circular","energy","incline","spring"].includes(lab.id)){
+        const unitsPerPixel=Math.max((maxX-minX)/pw,(maxY-minY)/ph);
+        const centerX=(minX+maxX)/2,centerY=(minY+maxY)/2;
+        minX=centerX-unitsPerPixel*pw/2;maxX=centerX+unitsPerPixel*pw/2;
+        minY=centerY-unitsPerPixel*ph/2;maxY=centerY+unitsPerPixel*ph/2;
+      }
       const sx=(maxX-minX)||1,sy=(maxY-minY)||1;
       const X=(x:number)=>left+(x-minX)/sx*pw;
       const Y=(y:number)=>top+ph-(y-minY)/sy*ph;
@@ -694,6 +700,30 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.fillText(graphMode==="trajectory"?(lab.id==="circular"||lab.id==="spring"?"x (m)":lab.id==="energy"?(language==="ID"?"Jarak sepanjang bidang (m)":"Distance along slope (m)"):(language==="ID"?"Posisi / jarak (m)":"Position / distance (m)")):(language==="ID"?"Waktu (s)":"Time (s)"),left+pw/2,height-14);
       ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(graphMode==="trajectory"?(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)")):graphMode==="position-time"?(language==="ID"?"Posisi (m)":"Position (m)"):graphMode==="velocity-time"?(language==="ID"?"Kecepatan (m/s)":"Velocity (m/s)"):(language==="ID"?"Percepatan (m/s²)":"Acceleration (m/s²)"),0,0);ctx.restore();
 
+      if(graphMode==="trajectory"){
+        ctx.save();
+        if(lab.id==="projectile"||lab.id==="mru"||lab.id==="mrua"){
+          const ground=Y(0);ctx.strokeStyle="#b9c8d7";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(left,ground);ctx.lineTo(left+pw,ground);ctx.stroke();
+          if(lab.id==="projectile"){
+            const ox=X(0);ctx.fillStyle="#71879d";ctx.fillRect(ox-17,ground-8,18,8);ctx.beginPath();ctx.arc(ox-8,ground-8,8,Math.PI,Math.PI*1.5);ctx.fill();
+            ctx.fillStyle="#d9e5f0";ctx.beginPath();ctx.arc(ox,ground-3,3,0,Math.PI*2);ctx.fill();
+          }else{
+            ctx.strokeStyle="#d7e0e9";ctx.lineWidth=1;for(let k=0;k<14;k++){const gx=left+k*pw/13;ctx.beginPath();ctx.moveTo(gx,ground);ctx.lineTo(gx,ground+5);ctx.stroke();}
+          }
+        }else if(lab.id==="energy"){
+          const end=points[points.length-1];ctx.fillStyle="#f6f8fb";ctx.beginPath();ctx.moveTo(X(0),Y(values.height));ctx.lineTo(X(end.x),Y(0));ctx.lineTo(X(0),Y(0));ctx.closePath();ctx.fill();
+          ctx.strokeStyle="#b6c5d4";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(X(0),Y(values.height));ctx.lineTo(X(end.x),Y(0));ctx.stroke();
+          ctx.strokeStyle="#d5dee8";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(end.x),Y(0));ctx.lineTo(X(end.x)+18,Y(0));ctx.stroke();
+        }else if(lab.id==="incline"){
+          const end=points[points.length-1];ctx.strokeStyle="#b6c5d4";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(X(0),Y(0));ctx.lineTo(X(end.x),Y(end.y));ctx.stroke();
+          ctx.strokeStyle="#d7e1eb";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(X(end.x),Y(end.y));ctx.lineTo(X(end.x)+18,Y(end.y));ctx.stroke();
+        }else if(lab.id==="spring"){
+          const anchor=X(-values.amplitude*1.5),base=Y(0);ctx.fillStyle="#9aabba";ctx.fillRect(anchor-4,base-27,4,54);
+          ctx.strokeStyle="#d7e1eb";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(anchor,base-27);ctx.lineTo(anchor,base+27);ctx.stroke();
+          ctx.strokeStyle="#e7edf4";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X(-values.amplitude*1.4),base+17);ctx.lineTo(X(values.amplitude*1.4),base+17);ctx.stroke();
+        }
+        ctx.restore();
+      }
       if(graphMode==="trajectory"&&lab.id==="circular"){
         const r=values.radius;
         ctx.beginPath();ctx.arc(X(0),Y(0),r*Math.min(pw/sx,ph/sy),0,Math.PI*2);ctx.strokeStyle="#d8cfee";ctx.lineWidth=2;ctx.setLineDash([6,7]);ctx.stroke();ctx.setLineDash([]);
@@ -722,20 +752,20 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         ctx.fillStyle="#9b6b27";ctx.font="11px DM Sans";ctx.textAlign="left";ctx.fillText(`${plottedCurrent.x.toFixed(2)}, ${plottedCurrent.y.toFixed(2)}`,Math.min(px+9,left+pw-100),Math.max(top+14,py-9));
       }
       if(showVectors&&graphMode==="trajectory"){
-        const vector=(dx:number,dy:number,color:string)=>{
-          const magnitude=Math.hypot(dx,dy);if(magnitude<1e-7)return;
-          const maxLength=Math.min(pw,ph)*.24,scale=Math.min(maxLength/magnitude, maxLength/Math.max(magnitude,1e-7));
-          drawArrow(ctx,px,py,px+dx*scale/sx*pw,py-dy*scale/sy*ph,color);
+        const vector=(dx:number,dy:number,color:string,reference=Math.hypot(dx,dy))=>{
+          if(Math.hypot(dx,dy)<1e-7)return;
+          const scale=.20*Math.min(pw,ph)*Math.max(1e-8,Math.min(sx/pw,sy/ph))/Math.max(reference,1e-7);
+          drawArrow(ctx,px,py,px+dx*scale*pw/sx,py-dy*scale*ph/sy,color);
         };
         const tag=(label:string,color:string,x:number,y:number)=>{
           ctx.fillStyle=color;ctx.font="700 10px DM Sans, sans-serif";ctx.textAlign="left";ctx.fillText(label,x,y);
         };
         if(lab.id==="projectile"){
-          vector(current.vx,0,"#347fd5");vector(0,current.vy,"#4da786");vector(current.vx,current.vy,"#d99a46");
-          vector(0,-(values.gravity??9.81)*.35,"#d36f72");
+          vector(current.vx,0,"#347fd5",current.speed);vector(0,current.vy,"#4da786",current.speed);vector(current.vx,current.vy,"#d99a46",current.speed);
+          vector(0,-(values.gravity??9.81),"#d36f72",values.gravity??9.81);
           tag("vₓ","#347fd5",px+12,py+18);tag("vᵧ","#4da786",px+12,py-17);tag("v","#d99a46",px+27,py-30);tag("g","#d36f72",px-23,py+34);
         }else if(lab.id==="circular"){
-          vector(current.vx,current.vy,"#347fd5");vector(-current.x,-current.y,"#d99a46");
+          vector(current.vx,current.vy,"#347fd5",current.speed);vector(-current.x,-current.y,"#d99a46",Math.max((values.omega??0)**2*(values.radius??0),1e-6));
           tag("v","#347fd5",px+12,py-14);tag("aᶜ","#d99a46",px-25,py+24);
         }else if(lab.id==="incline"||lab.id==="energy"){
           const theta=lab.id==="energy"?Math.PI/6:(values.angle??0)*Math.PI/180;
@@ -752,12 +782,12 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           forceArrow(Math.cos(theta)*parallel,-Math.sin(theta)*parallel,"#d99a46","mg∥",5,10);
           if(friction>0)forceArrow(-Math.cos(theta)*friction,Math.sin(theta)*friction,"#8b6bd6","f",-14,12);
         }else{
-          vector(current.vx,0,"#347fd5");tag("v","#347fd5",px+12,py-13);
+          vector(current.vx,0,"#347fd5",Math.max(current.speed,1e-6));tag("v","#347fd5",px+12,py-13);
           if(lab.id==="spring"){
             const restoring=-(values.spring??0)*current.x/(values.mass??1);
-            vector(restoring,0,"#d99a46");tag("F","#d99a46",px+12,py+18);
+            vector(restoring,0,"#d99a46",Math.max((values.spring??0)*(values.amplitude??0),1e-6));tag("F","#d99a46",px+12,py+18);
           }else if(lab.id==="mrua"){
-            vector(values.acceleration??0,0,"#d36f72");tag("a","#d36f72",px+12,py+31);
+            vector(values.acceleration??0,0,"#d36f72",Math.max(Math.abs(values.acceleration??0),1e-6));tag("a","#d36f72",px+12,py+31);
           }
         }
       }

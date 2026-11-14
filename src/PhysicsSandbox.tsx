@@ -61,6 +61,7 @@ function compile(rows:Row[]):Compiled[]{
  });
 }
 function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
+ const m=vars.m;
  const fx=list.find(q=>q.target==="x(t)"&&!q.error),fy=list.find(q=>q.target==="y(t)"&&!q.error);if(!fx&&!fy)return null;
  const at=(time:number)=>({x:fx?calc(fx.root,{...vars,x:0,t:time}):time,y:fy?calc(fy.root,{...vars,x:0,t:time}):0});
  const h=.001,p=at(t),a=at(t-h),b=at(t+h);const vx=(b.x-a.x)/(2*h),vy=(b.y-a.y)/(2*h),ax=(b.x-2*p.x+a.x)/(h*h),ay=(b.y-2*p.y+a.y)/(h*h);
@@ -77,7 +78,7 @@ export default function PhysicsSandbox({language}:{language:Language}){
  const [object,setObject]=useState("particle");const [scale,setScale]=useState(1);const [cursor,setCursor]=useState<{x:number;y:number}|null>(null);const [view,setView]=useState({xmin:-10,xmax:10,ymin:-10,ymax:10});const [canvasSize,setCanvasSize]=useState(0);
  const canvasRef=useRef<HTMLCanvasElement>(null);const timeRef=useRef(0);
  const parsed=useMemo(()=>compile(rows),[rows]);const valid=parsed.filter(x=>!x.error);const errors=parsed.filter(x=>x.error);
- const hasMotion=valid.some(x=>x.target==="x(t)"||x.target==="y(t)");const parameterSet=useMemo<Vars>(()=>({x:0,t:time,m:mass,g:gravity,a:amplitude,v0:initialSpeed,omega:angularSpeed,k:stiffness,theta:phase}),[time,mass,gravity,amplitude,initialSpeed,angularSpeed,stiffness,phase]);const current=motionAt(valid,time,parameterSet);
+ const hasMotion=valid.some(x=>x.target==="x(t)"||x.target==="y(t)");const parameterSet=useMemo<Vars>(()=>({x:0,t:0,m:mass,g:gravity,a:amplitude,v0:initialSpeed,omega:angularSpeed,k:stiffness,theta:phase}),[time,mass,gravity,amplitude,initialSpeed,angularSpeed,stiffness,phase]);const current=motionAt(valid,time,parameterSet);
  const badSample=useMemo(()=>{for(const item of valid){for(let i=0;i<=100;i++){const q=item.target==="y(x)"?calc(item.root,{...parameterSet,x:view.xmin+(view.xmax-view.xmin)*i/100,t:0}):calc(item.root,{...parameterSet,x:0,t:duration*i/100});if(!Number.isFinite(q)||Math.abs(q)>1e6)return true;}}return false;},[valid,view,duration,parameterSet]);
  const warning=errors.length>0||badSample||(hasMotion&&!current);
  useEffect(()=>{if(!playing)return;let frame=0,last=0;const tick=(now:number)=>{if(!last)last=now;const next=timeRef.current+Math.min((now-last)/1000,.05);last=now;timeRef.current=Math.min(duration,next);setTime(timeRef.current);if(next>=duration){setPlaying(false);return;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,duration]);

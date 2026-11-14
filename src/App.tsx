@@ -498,7 +498,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,graphMode]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;

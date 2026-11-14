@@ -585,12 +585,12 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           const mass=values.mass??1,g=values.gravity??9.81,mu=values.friction??0;
           const normal=mass*g*Math.cos(theta),parallel=mass*g*Math.sin(theta),friction=Math.min(mu*normal,parallel);
           const base=lab.id==="incline"?{x:px,y:py}:{x:px,y:py};
-          const unit= Math.min(pw,ph)*.012;
+          const unit= Math.min(pw,ph)*.20/Math.max(mass*g,1);
           const forceArrow=(dx:number,dy:number,color:string,label:string,offsetX:number,offsetY:number)=>{
             drawArrow(ctx,base.x,base.y,base.x+dx*unit,base.y-dy*unit,color);
             tag(label,color,base.x+dx*unit+offsetX,base.y-dy*unit+offsetY);
           };
-          forceArrow(0,mass*g,"#d36f72","mg",5,-4);
+          forceArrow(0,-mass*g,"#d36f72","mg",5,14);
           forceArrow(-Math.sin(theta)*normal,Math.cos(theta)*normal,"#4da786","N",-15,-5);
           forceArrow(Math.cos(theta)*parallel,-Math.sin(theta)*parallel,"#d99a46","mg∥",5,10);
           if(friction>0)forceArrow(-Math.cos(theta)*friction,Math.sin(theta)*friction,"#8b6bd6","f",-14,12);

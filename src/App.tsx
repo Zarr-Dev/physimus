@@ -350,7 +350,7 @@ function collisionResults(v:Record<string,number>){
   const relative=u1-u2,collisionTime=relative>0?(v.separation??6)/relative:Infinity;
   const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2);
   const v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
-  return {m1,m2,u1,u2,e,collisionTime,v1,v2,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
+  return {m1,m2,u1,u2,e,separation:v.separation??6,collisionTime,v1,v2,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
 }
 
 function makePoints(lab:Lab,values:Record<string,number>):Point[] {
@@ -377,7 +377,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const accel=lab.id==="incline"&&!staticHolds?Math.max(0,g*(Math.sin(angle)-p("friction")*Math.cos(angle))):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
-    let x=0,y=0,vx=0,vy=0,kinetic=0,potential=0;
+    let x=0,y=0,vx=0,vy=0,kinetic=0,potential=0,x2:number|undefined,vx2:number|undefined;
     const mass=p("mass")||1;
     if(lab.id==="projectile") {
       const v=p("speed"),theta=angle;

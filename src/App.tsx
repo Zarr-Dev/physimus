@@ -38,7 +38,7 @@ const labs: Lab[] = [
     description: "Amati benda yang bergerak pada lintasan lurus dengan kecepatan konstan dan percepatan nol.",
     formula: String.raw`x(t)=x_0+vt,\quad v(t)=v_0,\quad a(t)=0`,
     question: "Jika kecepatan tetap, bagaimana posisi berubah setiap detik?",
-    params: [{key:"speed",label:"Kecepatan",min:1,max:30,step:.5,unit:"m/s",initial:8},{key:"mass",label:"Massa benda",min:.1,max:20,step:.1,unit:"kg",initial:1}],
+    params: [{key:"speed",label:"Kecepatan",min:1,max:30,step:.5,unit:"m/s",initial:8},{key:"x0",label:"Posisi awal",min:-50,max:50,step:.5,unit:"m",initial:0},{key:"mass",label:"Massa benda",min:.1,max:20,step:.1,unit:"kg",initial:1}],
     duration: 10, color:"#347fd5"
   },
   {
@@ -49,6 +49,7 @@ const labs: Lab[] = [
     params: [
       {key:"speed",label:"Kecepatan awal",min:0,max:25,step:.5,unit:"m/s",initial:4},
       {key:"acceleration",label:"Percepatan",min:-5,max:5,step:.1,unit:"m/s²",initial:1.5},
+      {key:"x0",label:"Posisi awal",min:-50,max:50,step:.5,unit:"m",initial:0},
       {key:"mass",label:"Massa benda",min:.1,max:20,step:.1,unit:"kg",initial:1}
     ], duration: 10, color:"#347fd5"
   },
@@ -71,7 +72,8 @@ const labs: Lab[] = [
     params: [
       {key:"mass",label:"Massa benda",min:.5,max:20,step:.5,unit:"kg",initial:2},
       {key:"height",label:"Ketinggian awal",min:1,max:20,step:.5,unit:"m",initial:8},
-      {key:"friction",label:"Koefisien gesek",min:0,max:.5,step:.01,unit:"μ",initial:0}
+      {key:"friction",label:"Koefisien gesek kinetis μk",min:0,max:.5,step:.01,unit:"μk",initial:0},
+      {key:"staticFriction",label:"Koefisien gesek statis μs",min:0,max:.8,step:.01,unit:"μs",initial:.3}
     ], duration: 8, color:"#d99a46"
   },
   {
@@ -206,7 +208,7 @@ const englishLabText: Record<LabId,{description:string;question:string}> = {
 function parameterText(language:Language,key:string,fallback:string) {
   if(language==="ID") return fallback;
   const en:Record<string,string> = {
-    speed:"Initial speed",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
+    speed:"Initial speed",x0:"Initial position",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
     acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",
     friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
   };
@@ -331,7 +333,8 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   }
   if(lab.id==="circular") duration=2*Math.PI/p("omega");
   const energyAngle=Math.PI/6;
-  const energyAcceleration=g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
+  const energyStaticHolds=Math.tan(energyAngle)<=p("staticFriction");
+  const energyAcceleration=energyStaticHolds?0:g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
   if(lab.id==="energy"&&energyAcceleration>0) duration=Math.sqrt(2*(p("height")/Math.sin(energyAngle))/energyAcceleration);
   if(lab.id==="spring") duration=2*Math.PI/Math.sqrt(p("spring")/p("mass"))*2;
   const count=240;
@@ -340,7 +343,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const omega=lab.id==="spring"?Math.sqrt(p("spring")/p("mass")):p("omega");
   const inclineAngle=lab.id==="energy"?Math.PI/6:angle;
   const totalDistance=lab.id==="energy"?p("height")/Math.sin(inclineAngle):0;
-  const staticHolds=lab.id==="incline"&&Math.tan(angle)<=p("staticFriction");
+  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&Math.tan(inclineAngle)<=p("staticFriction");
   const accel=lab.id==="incline"&&!staticHolds?Math.max(0,g*(Math.sin(angle)-p("friction")*Math.cos(angle))):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
@@ -354,9 +357,9 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       const h=p("height")+v*Math.sin(theta)*time-.5*g*time*time;
       kinetic=.5*mass*(vx*vx+vy*vy);potential=mass*g*Math.max(0,h);
     } else if(lab.id==="mru") {
-      vx=p("speed");x=vx*time;kinetic=.5*mass*vx*vx;
+      vx=p("speed");x=p("x0")+vx*time;kinetic=.5*mass*vx*vx;
     } else if(lab.id==="mrua") {
-      vx=p("speed")+p("acceleration")*time;x=p("speed")*time+.5*p("acceleration")*time*time;kinetic=.5*mass*vx*vx;
+      vx=p("speed")+p("acceleration")*time;x=p("x0")+p("speed")*time+.5*p("acceleration")*time*time;kinetic=.5*mass*vx*vx;
     } else if(lab.id==="circular") {
       const theta=omega*time,r=p("radius");
       x=r*Math.cos(theta);y=r*Math.sin(theta);
@@ -475,13 +478,13 @@ function liveEquationsFor(lab:Lab,v:Record<string,number>,p:Point,t:number):{tit
     ];
   }
   if(lab.id==="mru") return [
-    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"\\cdot "+n(t)+"="+n(p.x)+"\\;\\mathrm{m}"},
+    {title:"Posisi",formula:"x(t)="+n(v.x0??0)+"+"+n(v.speed??0)+"\\cdot "+n(t)+"="+n(p.x)+"\\;\\mathrm{m}"},
     {title:"Kecepatan tetap",formula:"v(t)=v_0="+n(v.speed??0)+"\\;\\mathrm{m/s}"},
     {title:"Percepatan",formula:"a(t)=\\frac{\\Delta v}{\\Delta t}=0\\;\\mathrm{m/s^2}"},
     {title:"Energi kinetik",formula:"E_k=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
   ];
   if(lab.id==="mrua") return [
-    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"t+\\frac12("+n(v.acceleration??0)+")t^2="+n(p.x)+"\\;\\mathrm{m}"},
+    {title:"Posisi",formula:"x(t)="+n(v.x0??0)+"+"+n(v.speed??0)+"t+\\frac12("+n(v.acceleration??0)+")t^2="+n(p.x)+"\\;\\mathrm{m}"},
     {title:"Kecepatan",formula:"v(t)="+n(v.speed??0)+"+("+n(v.acceleration??0)+")("+n(t)+")="+n(p.vx)+"\\;\\mathrm{m/s}"},
     {title:"Hukum II Newton",formula:"\\sum F=ma=("+n(m)+")("+n(v.acceleration??0)+")="+n(m*(v.acceleration??0))+"\\;\\mathrm{N}"},
     {title:"Energi kinetik",formula:"E_k=\\frac12mv^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
@@ -493,11 +496,11 @@ function liveEquationsFor(lab:Lab,v:Record<string,number>,p:Point,t:number):{tit
     {title:"Periode",formula:"T=\\frac{2\\pi}{\\omega}= "+n(2*Math.PI/(v.omega??1))+"\\;\\mathrm{s}"}
   ];
   if(lab.id==="energy"){
-    const alpha=Math.PI/6,s=(v.height??0)/Math.sin(alpha)-p.x/Math.cos(alpha),mu=v.friction??0;
+    const alpha=Math.PI/6,distanceTravelled=p.x/Math.cos(alpha),mu=v.friction??0;
     return [
       {title:"Energi potensial",formula:"E_p=mgh=("+n(m)+")("+n(g)+")("+n(p.y)+")="+n(p.potential)+"\\;\\mathrm{J}"},
       {title:"Energi kinetik",formula:"E_k=\\frac12mv^2=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"},
-      {title:"Usaha gesekan",formula:"W_f=-\\mu_kmg\\cos 30^\\circ\\,s="+n(-mu*m*g*Math.cos(alpha)*Math.max(0,s))+"\\;\\mathrm{J}"},
+      {title:"Usaha gesekan",formula:"W_f=-\\mu_kmg\\cos 30^\\circ\\,s="+n(-mu*m*g*Math.cos(alpha)*Math.max(0,distanceTravelled))+"\\;\\mathrm{J}"},
       {title:"Energi mekanik",formula:"E_m=E_k+E_p="+n(p.kinetic+p.potential)+"\\;\\mathrm{J}"}
     ];
   }

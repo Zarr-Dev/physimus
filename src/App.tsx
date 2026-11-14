@@ -242,6 +242,7 @@ function Workspace({ language, setLanguage, onBack }: {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const elapsedRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const drawRef = useRef<() => void>(() => {});
 
   const radians = angle * Math.PI / 180;
   const vx = speed * Math.cos(radians);
@@ -398,11 +399,17 @@ function Workspace({ language, setLanguage, onBack }: {
       }
     };
 
+    drawRef.current = render;
     render();
-    const observer = new ResizeObserver(render);
+  }, [angle, elapsedSafe, flightTime, gravity, maxHeight, mode, range, showGrid, showHorizontal, showTrail, showVectors, showVertical, t.distanceAxis, t.timeAxis, vx, vy0]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const observer = new ResizeObserver(() => drawRef.current());
     observer.observe(canvas);
     return () => observer.disconnect();
-  }, [angle, elapsedSafe, flightTime, gravity, maxHeight, mode, range, showGrid, showHorizontal, showTrail, showVectors, showVertical, t.distanceAxis, t.timeAxis, vx, vy0]);
+  }, []);
 
   const startPause = () => {
     if (running) { setRunning(false); return; }

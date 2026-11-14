@@ -197,3 +197,23 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   .workspace-page{padding:22px 12px 35px}.workspace-heading h1{font-size:30px}.workspace-heading p{font-size:13px}.workspace-actions{width:100%}.secondary-button{min-height:39px;padding:0 9px;font-size:10px}.lab-studio{min-height:0}.drawer-content{padding:18px 14px}.parameter-list{grid-template-columns:1fr}.graph-header{align-items:flex-start;flex-direction:column;padding:15px}.graph-tools{width:100%;justify-content:flex-start}.graph-tools button{padding:0 7px}.canvas-area{height:440px;min-height:360px}.playback-bar{flex-wrap:wrap;padding:12px}.timeline{order:3;flex-basis:100%;margin:0}.play-speeds{margin-left:auto}.measurement-area{padding:16px 12px}.measurement-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.measurement{padding:10px}.measurement strong{font-size:16px}.graph-footer{flex-wrap:wrap;padding:12px;gap:12px}.notice{width:100%}
   .secondary-page{padding:45px 18px 65px}.secondary-intro h1{font-size:39px}.secondary-intro p{font-size:14px}.learning-row{align-items:flex-start;flex-direction:column}.sandbox-builder{padding:14px}.sandbox-preview{min-height:245px}
 }
+
+
+.equation-feature{margin:18px 0 16px;padding:14px 12px;border:1px solid #dce9f5;border-radius:10px;background:#f7fbff}
+.equation-feature>.eyebrow{font-size:9px;letter-spacing:.12em;color:#4383c4}
+.equation-feature .formula-box{margin:12px 0;padding:13px 8px;border:0;background:#fff;overflow-x:auto}
+.equation-feature>p{margin:8px 0 0;color:#7a8da1;font-size:11px;line-height:1.65}
+.equation-list{display:flex;flex-direction:column;gap:10px;margin:12px 0 18px}
+.equation-card{padding:12px 11px;border:1px solid #e7edf3;border-radius:9px;background:#fff;min-width:0}
+.equation-card-head{display:flex;align-items:center;gap:8px;min-width:0}
+.equation-card-head>span{color:#8ba0b5;font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
+.equation-card-head>strong{flex:1;color:#405a73;font-size:11px;line-height:1.4}
+.equation-card-head>button{width:28px;height:28px;display:grid;place-items:center;border:1px solid #e5ebf1;border-radius:6px;background:#fff;color:#6d849b}
+.equation-card-head>button:hover{background:#edf5fe;color:#347fd5}
+.equation-math{padding:12px 3px 8px;overflow-x:auto;color:#294763}
+.equation-math .math-display{font-size:13px}
+.equation-card>p{margin:4px 0 0;color:#788da1;font-size:11px;line-height:1.65}
+.drawer-content:has(.equation-list){padding-right:13px}
+.drawer-rail{position:sticky;top:0;align-self:start;min-height:100%;z-index:1}
+@media(max-width:820px){.drawer-rail{position:static;min-height:0}.drawer-content:has(.equation-list){max-height:440px}}
+@media(max-width:540px){.equation-card{padding:10px 9px}.equation-math .math-display{font-size:12px}}

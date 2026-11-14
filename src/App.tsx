@@ -714,7 +714,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       const pw=width-left-right,ph=height-top-bottom;
       ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
       const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
-        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan((values.angle??0)*Math.PI/180)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
+        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan((values.angle??0)*Math.PI/180)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
         return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
       });
       const plottedIndex=Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)));
@@ -725,6 +725,10 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       let minX=Math.min(...plotted.map(p=>p.x)),maxX=Math.max(...plotted.map(p=>p.x));
       let minY=Math.min(...plotted.map(p=>p.y)),maxY=Math.max(...plotted.map(p=>p.y));
       if(graphMode==="trajectory"&&lab.id==="collision"){const positions=points.flatMap(p=>[p.x,p.x2??p.x]);minX=Math.min(...positions);maxX=Math.max(...positions);minY=-1;maxY=1;}
+      if(graphMode!=="trajectory"&&lab.id==="collision"){
+        const secondary=points.map(p=>graphMode==="position-time"?(p.x2??0):graphMode==="velocity-time"?(p.vx2??0):0);
+        minY=Math.min(minY,...secondary);maxY=Math.max(maxY,...secondary);
+      }
       if(graphMode==="trajectory"){
         if(lab.id==="circular"){minX=-values.radius*1.3;maxX=values.radius*1.3;minY=-values.radius*1.3;maxY=values.radius*1.3;}
         if(lab.id==="spring"){minX=-values.amplitude*1.35;maxX=values.amplitude*1.35;minY=-.5;maxY=.5;}
@@ -810,6 +814,24 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       }else if(points.length>1){
         ctx.beginPath();plotted.forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
         ctx.strokeStyle="#c6d4e3";ctx.lineWidth=2;ctx.setLineDash([5,7]);ctx.stroke();ctx.setLineDash([]);
+      }
+      if(lab.id==="collision"&&graphMode!=="trajectory"){
+        const secondValues=points.map(p=>({x:p.t,y:graphMode==="position-time"?(p.x2??0):graphMode==="velocity-time"?(p.vx2??0):0}));
+        ctx.beginPath();secondValues.forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
+        ctx.strokeStyle="#d99a46";ctx.lineWidth=2.5;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+        const second=secondValues[plottedIndex];ctx.beginPath();ctx.arc(X(second.x),Y(second.y),5.5,0,Math.PI*2);ctx.fillStyle="#d99a46";ctx.fill();
+        if(graphMode==="acceleration-time"){
+          const collisionTime=collisionResults(values).collisionTime;
+          if(Number.isFinite(collisionTime)&&collisionTime>=minX&&collisionTime<=maxX){
+            ctx.strokeStyle="#d36f72";ctx.lineWidth=1.7;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(X(collisionTime),top);ctx.lineTo(X(collisionTime),top+ph);ctx.stroke();ctx.setLineDash([]);
+            ctx.fillStyle="#b55e61";ctx.font="700 10px DM Sans";ctx.textAlign="left";ctx.fillText(language==="ID"?"Impuls / kontak":"Impulse / contact",Math.min(X(collisionTime)+7,left+pw-110),top+18);
+          }
+        }
+      }
+      if(lab.id==="collision"&&graphMode==="trajectory"){
+        const end=showTrail?Math.max(1,Math.round(time/duration*(points.length-1))):points.length-1;
+        ctx.beginPath();points.slice(0,end+1).forEach((p,i)=>{const x=p.x2??p.x;if(i===0)ctx.moveTo(X(x),Y(0));else ctx.lineTo(X(x),Y(0));});
+        ctx.strokeStyle="#d99a46";ctx.lineWidth=2.5;ctx.setLineDash(showTrail?[6,4]:[3,6]);ctx.stroke();ctx.setLineDash([]);
       }
       const px=X(plottedCurrent.x),py=Y(plottedCurrent.y);
       if(showTangent&&graphMode!=="trajectory"&&Number.isFinite(localSlope)){
@@ -900,8 +922,8 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const seek=(value:number)=>{const next=Math.max(0,Math.min(duration,value));timeRef.current=next;setTime(next);if(next>=duration)setPlaying(false);};
 
   const exportCsv=()=>{
-    const rows=["time_s,x_m,y_m,vx_m_s,vy_m_s,speed_m_s,kinetic_J,potential_J"];
-    points.forEach(p=>rows.push([p.t,p.x,p.y,p.vx,p.vy,p.speed,p.kinetic,p.potential].map(n=>n.toFixed(7)).join(",")));
+    const rows=["time_s,x1_m,y1_m,v1x_m_s,v1y_m_s,speed1_m_s,kinetic_total_J,potential_J,x2_m,v2x_m_s,collision_occurred"];
+    points.forEach(p=>rows.push([p.t,p.x,p.y,p.vx,p.vy,p.speed,p.kinetic,p.potential,p.x2??"",p.vx2??"",p.collisionOccurred?1:0].map(n=>typeof n==="number"?n.toFixed(7):n).join(",")));
     downloadFile("physimus-"+lab.id+".csv",rows.join("\n"),"text/csv;charset=utf-8");setNotice(language==="ID"?"CSV siap diunduh":"CSV ready");
   };
   const saveProject=()=>{

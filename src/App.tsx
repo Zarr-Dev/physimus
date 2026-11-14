@@ -3,7 +3,7 @@ import type { ChangeEvent, CSSProperties } from "react";
 import katex from "katex";
 import {
   Activity, ArrowLeft, ArrowRight, Atom, BookOpen, Check, ChevronDown,
-  CircleHelp, Download, FlaskConical, Globe2, Grid3X3, Home as HomeIcon,
+  CircleHelp, Copy, Download, FlaskConical, Globe2, Grid3X3, Home as HomeIcon,
   Layers3, Pause, Play, RotateCcw, Save, Settings2, SlidersHorizontal,
   Sparkles, Upload, Waves
 } from "lucide-react";
@@ -95,6 +95,54 @@ const labs: Lab[] = [
     ], duration: 8, color:"#8b6bd6"
   }
 ];
+
+type EquationEntry = { id:string; titleID:string; titleEN:string; formula:string; noteID:string; noteEN:string };
+const equationLibrary: Record<LabId, EquationEntry[]> = {
+ projectile:[
+  {id:"components",titleID:"Komponen kecepatan",titleEN:"Velocity components",formula:String.raw\`v_x=v_0\\cos\\theta,\\quad v_y=v_0\\sin\\theta-gt\`,noteID:"Komponen horizontal tetap, sedangkan komponen vertikal berubah karena gravitasi.",noteEN:"The horizontal component stays constant while the vertical component changes under gravity."},
+  {id:"coordinates",titleID:"Persamaan posisi",titleEN:"Position equations",formula:String.raw\`x(t)=x_0+v_0\\cos\\theta\\,t,\\quad y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2\`,noteID:"Posisi diperoleh dengan mengintegralkan komponen kecepatan terhadap waktu.",noteEN:"Position follows by integrating each velocity component over time."},
+  {id:"flight",titleID:"Waktu hingga menyentuh tanah",titleEN:"Time to reach the ground",formula:String.raw\`t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}\`,noteID:"Akar positif dipilih karena waktu fisik tidak negatif.",noteEN:"Choose the positive root because physical flight time cannot be negative."},
+  {id:"peak",titleID:"Tinggi maksimum",titleEN:"Maximum height",formula:String.raw\`H_{\\max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}\`,noteID:"Di titik tertinggi, kecepatan vertikal sesaat sama dengan nol.",noteEN:"At the apex, vertical velocity is momentarily zero."},
+  {id:"range",titleID:"Jangkauan horizontal",titleEN:"Horizontal range",formula:String.raw\`R=v_0\\cos\\theta\\,t_f\`,noteID:"Bentuk ini berlaku untuk ketinggian awal umum, termasuk h₀ bukan nol.",noteEN:"This form supports a nonzero launch height."}
+ ],
+ mru:[
+  {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw\`x(t)=x_0+vt\`,noteID:"Grafik x–t berupa garis lurus; gradiennya adalah kecepatan.",noteEN:"The x–t graph is a straight line whose slope is velocity."},
+  {id:"velocity",titleID:"Kecepatan konstan",titleEN:"Constant velocity",formula:String.raw\`v=\\frac{\\Delta x}{\\Delta t}=\\text{konstan}\`,noteID:"Perpindahan per selang waktu selalu sama.",noteEN:"Displacement per time interval remains constant."},
+  {id:"acceleration",titleID:"Percepatan",titleEN:"Acceleration",formula:String.raw\`a=\\frac{\\Delta v}{\\Delta t}=0\`,noteID:"Karena kecepatan tidak berubah, percepatannya nol.",noteEN:"Since velocity does not change, acceleration is zero."}
+ ],
+ mrua:[
+  {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw\`x=x_0+v_0t+\\frac12at^2\`,noteID:"Grafik posisi terhadap waktu berbentuk parabola jika percepatan tidak nol.",noteEN:"Position versus time is parabolic when acceleration is nonzero."},
+  {id:"velocity",titleID:"Persamaan kecepatan",titleEN:"Velocity equation",formula:String.raw\`v=v_0+at\`,noteID:"Gradien grafik v–t sama dengan percepatan.",noteEN:"The slope of a velocity–time graph equals acceleration."},
+  {id:"torricelli",titleID:"Persamaan tanpa waktu",titleEN:"Time-independent equation",formula:String.raw\`v^2=v_0^2+2a(x-x_0)\`,noteID:"Berguna ketika waktu tidak diketahui atau tidak diperlukan.",noteEN:"Useful when time is unknown or not needed."},
+  {id:"displacement",titleID:"Kecepatan rata-rata",titleEN:"Average velocity",formula:String.raw\`\\Delta x=\\frac{v_0+v}{2}\\,t\`,noteID:"Berlaku untuk percepatan konstan satu dimensi.",noteEN:"Valid for constant one-dimensional acceleration."}
+ ],
+ circular:[
+  {id:"angular",titleID:"Posisi sudut",titleEN:"Angular position",formula:String.raw\`\\theta(t)=\\theta_0+\\omega t\`,noteID:"Kecepatan sudut konstan menghasilkan perubahan sudut linear terhadap waktu.",noteEN:"Constant angular velocity gives a linear change in angle over time."},
+  {id:"linear",titleID:"Hubungan linear dan sudut",titleEN:"Linear–angular relation",formula:String.raw\`v=\\omega r,\\quad s=r\\theta\`,noteID:"Sudut θ harus dinyatakan dalam radian pada persamaan panjang busur.",noteEN:"Angle θ must be in radians in the arc-length relation."},
+  {id:"period",titleID:"Periode dan frekuensi",titleEN:"Period and frequency",formula:String.raw\`T=\\frac{2\\pi}{\\omega},\\quad f=\\frac1T=\\frac{\\omega}{2\\pi}\`,noteID:"Periode adalah waktu untuk satu putaran penuh.",noteEN:"The period is the time required for one complete revolution."},
+  {id:"centripetal",titleID:"Percepatan sentripetal",titleEN:"Centripetal acceleration",formula:String.raw\`a_c=\\frac{v^2}{r}=\\omega^2r\`,noteID:"Arah percepatan selalu menuju pusat lintasan.",noteEN:"Acceleration always points toward the center of the path."}
+ ],
+ energy:[
+  {id:"mechanical",titleID:"Energi mekanik",titleEN:"Mechanical energy",formula:String.raw\`E_m=E_k+E_p=\\frac12mv^2+mgh\`,noteID:"Energi mekanik adalah jumlah energi kinetik dan potensial gravitasi.",noteEN:"Mechanical energy is the sum of kinetic and gravitational potential energy."},
+  {id:"work",titleID:"Usaha oleh gesekan",titleEN:"Work done by friction",formula:String.raw\`W_f=-f_ks=-\\mu_kmg\\cos\\alpha\\,s\`,noteID:"Tanda negatif menunjukkan gaya gesek berlawanan arah dengan perpindahan.",noteEN:"The negative sign indicates friction acts opposite to displacement."},
+  {id:"energybalance",titleID:"Teorema usaha–energi",titleEN:"Work–energy theorem",formula:String.raw\`K_f-K_i=W_{\\mathrm{net}}\`,noteID:"Usaha total sama dengan perubahan energi kinetik.",noteEN:"Net work equals the change in kinetic energy."},
+  {id:"conservation",titleID:"Energi dan gaya nonkonservatif",titleEN:"Energy and non-conservative work",formula:String.raw\`E_{m,f}=E_{m,i}+W_{\\mathrm{nc}}\`,noteID:"Gesekan dapat mengurangi energi mekanik dan mentransfer energi menjadi energi termal.",noteEN:"Friction can reduce mechanical energy and transfer energy into thermal energy."}
+ ],
+ incline:[
+  {id:"weight",titleID:"Komponen gaya berat",titleEN:"Weight components",formula:String.raw\`F_{\\parallel}=mg\\sin\\theta,\\quad F_{\\perp}=mg\\cos\\theta\`,noteID:"Gaya berat diuraikan sejajar dan tegak lurus bidang miring.",noteEN:"Resolve weight into components parallel and perpendicular to the incline."},
+  {id:"normal",titleID:"Gaya normal",titleEN:"Normal force",formula:String.raw\`N=mg\\cos\\theta\`,noteID:"Berlaku jika tidak ada percepatan tegak lurus bidang dan tidak ada gaya normal tambahan.",noteEN:"Applies when there is no perpendicular acceleration or additional normal force."},
+  {id:"friction",titleID:"Gaya gesek kinetik",titleEN:"Kinetic friction",formula:String.raw\`f_k=\\mu_kN\`,noteID:"Gesekan statis memerlukan analisis ambang gerak tersendiri.",noteEN:"Static friction requires a separate threshold analysis."},
+  {id:"acceleration",titleID:"Percepatan sepanjang bidang",titleEN:"Acceleration along the incline",formula:String.raw\`a=g(\\sin\\theta-\\mu_k\\cos\\theta)\`,noteID:"Berlaku saat balok meluncur turun dan arah positif dipilih menuruni bidang.",noteEN:"Valid for downhill sliding with downhill chosen as positive."},
+  {id:"threshold",titleID:"Ambang mulai meluncur",titleEN:"Threshold for sliding",formula:String.raw\`\\tan\\theta>\\mu_s\`,noteID:"Untuk mulai bergerak dari diam, gunakan koefisien gesek statis μs, bukan μk.",noteEN:"For motion to begin from rest, use static friction μs, not kinetic friction μk."}
+ ],
+ spring:[
+  {id:"hooke",titleID:"Hukum Hooke",titleEN:"Hooke's law",formula:String.raw\`F=-kx\`,noteID:"Tanda negatif menunjukkan gaya pegas mengarah menuju posisi setimbang.",noteEN:"The negative sign means spring force points toward equilibrium."},
+  {id:"motion",titleID:"Persamaan gerak",titleEN:"Motion equation",formula:String.raw\`x(t)=A\\cos(\\omega t+\\phi)\`,noteID:"Fase awal φ menentukan posisi dan arah gerak pada t = 0.",noteEN:"Initial phase φ determines position and direction at t = 0."},
+  {id:"frequency",titleID:"Frekuensi sudut",titleEN:"Angular frequency",formula:String.raw\`\\omega=\\sqrt{\\frac{k}{m}}\`,noteID:"Pegas lebih kaku meningkatkan frekuensi; massa lebih besar menurunkannya.",noteEN:"A stiffer spring increases frequency; a larger mass decreases it."},
+  {id:"period",titleID:"Periode dan frekuensi",titleEN:"Period and frequency",formula:String.raw\`T=2\\pi\\sqrt{\\frac{m}{k}},\\quad f=\\frac1T\`,noteID:"Periode adalah waktu satu osilasi penuh pada model pegas ideal.",noteEN:"The period is the time for one full oscillation in the ideal spring model."},
+  {id:"energy",titleID:"Energi osilasi",titleEN:"Oscillation energy",formula:String.raw\`E=\\frac12mv^2+\\frac12kx^2=\\frac12kA^2\`,noteID:"Tanpa redaman, energi mekanik total tetap.",noteEN:"Without damping, total mechanical energy remains constant."}
+ ]
+};
 
 const words = {
   ID: {
@@ -569,7 +617,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         </nav>
         <div className="drawer-content">
           {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
-          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="formula-box"><Equation value={lab.formula} display/></div><p className="drawer-help">{language==="ID"?"Persamaan ditampilkan dalam notasi LaTeX. Variabel mengikuti parameter eksperimen yang aktif.":"Equations are rendered from LaTeX. Variables follow the active experiment parameters."}</p><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
+          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"PERSAMAAN UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={lab.formula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
           {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
           {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><p className="drawer-help">{lab.id==="projectile"?w.noDrag:language==="ID"?"Model menggunakan parameter ideal. Batasan dan asumsi disederhanakan untuk pembelajaran.":"This is an idealized teaching model. Some real-world effects are intentionally simplified."}</p></>}
         </div>

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, CSSProperties } from "react";
 import katex from "katex";
 import {
   Activity, ArrowLeft, ArrowRight, Atom, BookOpen, Check, ChevronDown,
-  CircleHelp, Download, Eye, FlaskConical, Globe2, Grid3X3, Home as HomeIcon,
+  CircleHelp, Download, FlaskConical, Globe2, Grid3X3, Home as HomeIcon,
   Layers3, Pause, Play, RotateCcw, Save, Settings2, SlidersHorizontal,
-  Sparkles, Upload, Waves, X
+  Sparkles, Upload, Waves
 } from "lucide-react";
 
 type Language = "ID" | "EN";
@@ -213,7 +213,7 @@ function LabCard({lab,language,onOpen,index}:{lab:Lab;language:Language;onOpen:(
   const category=language==="ID"?lab.category:lab.category==="KINEMATIKA"?"KINEMATICS":lab.category==="GETARAN"?"OSCILLATIONS":"DYNAMICS & ENERGY";
   return <button className="lab-card" onClick={()=>onOpen(lab.id)}>
     <div className="lab-card-top"><span className="lab-index">{String(index+1).padStart(2,"0")}</span><span className="lab-category">{category}</span><span className="lab-arrow"><ArrowRight size={19}/></span></div>
-    <div className="lab-card-icon" style={{"--lab-color":lab.color} as React.CSSProperties}><Activity size={28}/></div>
+    <div className="lab-card-icon" style={{"--lab-color":lab.color} as CSSProperties}><Activity size={28}/></div>
     <h3>{lab.title}</h3><p className="lab-subtitle">{label.title}</p>
     <p className="lab-description">{label.description}</p>
     <div className="lab-formula"><Equation value={lab.formula}/></div>
@@ -257,7 +257,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const omega=lab.id==="spring"?Math.sqrt(p("spring")/p("mass")):p("omega");
   const inclineAngle=lab.id==="energy"?Math.PI/6:angle;
   const totalDistance=lab.id==="energy"?p("height")/Math.sin(inclineAngle):0;
-  const accel=lab.id==="incline"?g*(Math.sin(angle)-p("friction")*Math.cos(angle)):0;
+  const accel=lab.id==="incline"?Math.max(0,g*(Math.sin(angle)-p("friction")*Math.cos(angle))):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
     let x=0,y=0,vx=0,vy=0,kinetic=0,potential=0;
@@ -297,7 +297,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   return points;
 }
 
-function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[]) {
+function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[],language:Language) {\n  const labels = language==="ID" ? ["Posisi x","Posisi y","Kelajuan","Jangkauan","Tinggi maksimum","Waktu terbang","Posisi","Kecepatan","Percepatan","Waktu","Periode","Kecepatan sudut","a sentripetal","Energi kinetik","Energi potensial","Energi mekanik","Ketinggian","Energi awal","Resultan gaya","Jarak","Massa"] : ["Position x","Position y","Speed","Range","Maximum height","Flight time","Position","Velocity","Acceleration","Time","Period","Angular velocity","Centripetal acceleration","Kinetic energy","Potential energy","Mechanical energy","Height","Initial energy","Net force","Distance","Mass"];
   const peak=points.reduce((best,p)=>p.y>best.y?p:best,points[0]);
   const total=point.kinetic+point.potential;
   const mass=values.mass??1;
@@ -363,7 +363,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const points=useMemo(()=>makePoints(lab,values),[lab,values]);
   const duration=points[points.length-1]?.t??1;
   const current=points[Math.min(points.length-1,Math.round(time/duration*(points.length-1)))]??points[0];
-  const metrics=metricsFor(lab,values,current,points);
+  const metrics=metricsFor(lab,values,current,points,language);
 
   useEffect(()=>{
     const initial=Object.fromEntries(lab.params.map(p=>[p.key,p.initial]));

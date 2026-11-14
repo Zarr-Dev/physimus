@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import katex from "katex";
 import {
-  Activity, ArrowDownRight, ArrowRight, Atom, BookOpen, ChevronDown,
-  CircleHelp, Clock3, Code2, FlaskConical, Globe2, GraduationCap,
-  Grid2X2, Maximize2, MoreHorizontal, Pause, Play, Plus, RotateCcw,
-  Save, Settings2, Share2, SlidersHorizontal, Sparkles, Square,
-  Target, Waves, Zap
+  Activity, ArrowDownRight, ArrowRight, Atom, ChevronDown,
+  CircleHelp, Clock3, Globe2, Grid2X2, Maximize2, MoreHorizontal,
+  Pause, Play, Plus, RotateCcw, Save, Settings2, Share2,
+  SlidersHorizontal, Sparkles, Square, Waves, Zap
 } from "lucide-react";
 
 type Page = "home" | "workspace";

@@ -491,8 +491,8 @@ function objectOptionsFor(id:LabId,language:Language):{value:string;label:string
   return data[id].map(v=>({value:v.value,label:language==="ID"?v.id:v.en}));
 }
 
-function drawLabObject(ctx:CanvasRenderingContext2D,x:number,y:number,style:string,color:string) {
-  ctx.save();ctx.translate(x,y);
+function drawLabObject(ctx:CanvasRenderingContext2D,x:number,y:number,style:string,color:string,orientation=0) {
+  ctx.save();ctx.translate(x,y);if(style==="rocket")ctx.rotate(orientation+Math.PI/2);else if(style==="satellite"||style==="block")ctx.rotate(orientation);
   if(style==="car"||style==="cart"||style==="train"){
     ctx.fillStyle=style==="train"?"#617e9e":color;ctx.beginPath();ctx.roundRect(-19,-12,38,18,5);ctx.fill();
     if(style==="train"){ctx.fillStyle="#e7f1fa";ctx.fillRect(-12,-8,8,7);ctx.fillRect(1,-8,8,7);}
@@ -896,13 +896,13 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         }
       }
       if(lab.id==="collision"&&current.x2!==undefined)drawLabObject(ctx,X(current.x2),py,selectedObject2,"#d99a46");
-      drawLabObject(ctx,px,py,selectedObject,lab.color);
+      drawLabObject(ctx,px,py,selectedObject,lab.color,objectOrientation);
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2,objectOrientation]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
@@ -950,6 +950,17 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
     reader.readAsText(file);
   };
   const activeLabLabel=tLabel(language,lab);
+  const assumptions:Record<LabId,{id:string;en:string}> = {
+    projectile:{id:"Lintasan 2D ideal tanpa hambatan udara; gravitasi konstan dan permukaan tanah datar.",en:"Ideal 2D trajectory without air drag; gravity is constant and the ground is level."},
+    mru:{id:"Gerak satu dimensi pada lintasan lurus; kecepatan konstan dan resultan gaya nol.",en:"One-dimensional straight-line motion; velocity is constant and net force is zero."},
+    mrua:{id:"Gerak satu dimensi dengan percepatan konstan; gaya resultan konstan.",en:"One-dimensional motion with constant acceleration; net force is constant."},
+    circular:{id:"Gerak melingkar beraturan: jari-jari dan kecepatan sudut konstan; percepatan sentripetal menuju pusat.",en:"Uniform circular motion: fixed radius and angular speed; centripetal acceleration points inward."},
+    energy:{id:"Bidang miring 30°; benda mulai diam. Gesekan statis menentukan apakah benda mulai bergerak, lalu gesekan kinetis berlaku saat meluncur. Hambatan udara diabaikan.",en:"A 30° incline; the object starts from rest. Static friction determines whether it starts moving, then kinetic friction applies while sliding. Air drag is ignored."},
+    incline:{id:"Balok pada bidang miring; gesekan statis menentukan ambang gerak, gesekan kinetis berlaku selama meluncur. Hambatan udara diabaikan.",en:"A block on an inclined plane; static friction sets the motion threshold, and kinetic friction applies while sliding. Air drag is ignored."},
+    collision:{id:"Tumbukan satu dimensi terisolasi: impuls eksternal diabaikan dan kontak dimodelkan seketika. Grafik percepatan menandai waktu tumbukan; gaya puncak selama kontak tidak dimodelkan.",en:"Isolated one-dimensional collision: external impulse is neglected and contact is modeled as instantaneous. The acceleration plot marks impact time; peak contact force is not modeled."},
+    spring:{id:"Osilator massa–pegas ideal: pegas linear, tanpa redaman, dan tanpa gaya luar.",en:"Ideal mass–spring oscillator: linear spring, no damping, and no external driving force."}
+  };
+  const objectOrientation=lab.id==="energy"?Math.PI/6:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
   return <main className="workspace-page">
     <div className="workspace-heading">
       <div><button className="breadcrumb" onClick={onBack}><ArrowLeft size={16}/>{words[language].discoverMore}</button><div className="workspace-title-line"><span className="eyebrow">{categoryText(language,lab.category)}</span><span className="model-pill">{w.model}</span></div><h1>{language==="ID"?lab.title:lab.subtitle}</h1><p>{activeLabLabel.description}</p></div>
@@ -972,7 +983,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
           {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"PERSAMAAN UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={lab.formula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
           {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button disabled={graphMode==="trajectory"} className={showTangent?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTangent(v=>!v)}>{language==="ID"?"Garis singgung & gradien":"Tangent & slope"}<span>{showTangent?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
-          {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><p className="drawer-help">{lab.id==="projectile"?w.noDrag:language==="ID"?"Model menggunakan parameter ideal. Batasan dan asumsi disederhanakan untuk pembelajaran.":"This is an idealized teaching model. Some real-world effects are intentionally simplified."}</p></>}
+          {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><p className="drawer-help">{language==="ID"?assumptions[lab.id].id:assumptions[lab.id].en}</p></>}
         </div>
       </aside>
       <section className="graph-panel">

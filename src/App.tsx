@@ -345,6 +345,14 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
   </label>;
 }
 
+function collisionResults(v:Record<string,number>){
+  const m1=v.mass1??2,m2=v.mass2??2,u1=v.velocity1??6,u2=v.velocity2??0,e=Math.max(0,Math.min(1,v.restitution??1));
+  const relative=u1-u2,collisionTime=relative>0?(v.separation??6)/relative:Infinity;
+  const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2);
+  const v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
+  return {m1,m2,u1,u2,e,collisionTime,v1,v2,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
+}
+
 function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const p=(key:string)=>values[key]??0;
   const g=p("gravity")||9.81;
@@ -386,6 +394,15 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       const theta=omega*time,r=p("radius");
       x=r*Math.cos(theta);y=r*Math.sin(theta);
       vx=-r*omega*Math.sin(theta);vy=r*omega*Math.cos(theta);kinetic=.5*mass*(r*omega)**2;
+    } else if(lab.id==="collision") {
+      const c=collisionResults(values),elapsed=Math.max(0,time-c.collisionTime),hasCollided=time>=c.collisionTime;
+      if(hasCollided&&Number.isFinite(c.collisionTime)){
+        const contactX=-c.separation/2+c.u1*c.collisionTime;
+        x=contactX+c.v1*elapsed;x2=contactX+c.v2*elapsed;vx=c.v1;vx2=c.v2;
+      }else{
+        x=-(values.separation??6)/2+c.u1*time;x2=(values.separation??6)/2+c.u2*time;vx=c.u1;vx2=c.u2;
+      }
+      kinetic=.5*c.m1*vx*vx+.5*c.m2*(vx2??0)**2;
     } else if(lab.id==="energy") {
       const s=Math.min(totalDistance,.5*Math.max(0,energyAcceleration)*time*time);
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
@@ -400,7 +417,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       x=a*Math.cos(w*time);vx=-a*w*Math.sin(w*time);
       y=0;kinetic=.5*mass*vx*vx;potential=.5*p("spring")*x*x;
     }
-    points.push({x,y,t:time,vx,vy,speed:Math.hypot(vx,vy),kinetic,potential});
+    points.push({x,y,t:time,vx,vy,speed:Math.hypot(vx,vy),kinetic,potential,...(lab.id==="collision"?{x2,vx2,collisionOccurred:Number.isFinite(collisionResults(values).collisionTime)&&time>=collisionResults(values).collisionTime}:{})});
   }
   return points;
 }
@@ -425,6 +442,17 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
     [labels.x,point.x,"m"],[labels.y,point.y,"m"],[labels.speed,point.speed,"m/s"],
     [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"]
   ] as [string,number,string][];
+  if(lab.id==="collision"){
+    const c=collisionResults(values),occurred=point.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
+    return [
+      [language==="ID"?"Kecepatan benda 1":"Body 1 velocity",v1,"m/s"],
+      [language==="ID"?"Kecepatan benda 2":"Body 2 velocity",v2,"m/s"],
+      [language==="ID"?"Momentum total":"Total momentum",c.initialMomentum,"kg·m/s"],
+      [language==="ID"?"Energi kinetik sistem":"System kinetic energy",point.kinetic,"J"],
+      [language==="ID"?"Impuls benda 1":"Impulse on body 1",c.m1*(v1-c.u1),"N·s"],
+      [language==="ID"?"Waktu tumbukan":"Collision time",Number.isFinite(c.collisionTime)?c.collisionTime:0,"s"]
+    ] as [string,number,string][];
+  }
   if(lab.id==="energy") return [
     [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
     [language==="ID"?"Energi terdisipasi":"Dissipated energy",Math.max(0,mass*g*values.height-total),"J"],
@@ -517,6 +545,17 @@ function liveEquationsFor(lab:Lab,v:Record<string,number>,p:Point,t:number):{tit
     {title:"Percepatan sentripetal",formula:"a_c=\\omega^2r=("+n(v.omega??0)+")^2("+n(v.radius??0)+")="+n((v.omega??0)**2*(v.radius??0))+"\\;\\mathrm{m/s^2}"},
     {title:"Periode",formula:"T=\\frac{2\\pi}{\\omega}= "+n(2*Math.PI/(v.omega??1))+"\\;\\mathrm{s}"}
   ];
+  if(lab.id==="collision"){
+    const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
+    const currentKinetic=.5*c.m1*v1*v1+.5*c.m2*v2*v2;
+    return [
+      {title:"Momentum total",formula:"p_{tot}=m_1u_1+m_2u_2="+n(c.initialMomentum)+"\\;\\mathrm{kg\\,m/s}"},
+      {title:"Kecepatan akhir benda 1",formula:"v_1="+n(v1)+"\\;\\mathrm{m/s}"},
+      {title:"Kecepatan akhir benda 2",formula:"v_2="+n(v2)+"\\;\\mathrm{m/s}"},
+      {title:"Impuls benda 1",formula:"J_1=m_1(v_1-u_1)="+n(c.m1*(v1-c.u1))+"\\;\\mathrm{N\\,s}"},
+      {title:"Energi kinetik sistem",formula:"K=\\frac12m_1v_1^2+\\frac12m_2v_2^2="+n(currentKinetic)+"\\;\\mathrm{J}"}
+    ];
+  }
   if(lab.id==="energy"){
     const alpha=Math.PI/6,distanceTravelled=p.x/Math.cos(alpha),mu=v.friction??0;
     return [

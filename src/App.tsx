@@ -11,9 +11,9 @@ import {
 
 type Language = "ID" | "EN";
 type Page = "discover" | "laboratory" | "learn" | "sandbox";
-type LabId = "projectile" | "mru" | "mrua" | "circular" | "energy" | "incline" | "spring";
+type LabId = "projectile" | "mru" | "mrua" | "circular" | "energy" | "incline" | "collision" | "spring";
 type Param = { key: string; label: string; min: number; max: number; step: number; unit: string; initial: number };
-type Point = { x: number; y: number; t: number; vx: number; vy: number; speed: number; kinetic: number; potential: number };
+type Point = { x: number; y: number; t: number; vx: number; vy: number; speed: number; kinetic: number; potential: number; x2?:number; vx2?:number; collisionOccurred?:boolean };
 type Lab = {
   id: LabId; category: string; title: string; subtitle: string; description: string;
   formula: string; question: string; params: Param[]; duration: number; color: string;
@@ -90,6 +90,20 @@ const labs: Lab[] = [
     ], duration: 8, color:"#4da786"
   },
   {
+    id: "collision", category: "MOMENTUM & IMPULS", title: "Tumbukan Satu Dimensi", subtitle: "One-Dimensional Collisions",
+    description: "Bandingkan tumbukan lenting sempurna hingga tidak lenting. Amati kekekalan momentum, impuls, koefisien restitusi, dan perubahan energi kinetik dua benda.",
+    formula: String.raw`m_1u_1+m_2u_2=m_1v_1+m_2v_2,\quad e=\\frac{v_2-v_1}{u_1-u_2}`,
+    question: "Bagaimana koefisien restitusi memengaruhi kecepatan akhir dan energi kinetik setelah tumbukan?",
+    params: [
+      {key:"mass1",label:"Massa benda 1",min:.5,max:10,step:.1,unit:"kg",initial:2},
+      {key:"mass2",label:"Massa benda 2",min:.5,max:10,step:.1,unit:"kg",initial:2},
+      {key:"velocity1",label:"Kecepatan awal benda 1",min:0,max:12,step:.1,unit:"m/s",initial:6},
+      {key:"velocity2",label:"Kecepatan awal benda 2",min:-6,max:6,step:.1,unit:"m/s",initial:0},
+      {key:"separation",label:"Jarak awal antarbenda",min:2,max:12,step:.5,unit:"m",initial:6},
+      {key:"restitution",label:"Koefisien restitusi",min:0,max:1,step:.05,unit:"e",initial:1}
+    ], duration: 8, color:"#d99a46"
+  },
+  {
     id: "spring", category: "GETARAN", title: "Gerak Harmonik Sederhana", subtitle: "Simple Harmonic Motion",
     description: "Amati osilasi massa-pegas, hubungan gaya pemulih, konstanta pegas, massa, periode, dan frekuensi.",
     formula: String.raw`x(t)=A\cos(\omega t),\quad \omega=\sqrt{\frac{k}{m}}`,
@@ -140,6 +154,13 @@ const equationLibrary: Record<LabId, EquationEntry[]> = {
   {id:"friction",titleID:"Gaya gesek kinetik",titleEN:"Kinetic friction",formula:String.raw`f_k=\mu_kN`,noteID:"Gesekan statis memerlukan analisis ambang gerak tersendiri.",noteEN:"Static friction requires a separate threshold analysis."},
   {id:"acceleration",titleID:"Percepatan sepanjang bidang",titleEN:"Acceleration along the incline",formula:String.raw`a=g(\sin\theta-\mu_k\cos\theta)`,noteID:"Berlaku saat balok meluncur turun dan arah positif dipilih menuruni bidang.",noteEN:"Valid for downhill sliding with downhill chosen as positive."},
   {id:"threshold",titleID:"Ambang mulai meluncur",titleEN:"Threshold for sliding",formula:String.raw`\tan\theta>\mu_s`,noteID:"Untuk mulai bergerak dari diam, gunakan koefisien gesek statis μs, bukan μk.",noteEN:"For motion to begin from rest, use static friction μs, not kinetic friction μk."}
+ ],
+ collision:[
+  {id:"momentum",titleID:"Kekekalan momentum",titleEN:"Conservation of momentum",formula:String.raw`m_1u_1+m_2u_2=m_1v_1+m_2v_2`,noteID:"Momentum total sistem dua benda tetap jika resultan impuls eksternal dapat diabaikan.",noteEN:"Total system momentum is conserved when external impulse is negligible."},
+  {id:"restitution",titleID:"Koefisien restitusi",titleEN:"Coefficient of restitution",formula:String.raw`e=\\frac{v_2-v_1}{u_1-u_2},\\quad 0\\le e\\le1`,noteID:"e = 1 lenting sempurna; e = 0 tidak lenting sama sekali pada arah normal tumbukan.",noteEN:"e = 1 is perfectly elastic; e = 0 is perfectly inelastic along the collision axis."},
+  {id:"impulse",titleID:"Impuls pada benda 1",titleEN:"Impulse on body 1",formula:String.raw`J_1=\\Delta p_1=m_1(v_1-u_1)`,noteID:"Impuls adalah perubahan momentum dan sama dengan integral gaya terhadap waktu.",noteEN:"Impulse is the change in momentum and equals the time integral of force."},
+  {id:"kinetic",titleID:"Energi kinetik total",titleEN:"Total kinetic energy",formula:String.raw`K=\\frac12m_1v_1^2+\\frac12m_2v_2^2`,noteID:"Momentum selalu kekal pada sistem terisolasi, tetapi energi kinetik hanya kekal pada tumbukan lenting sempurna.",noteEN:"Momentum is conserved in an isolated system, while kinetic energy is conserved only in an elastic collision."},
+  {id:"final",titleID:"Kecepatan akhir",titleEN:"Final velocities",formula:String.raw`v_1=\\frac{m_1u_1+m_2u_2-m_2e(u_1-u_2)}{m_1+m_2},\\quad v_2=v_1+e(u_1-u_2)`,noteID:"Hasil diperoleh dari gabungan kekekalan momentum dan definisi koefisien restitusi.",noteEN:"These results combine momentum conservation with the coefficient-of-restitution definition."}
  ],
  spring:[
   {id:"hooke",titleID:"Hukum Hooke",titleEN:"Hooke's law",formula:String.raw`F=-kx`,noteID:"Tanda negatif menunjukkan gaya pegas mengarah menuju posisi setimbang.",noteEN:"The negative sign means spring force points toward equilibrium."},
@@ -196,6 +217,7 @@ const words = {
 };
 
 const englishLabText: Record<LabId,{description:string;question:string}> = {
+  collision: {description:"Compare elastic, partially inelastic, and perfectly inelastic one-dimensional collisions. Explore momentum conservation, impulse, restitution, and kinetic-energy changes for two bodies.",question:"How does the coefficient of restitution affect final velocities and kinetic energy?"},
   projectile: {description:"Explore two-dimensional motion by separating horizontal and vertical components. Adjust launch speed, angle, initial height, and gravity.",question:"How do launch angle and initial height affect range and flight time?"},
   mru: {description:"Observe an object moving in a straight line at constant velocity and zero acceleration.",question:"If velocity stays constant, how does position change each second?"},
   mrua: {description:"Explore one-dimensional motion with constant acceleration. Try positive acceleration, negative acceleration, or an object starting from rest.",question:"How do position and velocity graphs change when acceleration changes sign?"},
@@ -208,7 +230,7 @@ const englishLabText: Record<LabId,{description:string;question:string}> = {
 function parameterText(language:Language,key:string,fallback:string) {
   if(language==="ID") return fallback;
   const en:Record<string,string> = {
-    speed:"Initial speed",x0:"Initial position",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
+    speed:"Initial speed",x0:"Initial position",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
     acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",
     friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
   };

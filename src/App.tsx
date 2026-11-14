@@ -1,8 +1,9 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import katex from "katex";
 import {
   Activity, ArrowRight, Atom, BookOpen, Check, ChevronDown, CircleHelp,
-  Download, Eye, EyeOff, FlaskConical, Globe2, Grid3X3, Maximize2,
+  Download, Eye, EyeOff, FlaskConical, Globe2, Grid3X3,
   Pause, Play, RotateCcw, SlidersHorizontal, Sparkles, Upload, Waves, Zap
 } from "lucide-react";
 
@@ -218,7 +219,7 @@ function downloadFile(filename: string, content: string, mime: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url; anchor.download = filename; anchor.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function Workspace({ language, setLanguage, onBack }: {
@@ -428,7 +429,8 @@ function Workspace({ language, setLanguage, onBack }: {
   };
 
   const loadProject = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -456,7 +458,7 @@ function Workspace({ language, setLanguage, onBack }: {
       } catch {
         setNotice(t.importError);
       }
-      event.target.value = "";
+      input.value = "";
     };
     reader.readAsText(file);
   };

@@ -274,3 +274,8 @@ A project license has not yet been selected. Until a license is added, the repos
 
 **Physimus — Imagine. Experiment. Discover.**  
 *Making physics explorable for everyone.*
+
+
+## Laboratory workspace
+
+The workspace uses a tabbed side drawer for parameters, equations, model assumptions, and graph tools. Graph modes include trajectory, position–time, velocity–time, and acceleration–time, with a coordinate ruler, grid, vectors, and motion trail. The idealized models are teaching approximations; each lab's assumptions are shown in the interface.

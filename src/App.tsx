@@ -307,35 +307,40 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   return points;
 }
 
-function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[],language:Language) {\n  const labels = language==="ID" ? ["Posisi x","Posisi y","Kelajuan","Jangkauan","Tinggi maksimum","Waktu terbang","Posisi","Kecepatan","Percepatan","Waktu","Periode","Kecepatan sudut","a sentripetal","Energi kinetik","Energi potensial","Energi mekanik","Ketinggian","Energi awal","Resultan gaya","Jarak","Massa"] : ["Position x","Position y","Speed","Range","Maximum height","Flight time","Position","Velocity","Acceleration","Time","Period","Angular velocity","Centripetal acceleration","Kinetic energy","Potential energy","Mechanical energy","Height","Initial energy","Net force","Distance","Mass"];
+function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[],language:Language) {
+  const labels=language==="ID"
+    ? {x:"Posisi x",y:"Posisi y",speed:"Kelajuan",range:"Jangkauan",max:"Tinggi maksimum",flight:"Waktu terbang",position:"Posisi",velocity:"Kecepatan",acceleration:"Percepatan",time:"Waktu",period:"Periode",omega:"Kecepatan sudut",centripetal:"Percepatan sentripetal",kinetic:"Energi kinetik",potential:"Energi potensial",mechanical:"Energi mekanik",height:"Ketinggian",initial:"Energi awal",net:"Resultan gaya",distance:"Jarak",mass:"Massa"}
+    : {x:"Position x",y:"Position y",speed:"Speed",range:"Range",max:"Maximum height",flight:"Flight time",position:"Position",velocity:"Velocity",acceleration:"Acceleration",time:"Time",period:"Period",omega:"Angular velocity",centripetal:"Centripetal acceleration",kinetic:"Kinetic energy",potential:"Potential energy",mechanical:"Mechanical energy",height:"Height",initial:"Initial energy",net:"Net force",distance:"Distance",mass:"Mass"};
   const peak=points.reduce((best,p)=>p.y>best.y?p:best,points[0]);
   const total=point.kinetic+point.potential;
   const mass=values.mass??1;
   const g=values.gravity??9.81;
   if(lab.id==="projectile") return [
-    ["Posisi x",point.x,"m"],["Posisi y",point.y,"m"],["Kelajuan",point.speed,"m/s"],
-    ["Jangkauan",points[points.length-1].x,"m"],["Tinggi maksimum",peak.y,"m"],["Waktu terbang",points[points.length-1].t,"s"]
+    [labels.x,point.x,"m"],[labels.y,point.y,"m"],[labels.speed,point.speed,"m/s"],
+    [labels.range,points[points.length-1].x,"m"],[labels.max,peak.y,"m"],[labels.flight,points[points.length-1].t,"s"]
   ] as [string,number,string][];
   if(lab.id==="mru"||lab.id==="mrua") return [
-    ["Posisi",point.x,"m"],["Kecepatan",point.vx,"m/s"],["Percepatan",lab.id==="mrua"?values.acceleration:0,"m/s²"],
-    ["Kelajuan",point.speed,"m/s"],["Energi kinetik",point.kinetic,"J"],["Waktu",point.t,"s"]
+    [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,lab.id==="mrua"?values.acceleration:0,"m/s²"],
+    [labels.speed,point.speed,"m/s"],[labels.kinetic,point.kinetic,"J"],[labels.time,point.t,"s"]
   ] as [string,number,string][];
   if(lab.id==="circular") return [
-    ["Posisi x",point.x,"m"],["Posisi y",point.y,"m"],["Kelajuan",point.speed,"m/s"],
-    ["Periode",2*Math.PI/values.omega,"s"],["Kecepatan sudut",values.omega,"rad/s"],["a sentripetal",values.omega**2*values.radius,"m/s²"]
+    [labels.x,point.x,"m"],[labels.y,point.y,"m"],[labels.speed,point.speed,"m/s"],
+    [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"]
   ] as [string,number,string][];
   if(lab.id==="energy") return [
-    ["Energi kinetik",point.kinetic,"J"],["Energi potensial",point.potential,"J"],["Energi mekanik",total,"J"],
-    ["Ketinggian",point.y,"m"],["Kelajuan",point.speed,"m/s"],["Energi awal",mass*g*values.height,"J"]
+    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
+    [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"],[labels.initial,mass*g*values.height,"J"]
   ] as [string,number,string][];
-  if(lab.id==="incline") return [
-    ["Percepatan",Math.max(0,values.gravity*(Math.sin(values.angle*Math.PI/180)-values.friction*Math.cos(values.angle*Math.PI/180))),"m/s²"],
-    ["Resultan gaya",mass*point.vx/(point.t||1),"N"],["Kecepatan",point.vx,"m/s"],
-    ["Jarak",point.x,"m"],["Massa",mass,"kg"],["Waktu",point.t,"s"]
-  ] as [string,number,string][];
+  if(lab.id==="incline") {
+    const acceleration=Math.max(0,values.gravity*(Math.sin(values.angle*Math.PI/180)-values.friction*Math.cos(values.angle*Math.PI/180)));
+    return [
+      [labels.acceleration,acceleration,"m/s²"],[labels.net,mass*acceleration,"N"],[labels.velocity,point.vx,"m/s"],
+      [labels.distance,point.x,"m"],[labels.mass,mass,"kg"],[labels.time,point.t,"s"]
+    ] as [string,number,string][];
+  }
   return [
-    ["Posisi",point.x,"m"],["Kecepatan",point.vx,"m/s"],["Percepatan",-(values.spring/values.mass)*point.x,"m/s²"],
-    ["Energi kinetik",point.kinetic,"J"],["Energi potensial",point.potential,"J"],["Periode",2*Math.PI*Math.sqrt(values.mass/values.spring),"s"]
+    [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,-(values.spring/values.mass)*point.x,"m/s²"],
+    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.period,2*Math.PI*Math.sqrt(values.mass/values.spring),"s"]
   ] as [string,number,string][];
 }
 
@@ -362,8 +367,6 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const [showGrid,setShowGrid]=useState(true);
   const [showVectors,setShowVectors]=useState(true);
   const [showTrail,setShowTrail]=useState(true);
-  const [showX,setShowX]=useState(true);
-  const [showY,setShowY]=useState(true);
   const [notice,setNotice]=useState("");
   const [menuOpen,setMenuOpen]=useState(false);
   const canvasRef=useRef<HTMLCanvasElement>(null);
@@ -457,12 +460,12 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       }
       ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fillStyle=lab.color;ctx.shadowColor=lab.color+"55";ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
       ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
-      if(showX&&lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
-      if(showY&&lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
+      if(lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
+      if(lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showX,showY]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;

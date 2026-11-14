@@ -237,23 +237,20 @@ Milestones should be accepted based on working demonstrations, automated tests, 
 
 ## Project status
 
-**Status: Early frontend prototype.**
+**Status: Interactive mechanics frontend prototype.**
 
-The repository now contains the first light-first bilingual website and a Desmos-inspired mechanics workspace. The current projectile-motion demonstration is an analytical ideal-model prototype, not yet the general-purpose Physimus Core or a numerically validated laboratory engine.
+The current frontend includes a bilingual Discover / Laboratory / Learn / Sandbox experience and seven selectable mechanics laboratories. The laboratory workspace connects adjustable model parameters, a Canvas 2D visualization, a simulation timeline, live measurements, and experiment-file / CSV export.
 
-Implemented in the prototype:
+Available laboratories:
+- Projectile motion with launch speed, launch angle, initial height, mass, and gravity controls.
+- Uniform linear motion (MRU).
+- Uniformly accelerated linear motion (MRUA), including positive and negative acceleration.
+- Uniform circular motion with radius and angular velocity.
+- Mechanical energy conversion on an inclined plane with adjustable friction.
+- Newton's second law on an inclined plane with adjustable mass, angle, and friction.
+- Simple harmonic motion for a mass-spring system.
 
-- Minimal visual homepage with an English / Bahasa Indonesia selector in the hero.
-- Space Grotesk headings, Inter interface text, and KaTeX mathematical rendering.
-- Expression panel and large 2D coordinate plane.
-- Projectile trajectory and position-versus-time views.
-- Adjustable initial speed, launch angle, and gravitational acceleration.
-- Grid, component guides, velocity vectors, motion trail, playback speed, and timeline scrubbing.
-- Live position and speed readouts.
-- Project configuration import/export and CSV data export.
-- Responsive layout and a GitHub Actions type-check / production-build workflow.
-
-The next engineering milestone is to extract the current demonstration into reusable physics-model and simulation-runtime modules, then add automated scientific tests against analytical solutions.
+The current models are intentionally scoped teaching models. They are not yet a general-purpose numerical physics engine, and their assumptions and limitations must remain visible. The next engineering milestone is to add automated scientific tests, improve graph scaling and model validation, and extract reusable physics-model and simulation-runtime modules.
 
 ## Contributing
 

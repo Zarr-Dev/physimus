@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import katex from "katex";
+import PhysicsSandbox from "./PhysicsSandbox";
 import {
   Activity, ArrowLeft, ArrowRight, Atom, BookOpen, Check, ChevronDown,
   CircleHelp, Copy, Download, FlaskConical, Globe2, Grid3X3, Home as HomeIcon,
@@ -37,7 +38,7 @@ const labs: Lab[] = [
     description: "Amati benda yang bergerak pada lintasan lurus dengan kecepatan konstan dan percepatan nol.",
     formula: String.raw`x(t)=x_0+vt,\quad v(t)=v_0,\quad a(t)=0`,
     question: "Jika kecepatan tetap, bagaimana posisi berubah setiap detik?",
-    params: [{key:"speed",label:"Kecepatan",min:1,max:30,step:.5,unit:"m/s",initial:8}],
+    params: [{key:"speed",label:"Kecepatan",min:1,max:30,step:.5,unit:"m/s",initial:8},{key:"mass",label:"Massa benda",min:.1,max:20,step:.1,unit:"kg",initial:1}],
     duration: 10, color:"#347fd5"
   },
   {
@@ -47,7 +48,8 @@ const labs: Lab[] = [
     question: "Apa yang terjadi pada grafik posisi dan kecepatan ketika percepatan berubah tanda?",
     params: [
       {key:"speed",label:"Kecepatan awal",min:0,max:25,step:.5,unit:"m/s",initial:4},
-      {key:"acceleration",label:"Percepatan",min:-5,max:5,step:.1,unit:"m/s²",initial:1.5}
+      {key:"acceleration",label:"Percepatan",min:-5,max:5,step:.1,unit:"m/s²",initial:1.5},
+      {key:"mass",label:"Massa benda",min:.1,max:20,step:.1,unit:"kg",initial:1}
     ], duration: 10, color:"#347fd5"
   },
   {
@@ -57,7 +59,8 @@ const labs: Lab[] = [
     question: "Jika jari-jari diperbesar pada kecepatan sudut tetap, bagaimana kelajuan dan percepatan sentripetal berubah?",
     params: [
       {key:"radius",label:"Jari-jari",min:.5,max:10,step:.1,unit:"m",initial:3},
-      {key:"omega",label:"Kecepatan sudut",min:.2,max:5,step:.1,unit:"rad/s",initial:1.5}
+      {key:"omega",label:"Kecepatan sudut",min:.2,max:5,step:.1,unit:"rad/s",initial:1.5},
+      {key:"mass",label:"Massa benda",min:.1,max:20,step:.1,unit:"kg",initial:1}
     ], duration: 8, color:"#8b6bd6"
   },
   {
@@ -79,7 +82,8 @@ const labs: Lab[] = [
     params: [
       {key:"mass",label:"Massa benda",min:.5,max:20,step:.5,unit:"kg",initial:5},
       {key:"angle",label:"Sudut bidang",min:0,max:60,step:1,unit:"°",initial:30},
-      {key:"friction",label:"Koefisien gesek",min:0,max:1,step:.01,unit:"μ",initial:.2},
+      {key:"friction",label:"Koefisien gesek kinetis μk",min:0,max:1,step:.01,unit:"μk",initial:.2},
+      {key:"staticFriction",label:"Koefisien gesek statis μs",min:0,max:1,step:.01,unit:"μs",initial:.3},
       {key:"gravity",label:"Gravitasi",min:1,max:20,step:.01,unit:"m/s²",initial:9.81}
     ], duration: 8, color:"#4da786"
   },
@@ -204,7 +208,7 @@ function parameterText(language:Language,key:string,fallback:string) {
   const en:Record<string,string> = {
     speed:"Initial speed",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
     acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",
-    friction:"Friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
+    friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
   };
   return en[key]??fallback;
 }
@@ -336,7 +340,8 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const omega=lab.id==="spring"?Math.sqrt(p("spring")/p("mass")):p("omega");
   const inclineAngle=lab.id==="energy"?Math.PI/6:angle;
   const totalDistance=lab.id==="energy"?p("height")/Math.sin(inclineAngle):0;
-  const accel=lab.id==="incline"?Math.max(0,g*(Math.sin(angle)-p("friction")*Math.cos(angle))):0;
+  const staticHolds=lab.id==="incline"&&Math.tan(angle)<=p("staticFriction");
+  const accel=lab.id==="incline"&&!staticHolds?Math.max(0,g*(Math.sin(angle)-p("friction")*Math.cos(angle))):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
     let x=0,y=0,vx=0,vy=0,kinetic=0,potential=0;
@@ -360,11 +365,11 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       const s=Math.min(totalDistance,.5*Math.max(0,energyAcceleration)*time*time);
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
       const v=Math.max(0,energyAcceleration)*time;
-      x=s;y=h;vx=v;kinetic=.5*mass*v*v;potential=mass*g*h;
+      x=s*Math.cos(inclineAngle);y=h;vx=v*Math.cos(inclineAngle);vy=-v*Math.sin(inclineAngle);kinetic=.5*mass*v*v;potential=mass*g*h;
     } else if(lab.id==="incline") {
       const a=accel;
-      x=.5*a*time*time;vx=a*time;kinetic=.5*mass*vx*vx;
-      y=0;potential=0;
+      const distance=.5*a*time*time;
+      x=distance*Math.cos(angle);y=-distance*Math.sin(angle);vx=a*time*Math.cos(angle);vy=-a*time*Math.sin(angle);kinetic=.5*mass*vx*vx/(Math.cos(angle)**2||1);potential=0;
     } else if(lab.id==="spring") {
       const a=p("amplitude"),w=omega;
       x=a*Math.cos(w*time);vx=-a*w*Math.sin(w*time);
@@ -401,18 +406,168 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
     [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
   ] as [string,number,string][];
   if(lab.id==="incline") {
-    const acceleration=Math.max(0,values.gravity*(Math.sin(values.angle*Math.PI/180)-values.friction*Math.cos(values.angle*Math.PI/180)));
+    const angle=values.angle*Math.PI/180;
+    const acceleration=Math.tan(angle)<=values.staticFriction?0:Math.max(0,values.gravity*(Math.sin(angle)-values.friction*Math.cos(angle)));
     return [
       [labels.acceleration,acceleration,"m/s²"],[labels.net,mass*acceleration,"N"],
-      [language==="ID"?"Gaya normal":"Normal force",mass*values.gravity*Math.cos(values.angle*Math.PI/180),"N"],
-      [language==="ID"?"Gaya gesek":"Friction force",Math.min(values.friction*mass*values.gravity*Math.cos(values.angle*Math.PI/180),mass*values.gravity*Math.sin(values.angle*Math.PI/180)),"N"],
-      [labels.velocity,point.vx,"m/s"],[labels.distance,point.x,"m"]
+      [language==="ID"?"Gaya normal":"Normal force",mass*values.gravity*Math.cos(angle),"N"],
+      [language==="ID"?"Gaya gesek":"Friction force",acceleration===0?mass*values.gravity*Math.sin(angle):values.friction*mass*values.gravity*Math.cos(angle),"N"],
+      [labels.velocity,point.speed,"m/s"],[labels.distance,Math.hypot(point.x,point.y),"m"]
     ] as [string,number,string][];
   }
   return [
     [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,-(values.spring/values.mass)*point.x,"m/s²"],
     [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.period,2*Math.PI*Math.sqrt(values.mass/values.spring),"s"]
   ] as [string,number,string][];
+}
+
+
+function objectOptionsFor(id:LabId,language:Language):{value:string;label:string}[] {
+  const data:Record<LabId,{value:string;id:string;en:string}[]> = {
+    projectile:[{value:"ball",id:"Bola",en:"Ball"},{value:"football",id:"Bola sepak",en:"Football"},{value:"rocket",id:"Roket",en:"Rocket"}],
+    mru:[{value:"car",id:"Mobil",en:"Car"},{value:"train",id:"Kereta",en:"Train"},{value:"cart",id:"Troli",en:"Cart"}],
+    mrua:[{value:"car",id:"Mobil",en:"Car"},{value:"cart",id:"Troli",en:"Cart"},{value:"rocket",id:"Roket",en:"Rocket"}],
+    circular:[{value:"satellite",id:"Satelit",en:"Satellite"},{value:"planet",id:"Planet",en:"Planet"},{value:"ball",id:"Bola",en:"Ball"}],
+    energy:[{value:"block",id:"Balok",en:"Block"},{value:"sphere",id:"Bola pejal",en:"Solid sphere"},{value:"cart",id:"Troli",en:"Cart"}],
+    incline:[{value:"block",id:"Balok",en:"Block"},{value:"sphere",id:"Bola pejal",en:"Solid sphere"},{value:"cart",id:"Troli",en:"Cart"}],
+    spring:[{value:"mass",id:"Massa pegas",en:"Spring mass"},{value:"ball",id:"Bola",en:"Ball"},{value:"block",id:"Balok",en:"Block"}]
+  };
+  return data[id].map(v=>({value:v.value,label:language==="ID"?v.id:v.en}));
+}
+
+function drawLabObject(ctx:CanvasRenderingContext2D,x:number,y:number,style:string,color:string) {
+  ctx.save();ctx.translate(x,y);
+  if(style==="car"||style==="cart"||style==="train"){
+    ctx.fillStyle=style==="train"?"#617e9e":color;ctx.beginPath();ctx.roundRect(-19,-12,38,18,5);ctx.fill();
+    if(style==="train"){ctx.fillStyle="#e7f1fa";ctx.fillRect(-12,-8,8,7);ctx.fillRect(1,-8,8,7);}
+    ctx.fillStyle="#344b64";ctx.beginPath();ctx.arc(-11,8,5,0,Math.PI*2);ctx.arc(12,8,5,0,Math.PI*2);ctx.fill();
+  }else if(style==="satellite"){
+    ctx.fillStyle="#d99a46";ctx.fillRect(-7,-7,14,14);ctx.fillStyle="#8da5bd";ctx.fillRect(-26,-5,16,10);ctx.fillRect(10,-5,16,10);ctx.strokeStyle="#657f98";ctx.strokeRect(-26,-5,16,10);ctx.strokeRect(10,-5,16,10);
+  }else if(style==="planet"){
+    ctx.strokeStyle="#b7a5e8";ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,18,7,-.3,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#8b6bd6";ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();
+  }else if(style==="rocket"){
+    ctx.fillStyle="#8b6bd6";ctx.beginPath();ctx.moveTo(0,-19);ctx.lineTo(10,9);ctx.lineTo(-10,9);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#d99a46";ctx.beginPath();ctx.moveTo(-4,9);ctx.lineTo(0,20);ctx.lineTo(4,9);ctx.closePath();ctx.fill();
+  }else if(style==="mass"){
+    ctx.strokeStyle="#8298af";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-52,0);for(let i=0;i<8;i++)ctx.lineTo(-48+i*5,Math.sin(i*Math.PI)*7);ctx.lineTo(-12,0);ctx.stroke();
+    ctx.fillStyle=color;ctx.fillRect(-10,-10,20,20);ctx.strokeStyle="#fff";ctx.strokeRect(-10,-10,20,20);
+  }else if(style==="block"){
+    ctx.fillStyle=color;ctx.fillRect(-12,-11,24,22);ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.strokeRect(-12,-11,24,22);
+  }else{
+    ctx.fillStyle=style==="football"?"#4b9b79":style==="sphere"?"#d99a46":color;
+    ctx.beginPath();ctx.arc(0,0,style==="football"?11:10,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#fff";ctx.lineWidth=1.8;ctx.stroke();
+    if(style==="football"){ctx.beginPath();ctx.moveTo(-7,-7);ctx.lineTo(7,7);ctx.moveTo(-7,7);ctx.lineTo(7,-7);ctx.stroke();}
+  }
+  ctx.restore();
+}
+
+function liveEquationsFor(lab:Lab,v:Record<string,number>,p:Point,t:number):{title:string;formula:string}[] {
+  const n=(x:number)=>Number.isFinite(x)?x.toFixed(2):"0.00";
+  const g=v.gravity??9.81,m=v.mass??1;
+  if(lab.id==="projectile"){
+    const th=(v.angle??0),rad=th*Math.PI/180,v0=v.speed??0;
+    return [
+      {title:"Posisi horizontal",formula:"x(t)="+n(v0)+"\\\\cos("+n(th)+"^\\\\circ)\\\\cdot "+n(t)+" = "+n(p.x)+"\\\\;\\\\mathrm{m}"},
+      {title:"Posisi vertikal",formula:"y(t)="+n(v.height??0)+"+"+n(v0)+"\\\\sin("+n(th)+"^\\\\circ)\\\\cdot "+n(t)+"-\\\\frac12("+n(g)+")("+n(t)+")^2="+n(p.y)+"\\\\;\\\\mathrm{m}"},
+      {title:"Komponen kecepatan",formula:"v_x="+n(v0*Math.cos(rad))+"\\\\;\\\\mathrm{m/s},\\\\quad v_y="+n(p.vy)+"\\\\;\\\\mathrm{m/s}"},
+      {title:"Energi kinetik",formula:"E_k=\\\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"}
+    ];
+  }
+  if(lab.id==="mru") return [
+    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"\\\\cdot "+n(t)+"="+n(p.x)+"\\\\;\\\\mathrm{m}"},
+    {title:"Kecepatan tetap",formula:"v(t)=v_0="+n(v.speed??0)+"\\\\;\\\\mathrm{m/s}"},
+    {title:"Percepatan",formula:"a(t)=\\\\frac{\\\\Delta v}{\\\\Delta t}=0\\\\;\\\\mathrm{m/s^2}"},
+    {title:"Energi kinetik",formula:"E_k=\\\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"}
+  ];
+  if(lab.id==="mrua") return [
+    {title:"Posisi",formula:"x(t)="+n(v.speed??0)+"t+\\\\frac12("+n(v.acceleration??0)+")t^2="+n(p.x)+"\\\\;\\\\mathrm{m}"},
+    {title:"Kecepatan",formula:"v(t)="+n(v.speed??0)+"+("+n(v.acceleration??0)+")("+n(t)+")="+n(p.vx)+"\\\\;\\\\mathrm{m/s}"},
+    {title:"Hukum II Newton",formula:"\\\\sum F=ma=("+n(m)+")("+n(v.acceleration??0)+")="+n(m*(v.acceleration??0))+"\\\\;\\\\mathrm{N}"},
+    {title:"Energi kinetik",formula:"E_k=\\\\frac12mv^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"}
+  ];
+  if(lab.id==="circular") return [
+    {title:"Posisi sudut",formula:"\\\\theta(t)=\\\\omega t=("+n(v.omega??0)+")("+n(t)+")="+n((v.omega??0)*t)+"\\\\;\\\\mathrm{rad}"},
+    {title:"Kelajuan tangensial",formula:"v=\\\\omega r=("+n(v.omega??0)+")("+n(v.radius??0)+")="+n(p.speed)+"\\\\;\\\\mathrm{m/s}"},
+    {title:"Percepatan sentripetal",formula:"a_c=\\\\omega^2r=("+n(v.omega??0)+")^2("+n(v.radius??0)+")="+n((v.omega??0)**2*(v.radius??0))+"\\\\;\\\\mathrm{m/s^2}"},
+    {title:"Periode",formula:"T=\\\\frac{2\\\\pi}{\\\\omega}= "+n(2*Math.PI/(v.omega??1))+"\\\\;\\\\mathrm{s}"}
+  ];
+  if(lab.id==="energy"){
+    const alpha=Math.PI/6,s=(v.height??0)/Math.sin(alpha)-p.x/Math.cos(alpha),mu=v.friction??0;
+    return [
+      {title:"Energi potensial",formula:"E_p=mgh=("+n(m)+")("+n(g)+")("+n(p.y)+")="+n(p.potential)+"\\\\;\\\\mathrm{J}"},
+      {title:"Energi kinetik",formula:"E_k=\\\\frac12mv^2=\\\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\\\;\\\\mathrm{J}"},
+      {title:"Usaha gesekan",formula:"W_f=-\\\\mu_kmg\\\\cos 30^\\\\circ\\\\,s="+n(-mu*m*g*Math.cos(alpha)*Math.max(0,s))+"\\\\;\\\\mathrm{J}"},
+      {title:"Energi mekanik",formula:"E_m=E_k+E_p="+n(p.kinetic+p.potential)+"\\\\;\\\\mathrm{J}"}
+    ];
+  }
+  if(lab.id==="incline"){
+    const th=(v.angle??0)*Math.PI/180,holds=Math.tan(th)<=(v.staticFriction??0),acc=holds?0:Math.max(0,g*(Math.sin(th)-(v.friction??0)*Math.cos(th)));
+    return [
+      {title:"Komponen berat sejajar",formula:"F_{\\\\parallel}=mg\\\\sin\\\\theta="+n(m*g*Math.sin(th))+"\\\\;\\\\mathrm{N}"},
+      {title:"Gaya normal",formula:"N=mg\\\\cos\\\\theta="+n(m*g*Math.cos(th))+"\\\\;\\\\mathrm{N}"},
+      {title:"Percepatan sepanjang bidang",formula:"a="+(holds?"0":"g(\\\\sin\\\\theta-\\\\mu_k\\\\cos\\\\theta)")+"="+n(acc)+"\\\\;\\\\mathrm{m/s^2}"},
+      {title:"Resultan gaya",formula:"\\\\sum F_{\\\\parallel}=ma="+n(m*acc)+"\\\\;\\\\mathrm{N}"}
+    ];
+  }
+  const omega=Math.sqrt((v.spring??0)/m);
+  return [
+    {title:"Frekuensi sudut",formula:"\\\\omega=\\\\sqrt{\\\\frac{k}{m}}=\\\\sqrt{\\\\frac{"+n(v.spring??0)+"}{"+n(m)+"}}="+n(omega)+"\\\\;\\\\mathrm{rad/s}"},
+    {title:"Posisi massa",formula:"x(t)="+n(v.amplitude??0)+"\\\\cos("+n(omega)+"t)="+n(p.x)+"\\\\;\\\\mathrm{m}"},
+    {title:"Gaya pemulih",formula:"F=-kx=-("+n(v.spring??0)+")("+n(p.x)+")="+n(-(v.spring??0)*p.x)+"\\\\;\\\\mathrm{N}"},
+    {title:"Energi mekanik",formula:"E=\\\\frac12kA^2="+n(.5*(v.spring??0)*(v.amplitude??0)**2)+"\\\\;\\\\mathrm{J}"}
+  ];
+}
+
+type PracticeQuestion={prompt:string;given:string;formula:string;answer:number;unit:string;steps:string[];resultLabel:string};
+function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
+  const r=(min:number,max:number,step:number)=>Math.round((min+Math.random()*(max-min))/step)*step;
+  const f=(x:number)=>Number(x.toFixed(2));
+  const en=language==="EN";
+  if(id==="projectile"){
+    const v=r(14,28,1),a=r(25,65,1),g=9.81,rad=a*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
+    return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"\\\\Delta h_{max}=\\\\frac{v_0^2\\\\sin^2\\\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\\\Delta h=\\\\frac{("+v+")^2\\\\sin^2("+a+"^\\\\circ)}{2(9.81)}","\\\\Delta h="+f(answer)+"\\\\;\\\\mathrm{m}"]};
+  }
+  if(id==="mru"){
+    const v=r(3,18,1),t=r(2,12,1),answer=v*t;
+    return {prompt:en?"How far does the object travel in the given time?":"Berapa perpindahan benda selama waktu tersebut?",given:"v = "+v+" m/s, t = "+t+" s, x₀ = 0",formula:"\\\\Delta x=vt",answer,unit:"m",resultLabel:en?"Displacement":"Perpindahan",steps:["\\\\Delta x=("+v+")("+t+")","\\\\Delta x="+f(answer)+"\\\\;\\\\mathrm{m}"]};
+  }
+  if(id==="mrua"){
+    const v0=r(0,8,1),a=r(.5,3,.5),t=r(2,8,1),answer=v0+a*t;
+    return {prompt:en?"Determine the velocity after the stated time.":"Tentukan kecepatan setelah selang waktu tersebut.",given:"v₀ = "+v0+" m/s, a = "+a+" m/s², t = "+t+" s",formula:"v=v_0+at",answer,unit:"m/s",resultLabel:en?"Final velocity":"Kecepatan akhir",steps:["v="+v0+"+("+a+")("+t+")","v="+f(answer)+"\\\\;\\\\mathrm{m/s}"]};
+  }
+  if(id==="circular"){
+    const omega=r(.5,4,.5),radius=r(1,8,1),answer=omega*omega*radius;
+    return {prompt:en?"Calculate the centripetal acceleration.":"Hitung percepatan sentripetal benda.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"a_c=\\\\omega^2r",answer,unit:"m/s²",resultLabel:en?"Centripetal acceleration":"Percepatan sentripetal",steps:["a_c=("+omega+")^2("+radius+")","a_c="+f(answer)+"\\\\;\\\\mathrm{m/s^2}"]};
+  }
+  if(id==="energy"){
+    const h=r(1,15,.5),g=9.81,answer=Math.sqrt(2*g*h);
+    return {prompt:en?"Find the speed after a frictionless drop from rest.":"Tentukan kelajuan setelah benda turun tanpa gesekan dari keadaan diam.",given:"Δh = "+h+" m, v₀ = 0, g = 9.81 m/s²",formula:"v=\\\\sqrt{2g\\\\Delta h}",answer,unit:"m/s",resultLabel:en?"Speed":"Kelajuan",steps:["\\\\frac12mv^2=mg\\\\Delta h","v=\\\\sqrt{2(9.81)("+h+")}","v="+f(answer)+"\\\\;\\\\mathrm{m/s}"]};
+  }
+  if(id==="incline"){
+    const angle=r(28,55,1),mu=r(.05,.2,.01),g=9.81,rad=angle*Math.PI/180,answer=g*(Math.sin(rad)-mu*Math.cos(rad));
+    return {prompt:en?"A block is already sliding downhill. Find its acceleration.":"Balok sudah meluncur menuruni bidang. Hitung percepatannya.",given:"θ = "+angle+"°, μₖ = "+mu.toFixed(2)+", g = 9.81 m/s²",formula:"a=g(\\\\sin\\\\theta-\\\\mu_k\\\\cos\\\\theta)",answer,unit:"m/s²",resultLabel:en?"Down-slope acceleration":"Percepatan turun bidang",steps:["a=9.81(\\\\sin "+angle+"^\\\\circ-"+mu.toFixed(2)+"\\\\cos "+angle+"^\\\\circ)","a="+f(answer)+"\\\\;\\\\mathrm{m/s^2}"]};
+  }
+  const m=r(.5,5,.5),k=r(10,100,5),answer=2*Math.PI*Math.sqrt(m/k);
+  return {prompt:en?"Calculate the period of an ideal mass–spring oscillator.":"Hitung periode osilasi sistem massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"T=2\\\\pi\\\\sqrt{\\\\frac{m}{k}}",answer,unit:"s",resultLabel:en?"Oscillation period":"Periode osilasi",steps:["T=2\\\\pi\\\\sqrt{\\\\frac{"+m+"}{"+k+"}}","T="+f(answer)+"\\\\;\\\\mathrm{s}"]};
+}
+function PracticePanel({labId,language}:{labId:LabId;language:Language}) {
+  const en=language==="EN";
+  const [question,setQuestion]=useState(()=>makePracticeQuestion(labId,language));
+  const [answer,setAnswer]=useState("");const [checked,setChecked]=useState(false);const [showSolution,setShowSolution]=useState(false);
+  useEffect(()=>{setQuestion(makePracticeQuestion(labId,language));setAnswer("");setChecked(false);setShowSolution(false);},[labId,language]);
+  const numeric=Number(answer);
+  const correct=answer.trim()!==""&&Number.isFinite(numeric)&&Math.abs(numeric-question.answer)<=Math.max(.02,Math.abs(question.answer)*.01);
+  const replace=()=>{setQuestion(makePracticeQuestion(labId,language));setAnswer("");setChecked(false);setShowSolution(false);};
+  return <section className="practice-panel">
+    <div className="practice-top"><div><span className="eyebrow">{en?"PRACTICE LAB":"LATIHAN LABORATORIUM"}</span><h2>{en?"Random challenge":"Tantangan acak"}</h2><p>{en?"Solve a short problem using the active topic.":"Selesaikan soal singkat sesuai materi laboratorium yang sedang dibuka."}</p></div><button className="secondary-button" onClick={replace}><RotateCcw size={15}/>{en?"New question":"Soal baru"}</button></div>
+    <div className="practice-content"><div className="practice-question"><strong>{question.prompt}</strong><p>{question.given}</p><div className="practice-formula"><Equation value={question.formula} display/></div></div>
+      <div className="practice-answer"><label>{en?"Your answer":"Jawabanmu"} ({question.unit})<input type="number" value={answer} onChange={e=>{setAnswer(e.target.value);setChecked(false);}} placeholder={en?"Enter a number":"Masukkan angka"}/></label><button className="primary-button" onClick={()=>setChecked(true)} disabled={!answer.trim()}>{en?"Check answer":"Periksa jawaban"}</button>
+      {checked&&<p className={correct?"practice-correct":"practice-incorrect"}>{correct?(en?"Correct — well done!":"Benar — perhitungannya tepat!"):(en?"Not quite. Recheck the substitution and units.":"Belum tepat. Periksa kembali substitusi angka dan satuannya.")}</p>}
+      <button className="practice-solution-button" onClick={()=>setShowSolution(v=>!v)}>{showSolution?(en?"Hide solution":"Sembunyikan pembahasan"):(en?"Show worked solution":"Lihat pembahasan")}</button></div>
+    </div>
+    {showSolution&&<div className="practice-solution"><strong>{question.resultLabel}: {question.answer.toFixed(2)} {question.unit}</strong>{question.steps.map((step,i)=><div key={i}><span>{i+1}</span><Equation value={step} display/></div>)}</div>}
+  </section>;
 }
 
 function drawArrow(ctx:CanvasRenderingContext2D,x1:number,y1:number,x2:number,y2:number,color:string) {
@@ -443,6 +598,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const [showRuler,setShowRuler]=useState(false);
   const [showTangent,setShowTangent]=useState(false);
   const [graphMode,setGraphMode]=useState<"trajectory"|"position-time"|"velocity-time"|"acceleration-time">("trajectory");
+  const [selectedObject,setSelectedObject]=useState(()=>objectOptionsFor(lab.id,language)[0].value);
   const canvasRef=useRef<HTMLCanvasElement>(null);
   const drawRef=useRef<()=>void>(()=>{});
   const timeRef=useRef(0);
@@ -451,6 +607,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const duration=points[points.length-1]?.t??1;
   const current=points[Math.min(points.length-1,Math.round(time/duration*(points.length-1)))]??points[0];
   const metrics=metricsFor(lab,values,current,points,language);
+  const liveEquations=liveEquationsFor(lab,values,current,time,points);
 
   useEffect(()=>{
     const initial=Object.fromEntries(lab.params.map(p=>[p.key,p.initial]));
@@ -485,7 +642,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
       const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
         const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
-        return graphMode==="position-time"?{...p,x:p.t,y:p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:p.vx}:{...p,x:p.t,y:acceleration};
+        return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
       });
       const plottedIndex=Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)));
       const plottedCurrent=graphMode==="trajectory"?current:plotted[plottedIndex];
@@ -497,7 +654,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       if(graphMode==="trajectory"){
         if(lab.id==="circular"){minX=-values.radius*1.3;maxX=values.radius*1.3;minY=-values.radius*1.3;maxY=values.radius*1.3;}
         if(lab.id==="spring"){minX=-values.amplitude*1.35;maxX=values.amplitude*1.35;minY=-.5;maxY=.5;}
-        if(lab.id==="mru"||lab.id==="mrua"||lab.id==="incline"){minY=-1;maxY=1;}
+        if(lab.id==="mru"||lab.id==="mrua"){minY=-1;maxY=1;}
         if(lab.id==="energy"){minY=0;maxY=values.height*1.2;}
         if(lab.id==="projectile"){minY=0;maxY=Math.max(1,maxY*1.18);}
       }
@@ -604,14 +761,13 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           }
         }
       }
-      ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fillStyle=lab.color;ctx.shadowColor=lab.color+"55";ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
-      ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
+      drawLabObject(ctx,px,py,selectedObject,lab.color);
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
@@ -686,6 +842,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       </aside>
       <section className="graph-panel">
         <div className="graph-header"><div><span className="eyebrow">{w.graph}</span><strong>{language==="ID"?"Visualisasi sistem":"System visualization"}</strong></div><div className="graph-tools">
+          <label className="object-picker"><span>{language==="ID"?"Objek":"Object"}</span><select value={selectedObject} onChange={e=>setSelectedObject(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <button className={showGrid?"tool-active":""} onClick={()=>setShowGrid(v=>!v)} title={w.grid}><Grid3X3 size={18}/><span>{w.grid}</span></button>
           <button className={showVectors?"tool-active":""} onClick={()=>setShowVectors(v=>!v)} title={w.vectors}><Activity size={18}/><span>{w.vectors}</span></button>
           <button className={showTrail?"tool-active":""} onClick={()=>setShowTrail(v=>!v)} title={w.trail}><Waves size={18}/><span>{w.trail}</span></button>
@@ -697,10 +854,13 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           <div className="timeline"><div><span>{w.time}</span><strong>{time.toFixed(2)} s <small>/ {duration.toFixed(2)} s</small></strong></div><input type="range" min="0" max={duration} step={duration/600} value={time} onChange={e=>seek(Number(e.target.value))}/></div>
           <div className="play-speeds">{[.5,1,2].map(v=><button key={v} className={speedFactor===v?"selected":""} onClick={()=>setSpeedFactor(v)}>{v}×</button>)}</div>
         </div>
-        <div className="measurement-area"><div className="measurement-heading"><span>03</span><strong>{w.values}</strong></div><div className="measurement-grid">{metrics.map(([label,value,unit])=><div className="measurement" key={label}><span>{label}</span><strong>{Number.isFinite(value)?value.toFixed(2):"—"} <small>{unit}</small></strong></div>)}</div></div>
+        <div className="measurement-area"><div className="measurement-heading"><span>03</span><strong>{w.values}</strong></div><div className="measurement-grid">{metrics.map(([label,value,unit])=><div className="measurement" key={label}><span>{label}</span><strong>{Number.isFinite(value)?value.toFixed(2):"—"} <small>{unit}</small></strong></div>)}</div>
+          <div className="live-equation-panel"><div className="live-equation-heading"><span className="ready-dot"/><strong>{language==="ID"?"Persamaan berjalan":"Live equations"}</strong></div>{liveEquations.map((row,index)=><div className="live-equation-row" key={index}><span>{row.title}</span><Equation value={row.formula}/></div>)}</div>
+        </div>
         <div className="graph-footer"><span className="ready-dot"/>{w.status}<span className="footer-spacer"/><button onClick={exportCsv}><Download size={16}/>{w.export}</button><button onClick={reset}><RotateCcw size={15}/>{w.resetView}</button>{notice&&<span className="notice"><Check size={15}/>{notice}</span>}</div>
       </section>
     </div>
+    <PracticePanel labId={lab.id} language={language}/>
   </main>;
 }
 
@@ -708,15 +868,6 @@ function Learn({language,onOpen}:{language:Language;onOpen:(id:LabId)=>void}) {
   const w=words[language];
   return <main className="secondary-page"><div className="secondary-intro"><span className="eyebrow">PHYSIMUS ACADEMY</span><h1>{w.learnTitle}</h1><p>{w.learnText}</p></div>
     <div className="learning-list">{labs.map(lab=><article className="learning-row" key={lab.id}><div><span className="eyebrow">{lab.category}</span><h2>{language==="ID"?lab.title:lab.subtitle}</h2><p>{tLabel(language,lab).description}</p><div className="learning-formula"><Equation value={lab.formula}/></div></div><button className="secondary-button" onClick={()=>onOpen(lab.id)}>{w.experiment}<ArrowRight size={17}/></button></article>)}</div>
-  </main>;
-}
-
-function Sandbox({language,onOpen}:{language:Language;onOpen:(id:LabId)=>void}) {
-  const w=words[language];
-  const [selected,setSelected]=useState<LabId>("projectile");
-  const lab=labs.find(item=>item.id===selected)??labs[0];
-  return <main className="secondary-page sandbox-page"><div className="secondary-intro"><span className="eyebrow">PHYSIMUS SANDBOX / MECHANICS</span><h1>{w.sandboxTitle}</h1><p>{w.sandboxText}</p></div>
-    <section className="sandbox-builder"><div className="sandbox-preview"><div className="sandbox-preview-grid"/><div className="sandbox-orbit"/><div className="sandbox-ball"/></div><div className="sandbox-config"><span className="eyebrow">{w.choose}</span><h2>{language==="ID"?lab.title:lab.subtitle}</h2><p>{tLabel(language,lab).description}</p><select value={selected} onChange={e=>setSelected(e.target.value as LabId)}>{labs.map(item=><option key={item.id} value={item.id}>{language==="ID"?item.title:item.subtitle}</option>)}</select><button className="primary-button" onClick={()=>onOpen(selected)}>{w.launch}<ArrowRight size={18}/></button></div></section>
   </main>;
 }
 
@@ -730,6 +881,6 @@ export default function App() {
     {page==="discover"&&<Discover language={language} onOpen={openLab}/>}
     {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} onBack={()=>setPage("discover")} onChoose={()=>setPage("discover")}/>}
     {page==="learn"&&<Learn language={language} onOpen={openLab}/>}
-    {page==="sandbox"&&<Sandbox language={language} onOpen={openLab}/>}
+    {page==="sandbox"&&<PhysicsSandbox language={language}/>}
   </div>;
 }

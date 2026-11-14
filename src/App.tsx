@@ -241,6 +241,7 @@ function categoryText(language:Language,category:string) {
   if(language==="ID") return category;
   if(category==="KINEMATIKA") return "KINEMATICS";
   if(category==="GETARAN") return "OSCILLATIONS";
+  if(category==="MOMENTUM & IMPULS") return "MOMENTUM & IMPULSE";
   return "DYNAMICS & ENERGY";
 }
 
@@ -484,6 +485,7 @@ function objectOptionsFor(id:LabId,language:Language):{value:string;label:string
     circular:[{value:"satellite",id:"Satelit",en:"Satellite"},{value:"planet",id:"Planet",en:"Planet"},{value:"ball",id:"Bola",en:"Ball"}],
     energy:[{value:"block",id:"Balok",en:"Block"},{value:"sphere",id:"Bola pejal",en:"Solid sphere"},{value:"cart",id:"Troli",en:"Cart"}],
     incline:[{value:"block",id:"Balok",en:"Block"},{value:"sphere",id:"Bola pejal",en:"Solid sphere"},{value:"cart",id:"Troli",en:"Cart"}],
+    collision:[{value:"ball",id:"Bola",en:"Ball"},{value:"block",id:"Balok",en:"Block"},{value:"cart",id:"Troli",en:"Cart"}],
     spring:[{value:"mass",id:"Massa pegas",en:"Spring mass"},{value:"ball",id:"Bola",en:"Ball"},{value:"block",id:"Balok",en:"Block"}]
   };
   return data[id].map(v=>({value:v.value,label:language==="ID"?v.id:v.en}));

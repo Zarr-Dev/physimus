@@ -278,6 +278,9 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
     duration=(vy+Math.sqrt(vy*vy+2*g*p("height")))/g;
   }
   if(lab.id==="circular") duration=2*Math.PI/p("omega");
+  const energyAngle=Math.PI/6;
+  const energyAcceleration=g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
+  if(lab.id==="energy"&&energyAcceleration>0) duration=Math.sqrt(2*(p("height")/Math.sin(energyAngle))/energyAcceleration);
   if(lab.id==="spring") duration=2*Math.PI/Math.sqrt(p("spring")/p("mass"))*2;
   const count=240;
   const points:Point[]=[];
@@ -306,11 +309,10 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       x=r*Math.cos(theta);y=r*Math.sin(theta);
       vx=-r*omega*Math.sin(theta);vy=r*omega*Math.cos(theta);kinetic=.5*mass*(r*omega)**2;
     } else if(lab.id==="energy") {
-      const s=totalDistance*time/duration;
+      const s=Math.min(totalDistance,.5*Math.max(0,energyAcceleration)*time*time);
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
-      const workLoss=mass*g*p("friction")*Math.cos(inclineAngle)*s;
-      const k=Math.max(0,mass*g*(p("height")-h)-workLoss);
-      x=s;y=h;vx=Math.sqrt(2*k/mass);kinetic=k;potential=mass*g*h;
+      const v=Math.max(0,energyAcceleration)*time;
+      x=s;y=h;vx=v;kinetic=.5*mass*v*v;potential=mass*g*h;
     } else if(lab.id==="incline") {
       const a=accel;
       x=.5*a*time*time;vx=a*time;kinetic=.5*mass*vx*vx;
@@ -465,7 +467,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
 
       if(graphMode==="trajectory"&&lab.id==="circular"){
         const r=values.radius;
-        ctx.beginPath();ctx.arc(X(0),Y(0),r/sx*pw,0,Math.PI*2);ctx.strokeStyle="#d8cfee";ctx.lineWidth=2;ctx.setLineDash([6,7]);ctx.stroke();ctx.setLineDash([]);
+        ctx.beginPath();ctx.arc(X(0),Y(0),r*Math.min(pw/sx,ph/sy),0,Math.PI*2);ctx.strokeStyle="#d8cfee";ctx.lineWidth=2;ctx.setLineDash([6,7]);ctx.stroke();ctx.setLineDash([]);
       }
       if(showTrail){
         ctx.beginPath();

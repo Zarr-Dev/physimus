@@ -237,11 +237,23 @@ Milestones should be accepted based on working demonstrations, automated tests, 
 
 ## Project status
 
-**Status: Planning and architecture.**
+**Status: Early frontend prototype.**
 
-The repository is currently being prepared. The product vision, initial scope, and technical direction are being documented before the main website and simulation engine are implemented.
+The repository now contains the first light-first bilingual website and a Desmos-inspired mechanics workspace. The current projectile-motion demonstration is an analytical ideal-model prototype, not yet the general-purpose Physimus Core or a numerically validated laboratory engine.
 
-The first implementation target is a small but complete mechanics workspace: one validated projectile-motion model, synchronized simulation and graphs, editable parameters, and reproducible results.
+Implemented in the prototype:
+
+- Minimal visual homepage with an English / Bahasa Indonesia selector in the hero.
+- Space Grotesk headings, Inter interface text, and KaTeX mathematical rendering.
+- Expression panel and large 2D coordinate plane.
+- Projectile trajectory and position-versus-time views.
+- Adjustable initial speed, launch angle, and gravitational acceleration.
+- Grid, component guides, velocity vectors, motion trail, playback speed, and timeline scrubbing.
+- Live position and speed readouts.
+- Project configuration import/export and CSV data export.
+- Responsive layout and a GitHub Actions type-check / production-build workflow.
+
+The next engineering milestone is to extract the current demonstration into reusable physics-model and simulation-runtime modules, then add automated scientific tests against analytical solutions.
 
 ## Contributing
 

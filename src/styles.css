@@ -217,3 +217,5 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .drawer-rail{position:sticky;top:0;align-self:start;min-height:100%;z-index:1}
 @media(max-width:820px){.drawer-rail{position:static;min-height:0}.drawer-content:has(.equation-list){max-height:440px}}
 @media(max-width:540px){.equation-card{padding:10px 9px}.equation-math .math-display{font-size:12px}}
+
+.drawer-tool:disabled{opacity:.42;cursor:not-allowed;background:#f7f8fa}

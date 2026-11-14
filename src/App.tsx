@@ -431,7 +431,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       const pw=width-left-right,ph=height-top-bottom;
       ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
       const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
-        const acceleration= i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t);
+        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="projectile"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
         return graphMode==="position-time"?{...p,x:p.t,y:p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:p.vx}:{...p,x:p.t,y:acceleration};
       });
       const plottedCurrent=graphMode==="trajectory"?current:plotted[Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)))];
@@ -464,7 +464,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.fillText(graphMode==="trajectory"?(lab.id==="circular"||lab.id==="spring"?"x (m)":lab.id==="energy"?(language==="ID"?"Jarak sepanjang bidang (m)":"Distance along slope (m)"):(language==="ID"?"Posisi / jarak (m)":"Position / distance (m)")):(language==="ID"?"Waktu (s)":"Time (s)"),left+pw/2,height-14);
       ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(graphMode==="trajectory"?(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)")):graphMode==="position-time"?(language==="ID"?"Posisi (m)":"Position (m)"):graphMode==="velocity-time"?(language==="ID"?"Kecepatan (m/s)":"Velocity (m/s)"):(language==="ID"?"Percepatan (m/s²)":"Acceleration (m/s²)"),0,0);ctx.restore();
 
-      if(lab.id==="circular"){
+      if(graphMode==="trajectory"&&lab.id==="circular"){
         const r=values.radius;
         ctx.beginPath();ctx.arc(X(0),Y(0),r/sx*pw,0,Math.PI*2);ctx.strokeStyle="#d8cfee";ctx.lineWidth=2;ctx.setLineDash([6,7]);ctx.stroke();ctx.setLineDash([]);
       }
@@ -492,8 +492,8 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       }
       ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fillStyle=lab.color;ctx.shadowColor=lab.color+"55";ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
       ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
-      if(lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
-      if(lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
+      if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
+      if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();

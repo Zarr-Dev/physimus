@@ -681,6 +681,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const current=points[Math.min(points.length-1,Math.round(time/duration*(points.length-1)))]??points[0];
   const metrics=metricsFor(lab,values,current,points,language);
   const liveEquations=liveEquationsFor(lab,values,current,time);
+  const objectOrientation=lab.id==="energy"?Math.PI/6:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
 
   useEffect(()=>{
     const initial=Object.fromEntries(lab.params.map(p=>[p.key,p.initial]));
@@ -960,7 +961,6 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
     collision:{id:"Tumbukan satu dimensi terisolasi: impuls eksternal diabaikan dan kontak dimodelkan seketika. Grafik percepatan menandai waktu tumbukan; gaya puncak selama kontak tidak dimodelkan.",en:"Isolated one-dimensional collision: external impulse is neglected and contact is modeled as instantaneous. The acceleration plot marks impact time; peak contact force is not modeled."},
     spring:{id:"Osilator massa–pegas ideal: pegas linear, tanpa redaman, dan tanpa gaya luar.",en:"Ideal mass–spring oscillator: linear spring, no damping, and no external driving force."}
   };
-  const objectOrientation=lab.id==="energy"?Math.PI/6:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
   return <main className="workspace-page">
     <div className="workspace-heading">
       <div><button className="breadcrumb" onClick={onBack}><ArrowLeft size={16}/>{words[language].discoverMore}</button><div className="workspace-title-line"><span className="eyebrow">{categoryText(language,lab.category)}</span><span className="model-pill">{w.model}</span></div><h1>{language==="ID"?lab.title:lab.subtitle}</h1><p>{activeLabLabel.description}</p></div>

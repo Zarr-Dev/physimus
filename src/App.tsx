@@ -140,8 +140,18 @@ const words = {
   }
 };
 
+const englishLabText: Record<LabId,{description:string;question:string}> = {
+  projectile: {description:"Explore two-dimensional motion by separating horizontal and vertical components. Adjust launch speed, angle, initial height, and gravity.",question:"How do launch angle and initial height affect range and flight time?"},
+  mru: {description:"Observe an object moving in a straight line at constant velocity and zero acceleration.",question:"If velocity stays constant, how does position change each second?"},
+  mrua: {description:"Explore one-dimensional motion with constant acceleration. Try positive acceleration, negative acceleration, or an object starting from rest.",question:"How do position and velocity graphs change when acceleration changes sign?"},
+  circular: {description:"Visualize circular motion, angular velocity, tangential speed, and centripetal acceleration.",question:"If radius increases while angular velocity stays constant, what happens to speed and centripetal acceleration?"},
+  energy: {description:"Track gravitational potential energy converting into kinetic energy as an object slides down an inclined plane. Friction is adjustable.",question:"Does mechanical energy stay constant when friction acts? Where does the mechanical energy go?"},
+  incline: {description:"Analyze weight, normal force, friction, and the acceleration of a block on an inclined plane.",question:"At what angle and friction coefficient does the block begin to slide?"},
+  spring: {description:"Explore a mass-spring oscillator and the relationship between restoring force, spring stiffness, mass, period, and frequency.",question:"How do mass and spring stiffness affect the oscillation period?"}
+};
+
 function tLabel(language: Language, lab: Lab) {
-  if (language === "EN") return {title:lab.subtitle, description:lab.description, question:lab.question};
+  if (language === "EN") return {title:lab.subtitle, description:englishLabText[lab.id].description, question:englishLabText[lab.id].question};
   return {title:lab.title, description:lab.description, question:lab.question};
 }
 
@@ -420,8 +430,8 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.textAlign="right";
       for(let i=0;i<=4;i++){const val=minY+sy*i/4;ctx.fillText(val.toFixed(1),left-12,top+ph-ph*i/4+4);}
       ctx.fillStyle="#60758c";ctx.font="600 12px Inter, sans-serif";ctx.textAlign="center";
-      ctx.fillText(lab.id==="circular"?"x (m)":lab.id==="spring"?"x (m)":lab.id==="energy"?"Jarak sepanjang bidang (m)":"Posisi / jarak (m)",left+pw/2,height-14);
-      ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(lab.id==="energy"?"Ketinggian (m)":lab.id==="circular"?"y (m)":lab.id==="spring"?"—":"Posisi vertikal (m)",0,0);ctx.restore();
+      ctx.fillText(lab.id==="circular"?"x (m)":lab.id==="spring"?"x (m)":lab.id==="energy"?(language==="ID"?"Jarak sepanjang bidang (m)":"Distance along slope (m)"):(language==="ID"?"Posisi / jarak (m)":"Position / distance (m)"),left+pw/2,height-14);
+      ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)"),0,0);ctx.restore();
 
       if(lab.id==="circular"){
         const r=values.radius;

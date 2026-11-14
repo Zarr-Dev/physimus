@@ -150,6 +150,23 @@ const englishLabText: Record<LabId,{description:string;question:string}> = {
   spring: {description:"Explore a mass-spring oscillator and the relationship between restoring force, spring stiffness, mass, period, and frequency.",question:"How do mass and spring stiffness affect the oscillation period?"}
 };
 
+function parameterText(language:Language,key:string,fallback:string) {
+  if(language==="ID") return fallback;
+  const en:Record<string,string> = {
+    speed:"Initial speed",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
+    acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",
+    friction:"Friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
+  };
+  return en[key]??fallback;
+}
+
+function categoryText(language:Language,category:string) {
+  if(language==="ID") return category;
+  if(category==="KINEMATIKA") return "KINEMATICS";
+  if(category==="GETARAN") return "OSCILLATIONS";
+  return "DYNAMICS & ENERGY";
+}
+
 function tLabel(language: Language, lab: Lab) {
   if (language === "EN") return {title:lab.subtitle, description:englishLabText[lab.id].description, question:englishLabText[lab.id].question};
   return {title:lab.title, description:lab.description, question:lab.question};
@@ -220,11 +237,11 @@ function Hero({language,onOpen}:{language:Language;onOpen:()=>void}) {
 
 function LabCard({lab,language,onOpen,index}:{lab:Lab;language:Language;onOpen:(id:LabId)=>void;index:number}) {
   const label=tLabel(language,lab);
-  const category=language==="ID"?lab.category:lab.category==="KINEMATIKA"?"KINEMATICS":lab.category==="GETARAN"?"OSCILLATIONS":"DYNAMICS & ENERGY";
+  const category=categoryText(language,lab.category);
   return <button className="lab-card" onClick={()=>onOpen(lab.id)}>
     <div className="lab-card-top"><span className="lab-index">{String(index+1).padStart(2,"0")}</span><span className="lab-category">{category}</span><span className="lab-arrow"><ArrowRight size={19}/></span></div>
     <div className="lab-card-icon" style={{"--lab-color":lab.color} as CSSProperties}><Activity size={28}/></div>
-    <h3>{lab.title}</h3><p className="lab-subtitle">{label.title}</p>
+    <h3>{language==="ID"?lab.title:lab.subtitle}</h3><p className="lab-subtitle">{language==="ID"?lab.subtitle:lab.title}</p>
     <p className="lab-description">{label.description}</p>
     <div className="lab-formula"><Equation value={lab.formula}/></div>
   </button>;
@@ -515,7 +532,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const activeLabLabel=tLabel(language,lab);
   return <main className="workspace-page">
     <div className="workspace-heading">
-      <div><button className="breadcrumb" onClick={onBack}><ArrowLeft size={16}/>{words[language].discoverMore}</button><div className="workspace-title-line"><span className="eyebrow">{lab.category}</span><span className="model-pill">{w.model}</span></div><h1>{language==="ID"?lab.title:lab.subtitle}</h1><p>{activeLabLabel.description}</p></div>
+      <div><button className="breadcrumb" onClick={onBack}><ArrowLeft size={16}/>{words[language].discoverMore}</button><div className="workspace-title-line"><span className="eyebrow">{categoryText(language,lab.category)}</span><span className="model-pill">{w.model}</span></div><h1>{language==="ID"?lab.title:lab.subtitle}</h1><p>{activeLabLabel.description}</p></div>
       <div className="workspace-actions">
         <button className="secondary-button" onClick={()=>onChoose(lab.id)}><ChevronDown size={17}/>{w.laboratory}</button>
         <button className="secondary-button" onClick={()=>fileRef.current?.click()}><Upload size={17}/>{w.load}</button>
@@ -528,7 +545,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         <div className="panel-title"><span>01</span><h2>{w.expr}</h2></div>
         <div className="formula-box"><Equation value={lab.formula} display/></div>
         <div className="panel-title parameter-title"><span>02</span><h2>{w.parameters}</h2><Settings2 size={18}/></div>
-        <div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={param} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div>
+        <div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div>
         <div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div>
         <div className="panel-actions"><button onClick={()=>setMenuOpen(!menuOpen)}><SlidersHorizontal size={16}/>{w.assumptions}<ChevronDown size={15}/></button>{menuOpen&&<p>{lab.id==="projectile"?w.noDrag:language==="ID"?"Model menggunakan parameter ideal dan mengabaikan faktor yang tidak tercantum pada kontrol.":"The model uses idealized parameters and ignores factors not listed in the controls."}</p>}</div>
       </aside>

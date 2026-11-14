@@ -441,6 +441,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const [notice,setNotice]=useState("");
   const [drawerTab,setDrawerTab]=useState<"model"|"parameters"|"equations"|"tools">("parameters");
   const [showRuler,setShowRuler]=useState(false);
+  const [showTangent,setShowTangent]=useState(false);
   const [graphMode,setGraphMode]=useState<"trajectory"|"position-time"|"velocity-time"|"acceleration-time">("trajectory");
   const canvasRef=useRef<HTMLCanvasElement>(null);
   const drawRef=useRef<()=>void>(()=>{});
@@ -486,7 +487,11 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
         return graphMode==="position-time"?{...p,x:p.t,y:p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:p.vx}:{...p,x:p.t,y:acceleration};
       });
-      const plottedCurrent=graphMode==="trajectory"?current:plotted[Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)))];
+      const plottedIndex=Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)));
+      const plottedCurrent=graphMode==="trajectory"?current:plotted[plottedIndex];
+      const slopeBefore=plotted[Math.max(0,plottedIndex-1)];
+      const slopeAfter=plotted[Math.min(plotted.length-1,plottedIndex+1)];
+      const localSlope=(slopeAfter.y-slopeBefore.y)/Math.max(1e-9,slopeAfter.x-slopeBefore.x);
       let minX=Math.min(...plotted.map(p=>p.x)),maxX=Math.max(...plotted.map(p=>p.x));
       let minY=Math.min(...plotted.map(p=>p.y)),maxY=Math.max(...plotted.map(p=>p.y));
       if(graphMode==="trajectory"){
@@ -530,6 +535,15 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         ctx.strokeStyle="#c6d4e3";ctx.lineWidth=2;ctx.setLineDash([5,7]);ctx.stroke();ctx.setLineDash([]);
       }
       const px=X(plottedCurrent.x),py=Y(plottedCurrent.y);
+      if(showTangent&&graphMode!=="trajectory"&&Number.isFinite(localSlope)){
+        const halfSpan=sx*.16;
+        const xa=Math.max(minX,plottedCurrent.x-halfSpan),xb=Math.min(maxX,plottedCurrent.x+halfSpan);
+        const ya=plottedCurrent.y+localSlope*(xa-plottedCurrent.x),yb=plottedCurrent.y+localSlope*(xb-plottedCurrent.x);
+        ctx.beginPath();ctx.moveTo(X(xa),Y(ya));ctx.lineTo(X(xb),Y(yb));
+        ctx.strokeStyle="#d99a46";ctx.lineWidth=2.2;ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle="#9b6b27";ctx.font="600 11px DM Sans";ctx.textAlign="left";
+        ctx.fillText((language==="ID"?"Gradien: ":"Slope: ")+localSlope.toFixed(3),left+12,top+38);
+      }
       if(showRuler){
         ctx.strokeStyle="#d99a46";ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,top+ph);ctx.moveTo(left,py);ctx.lineTo(left+pw,py);ctx.stroke();ctx.setLineDash([]);
         ctx.fillStyle="#9b6b27";ctx.font="11px DM Sans";ctx.textAlign="left";ctx.fillText(`${plottedCurrent.x.toFixed(2)}, ${plottedCurrent.y.toFixed(2)}`,Math.min(px+9,left+pw-100),Math.max(top+14,py-9));
@@ -549,7 +563,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,graphMode]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
@@ -618,7 +632,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         <div className="drawer-content">
           {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
           {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"PERSAMAAN UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={lab.formula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
-          {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
+          {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button disabled={graphMode==="trajectory"} className={showTangent?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTangent(v=>!v)}>{language==="ID"?"Garis singgung & gradien":"Tangent & slope"}<span>{showTangent?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
           {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><p className="drawer-help">{lab.id==="projectile"?w.noDrag:language==="ID"?"Model menggunakan parameter ideal. Batasan dan asumsi disederhanakan untuk pembelajaran.":"This is an idealized teaching model. Some real-world effects are intentionally simplified."}</p></>}
         </div>
       </aside>

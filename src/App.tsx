@@ -4,7 +4,7 @@ import katex from "katex";
 import {
   Activity, ArrowRight, Atom, BookOpen, Check, ChevronDown, CircleHelp,
   Download, Eye, EyeOff, FlaskConical, Globe2, Grid3X3,
-  Pause, Play, RotateCcw, SlidersHorizontal, Sparkles, Upload, Waves, Zap
+  Pause, Play, RotateCcw, SlidersHorizontal, Sparkles, Upload, Waves
 } from "lucide-react";
 
 type Page = "home" | "workspace";
@@ -255,7 +255,6 @@ function Workspace({ language, setLanguage, onBack }: {
   const y = Math.max(0, vy0 * elapsedSafe - .5 * gravity * elapsedSafe * elapsedSafe);
   const currentVy = vy0 - gravity * elapsedSafe;
   const currentSpeed = Math.hypot(vx, currentVy);
-  const progress = flightTime > 0 ? elapsedSafe / flightTime : 0;
 
   const reset = () => {
     setRunning(false); elapsedRef.current = 0; setElapsed(0);

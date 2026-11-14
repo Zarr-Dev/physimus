@@ -301,8 +301,10 @@ function Workspace({ language, setLanguage, onBack }: {
       const left = 58, right = 26, top = 25, bottom = 48;
       const plotWidth = width - left - right;
       const plotHeight = height - top - bottom;
-      const xMax = Math.max(range * 1.12, 1);
-      const yMax = Math.max(maxHeight * 1.3, 1);
+      const xMax = mode === "trajectory" ? Math.max(range * 1.12, 1) : Math.max(flightTime, 0.1);
+      const yMax = mode === "trajectory"
+        ? Math.max(maxHeight * 1.3, 1)
+        : Math.max(range, maxHeight, 1) * 1.12;
       const xScale = plotWidth / xMax;
       const yScale = plotHeight / yMax;
       const px = (value: number) => left + value * xScale;
@@ -356,6 +358,16 @@ function Workspace({ language, setLanguage, onBack }: {
           context.strokeStyle = "#347fd5"; context.lineWidth = 3; context.lineCap = "round"; context.stroke();
         }
         const currentPoint = trajectoryPoint(elapsedSafe);
+        if (showHorizontal) {
+          context.strokeStyle = "#c3d9ef"; context.lineWidth = 1; context.setLineDash([3, 5]);
+          context.beginPath(); context.moveTo(currentPoint.x, currentPoint.y); context.lineTo(currentPoint.x, top + plotHeight); context.stroke();
+          context.setLineDash([]);
+        }
+        if (showVertical) {
+          context.strokeStyle = "#c8e2d8"; context.lineWidth = 1; context.setLineDash([3, 5]);
+          context.beginPath(); context.moveTo(left, currentPoint.y); context.lineTo(currentPoint.x, currentPoint.y); context.stroke();
+          context.setLineDash([]);
+        }
         if (showVectors) {
           const vectorTime = .52;
           const endX = currentPoint.x + vx * vectorTime * xScale;
@@ -372,7 +384,7 @@ function Workspace({ language, setLanguage, onBack }: {
           context.beginPath();
           for (let i = 0; i <= 180; i++) {
             const time = flightTime * i / 180;
-            const xx = left + plotWidth * time / flightTime;
+            const xx = left + plotWidth * time / xMax;
             const yy = py(Math.max(0, fn(time)));
             if (i === 0) context.moveTo(xx, yy); else context.lineTo(xx, yy);
           }
@@ -380,7 +392,7 @@ function Workspace({ language, setLanguage, onBack }: {
         };
         drawLine(time => vx * time, "#347fd5", showHorizontal);
         drawLine(time => vy0 * time - .5 * gravity * time * time, "#57ad8d", showVertical);
-        const cursorX = left + plotWidth * progress;
+        const cursorX = left + plotWidth * elapsedSafe / xMax;
         context.strokeStyle = "#e7a34b"; context.setLineDash([4, 4]); context.beginPath();
         context.moveTo(cursorX, top); context.lineTo(cursorX, top + plotHeight); context.stroke(); context.setLineDash([]);
       }

@@ -773,7 +773,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         }else if(lab.id==="incline"||lab.id==="energy"){
           const theta=lab.id==="energy"?Math.PI/6:(values.angle??0)*Math.PI/180;
           const mass=values.mass??1,g=values.gravity??9.81,mu=values.friction??0;
-          const normal=mass*g*Math.cos(theta),parallel=mass*g*Math.sin(theta),friction=Math.min(mu*normal,parallel);
+          const normal=mass*g*Math.cos(theta),parallel=mass*g*Math.sin(theta),staticHolds=Math.tan(theta)<=(values.staticFriction??0),friction=staticHolds?parallel:Math.min(mu*normal,parallel);
           const base=lab.id==="incline"?{x:px,y:py}:{x:px,y:py};
           const unit= Math.min(pw,ph)*.20/Math.max(mass*g,1);
           const forceArrow=(dx:number,dy:number,color:string,label:string,offsetX:number,offsetY:number)=>{

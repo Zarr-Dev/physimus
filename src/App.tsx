@@ -104,7 +104,7 @@ const words = {
     openLab:"Mulai bereksperimen", browse:"Jelajahi laboratorium", featured:"LABORATORIUM MEKANIKA",
     collection:"Eksplorasi Mekanika", collectionText:"Dari gerak sederhana hingga energi dan gaya. Setiap laboratorium memiliki parameter, simulasi, grafik, dan pengukuran yang saling terhubung.",
     experiments:"laboratorium tersedia", open:"Buka laboratorium", all:"Semua", kinematics:"Kinematika", dynamics:"Dinamika & Energi", oscillation:"Getaran",
-    expr:"Persamaan model", parameters:"Parameter eksperimen", graph:"Bidang grafik", play:"Mulai", pause:"Jeda", reset:"Reset",
+    expr:"Persamaan model", parameters:"Parameter eksperimen", graph:"Grafik eksperimen", play:"Mulai", pause:"Jeda", reset:"Reset",
     time:"Waktu simulasi", values:"Pengukuran langsung", export:"Ekspor CSV", save:"Simpan eksperimen", load:"Buka eksperimen",
     grid:"Grid", vectors:"Vektor", trail:"Jejak", model:"MODEL FISIKA", assumptions:"Asumsi model",
     learnTitle:"Pahami sebelum menghitung", learnText:"Mulai dari fenomena, lanjutkan dengan persamaan, kemudian uji prediksi melalui simulasi.",
@@ -116,7 +116,7 @@ const words = {
     discoverMore:"Kembali ke beranda", projectSaved:"File eksperimen diunduh", projectLoaded:"Eksperimen dimuat", projectError:"File eksperimen tidak valid",
     resetView:"Atur ulang", graphHint:"Gunakan slider untuk mengubah kondisi awal. Grafik dan nilai akan diperbarui otomatis.",
     concept:"Konsep inti", formula:"Persamaan utama", experiment:"Eksperimen", chooseLab:"Pilih laboratorium untuk memulai.",
-    language:"Bahasa", height:"Ketinggian", distance:"Jarak", velocity:"Kecepatan", energy:"Energi"
+    language:"Bahasa", height:"Ketinggian", distance:"Jarak", velocity:"Kecepatan", energy:"Energi", graphTitle:"Grafik eksperimen"
   },
   EN: {
     discover:"Discover", laboratory:"Laboratory", learn:"Learn", sandbox:"Sandbox",
@@ -125,7 +125,7 @@ const words = {
     openLab:"Start experimenting", browse:"Explore laboratories", featured:"MECHANICS LABORATORIES",
     collection:"Explore Mechanics", collectionText:"From simple motion to energy and forces. Every lab connects parameters, simulation, graphs, and measurements.",
     experiments:"laboratories available", open:"Open laboratory", all:"All", kinematics:"Kinematics", dynamics:"Dynamics & Energy", oscillation:"Oscillations",
-    expr:"Model equations", parameters:"Experiment parameters", graph:"Graph plane", play:"Play", pause:"Pause", reset:"Reset",
+    expr:"Model equations", parameters:"Experiment parameters", graph:"Experiment graph", play:"Play", pause:"Pause", reset:"Reset",
     time:"Simulation time", values:"Live measurements", export:"Export CSV", save:"Save experiment", load:"Open experiment",
     grid:"Grid", vectors:"Vectors", trail:"Trail", model:"PHYSICS MODEL", assumptions:"Model assumptions",
     learnTitle:"Understand before calculating", learnText:"Start with the phenomenon, move to equations, then test predictions through simulation.",
@@ -137,7 +137,7 @@ const words = {
     discoverMore:"Back to discover", projectSaved:"Experiment file downloaded", projectLoaded:"Experiment loaded", projectError:"Invalid experiment file",
     resetView:"Reset", graphHint:"Adjust a slider to change the initial conditions. The graph and values update automatically.",
     concept:"Core concept", formula:"Main equation", experiment:"Experiment", chooseLab:"Choose a laboratory to get started.",
-    language:"Language", height:"Height", distance:"Distance", velocity:"Velocity", energy:"Energy"
+    language:"Language", height:"Height", distance:"Distance", velocity:"Velocity", energy:"Energy", graphTitle:"Experiment graph"
   }
 };
 
@@ -329,8 +329,8 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
 
 function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[],language:Language) {
   const labels=language==="ID"
-    ? {x:"Posisi x",y:"Posisi y",speed:"Kelajuan",range:"Jangkauan",max:"Tinggi maksimum",flight:"Waktu terbang",position:"Posisi",velocity:"Kecepatan",acceleration:"Percepatan",time:"Waktu",period:"Periode",omega:"Kecepatan sudut",centripetal:"Percepatan sentripetal",kinetic:"Energi kinetik",potential:"Energi potensial",mechanical:"Energi mekanik",height:"Ketinggian",initial:"Energi awal",net:"Resultan gaya",distance:"Jarak",mass:"Massa"}
-    : {x:"Position x",y:"Position y",speed:"Speed",range:"Range",max:"Maximum height",flight:"Flight time",position:"Position",velocity:"Velocity",acceleration:"Acceleration",time:"Time",period:"Period",omega:"Angular velocity",centripetal:"Centripetal acceleration",kinetic:"Kinetic energy",potential:"Potential energy",mechanical:"Mechanical energy",height:"Height",initial:"Initial energy",net:"Net force",distance:"Distance",mass:"Mass"};
+    ? {x:"Posisi x",y:"Posisi y",speed:"Kelajuan",range:"Jangkauan",max:"Tinggi maksimum",flight:"Waktu terbang",position:"Posisi",velocity:"Kecepatan",acceleration:lab.id==="projectile"?"Percepatan vertikal":"Percepatan",time:"Waktu",period:"Periode",omega:"Kecepatan sudut",centripetal:"Percepatan sentripetal",kinetic:"Energi kinetik",potential:"Energi potensial",mechanical:"Energi mekanik",height:"Ketinggian",initial:"Energi awal",net:"Resultan gaya",distance:"Jarak",mass:"Massa"}
+    : {x:"Position x",y:"Position y",speed:"Speed",range:"Range",max:"Maximum height",flight:"Flight time",position:"Position",velocity:"Velocity",acceleration:lab.id==="projectile"?"Vertical acceleration":"Acceleration",time:"Time",period:"Period",omega:"Angular velocity",centripetal:"Centripetal acceleration",kinetic:"Kinetic energy",potential:"Potential energy",mechanical:"Mechanical energy",height:"Height",initial:"Initial energy",net:"Net force",distance:"Distance",mass:"Mass"};
   const peak=points.reduce((best,p)=>p.y>best.y?p:best,points[0]);
   const total=point.kinetic+point.potential;
   const mass=values.mass??1;
@@ -349,13 +349,16 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
   ] as [string,number,string][];
   if(lab.id==="energy") return [
     [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
-    [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"],[labels.initial,mass*g*values.height,"J"]
+    [language==="ID"?"Energi terdisipasi":"Dissipated energy",Math.max(0,mass*g*values.height-total),"J"],
+    [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
   ] as [string,number,string][];
   if(lab.id==="incline") {
     const acceleration=Math.max(0,values.gravity*(Math.sin(values.angle*Math.PI/180)-values.friction*Math.cos(values.angle*Math.PI/180)));
     return [
-      [labels.acceleration,acceleration,"m/s²"],[labels.net,mass*acceleration,"N"],[labels.velocity,point.vx,"m/s"],
-      [labels.distance,point.x,"m"],[labels.mass,mass,"kg"],[labels.time,point.t,"s"]
+      [labels.acceleration,acceleration,"m/s²"],[labels.net,mass*acceleration,"N"],
+      [language==="ID"?"Gaya normal":"Normal force",mass*values.gravity*Math.cos(values.angle*Math.PI/180),"N"],
+      [language==="ID"?"Gaya gesek":"Friction force",Math.min(values.friction*mass*values.gravity*Math.cos(values.angle*Math.PI/180),mass*values.gravity*Math.sin(values.angle*Math.PI/180)),"N"],
+      [labels.velocity,point.vx,"m/s"],[labels.distance,point.x,"m"]
     ] as [string,number,string][];
   }
   return [
@@ -432,7 +435,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       const pw=width-left-right,ph=height-top-bottom;
       ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
       const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
-        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="projectile"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
+        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="projectile"?-(values.gravity??9.81):(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
         return graphMode==="position-time"?{...p,x:p.t,y:p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:p.vx}:{...p,x:p.t,y:acceleration};
       });
       const plottedCurrent=graphMode==="trajectory"?current:plotted[Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)))];
@@ -520,7 +523,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const exportCsv=()=>{
     const rows=["time_s,x_m,y_m,vx_m_s,vy_m_s,speed_m_s,kinetic_J,potential_J"];
     points.forEach(p=>rows.push([p.t,p.x,p.y,p.vx,p.vy,p.speed,p.kinetic,p.potential].map(n=>n.toFixed(7)).join(",")));
-    downloadFile("physimus-"+lab.id+".csv",rows.join("\n"),"text/csv;charset=utf-8");setNotice("CSV ready");
+    downloadFile("physimus-"+lab.id+".csv",rows.join("\n"),"text/csv;charset=utf-8");setNotice(language==="ID"?"CSV siap diunduh":"CSV ready");
   };
   const saveProject=()=>{
     downloadFile("physimus-"+lab.id+".physimus.json",JSON.stringify({format:"physimus-lab-v1",labId:lab.id,values},null,2),"application/json");
@@ -577,7 +580,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           <button className={showVectors?"tool-active":""} onClick={()=>setShowVectors(v=>!v)} title={w.vectors}><Activity size={18}/><span>{w.vectors}</span></button>
           <button className={showTrail?"tool-active":""} onClick={()=>setShowTrail(v=>!v)} title={w.trail}><Waves size={18}/><span>{w.trail}</span></button>
         </div></div>
-        <div className="canvas-area"><canvas ref={canvasRef} aria-label="Interactive physics simulation graph"/><div className="canvas-label">{lab.subtitle.toUpperCase()} · SI UNITS</div></div>
+        <div className="canvas-area"><canvas ref={canvasRef} aria-label="Interactive physics simulation graph"/><div className="canvas-label">{(language==="ID"?lab.title:lab.subtitle).toUpperCase()} · {language==="ID"?"SATUAN SI":"SI UNITS"}</div></div>
         <div className="playback-bar">
           <button className="play-control" onClick={togglePlay} aria-label={playing?w.pause:w.play}>{playing?<Pause size={21} fill="currentColor"/>:<Play size={21} fill="currentColor"/>}</button>
           <button className="reset-control" onClick={reset} aria-label={w.reset}><RotateCcw size={19}/></button>

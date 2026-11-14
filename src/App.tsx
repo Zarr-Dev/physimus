@@ -121,6 +121,7 @@ function Workspace() {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const elapsedRef = useRef(0);
   const flightTime = (2 * speed * Math.sin(angle * Math.PI / 180)) / gravity;
   const range = (speed * speed * Math.sin(2 * angle * Math.PI / 180)) / gravity;
   const maxHeight = (speed * speed * Math.sin(angle * Math.PI / 180) ** 2) / (2 * gravity);
@@ -135,11 +136,14 @@ function Workspace() {
       if (!previous) previous = now;
       const delta = Math.min((now - previous) / 1000, 0.05);
       previous = now;
-      setElapsed((current) => {
-        const next = current + delta;
-        if (next >= maxTime) { setRunning(false); return maxTime; }
-        return next;
-      });
+      const next = elapsedRef.current + delta;
+      elapsedRef.current = next;
+      if (next >= maxTime) {
+        setElapsed(maxTime);
+        setRunning(false);
+        return;
+      }
+      setElapsed(next);
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -190,7 +194,7 @@ function Workspace() {
     context.fillText("y (m)", 10, 18);
   }, [speed, angle, gravity, elapsed, flightTime, range, maxHeight]);
 
-  const reset = () => { setRunning(false); setElapsed(0); };
+  const reset = () => { setRunning(false); elapsedRef.current = 0; setElapsed(0); };
   return <main className="workspace-page">
     <div className="workspace-heading"><div><div className="breadcrumb">LABORATORY <span>/</span> MECHANICS <span>/</span> PROJECTILE MOTION</div><h1>Projectile motion <span className="workspace-beta">INTERACTIVE</span></h1><p>Explore how launch velocity and angle shape a projectile's trajectory.</p></div><div className="workspace-heading-actions"><button className="soft-button"><Save size={15}/> Save</button><button className="soft-button"><Share2 size={15}/> Share</button><button className="icon-button"><MoreHorizontal size={18}/></button></div></div>
     <div className="workspace-toolbar"><div className="toolbar-left"><span className="status-dot" /> MODEL: IDEAL PROJECTILE <span className="toolbar-divider" /> SI UNITS</div><div className="toolbar-right"><button className="toolbar-button"><Grid2X2 size={15}/> Grid</button><button className="toolbar-button"><Maximize2 size={15}/> Expand</button><button className="toolbar-button"><Settings2 size={15}/> Settings</button></div></div>
@@ -212,7 +216,7 @@ function Workspace() {
         <div className="canvas-card">
           <div className="canvas-header"><div><span className="panel-kicker">03 / SIMULATION</span><h3>Motion canvas</h3></div><span className="canvas-live"><i/> 2D VIEW</span></div>
           <canvas ref={canvasRef} width={760} height={390} className="simulation-canvas" />
-          <div className="simulation-controls"><div className="transport-controls"><button className="transport-main" onClick={() => {if (elapsed >= flightTime) setElapsed(0); setRunning(!running);}}>{running ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button><button className="transport-secondary" onClick={reset}><RotateCcw size={16}/></button><button className="transport-secondary" onClick={() => {setRunning(false);setElapsed(flightTime);}}><Square size={14}/></button></div><div className="timeline"><div className="timeline-label"><span>SIMULATION TIME</span><b>{elapsed.toFixed(2)} s</b></div><div className="timeline-track"><i style={{width: `${progress * 100}%`}}/></div></div><span className="speed-label"><Clock3 size={14}/> 1×</span></div>
+          <div className="simulation-controls"><div className="transport-controls"><button className="transport-main" onClick={() => {if (elapsed >= flightTime) { elapsedRef.current = 0; setElapsed(0); } setRunning(!running);}}>{running ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button><button className="transport-secondary" onClick={reset}><RotateCcw size={16}/></button><button className="transport-secondary" onClick={() => {setRunning(false);elapsedRef.current = flightTime;setElapsed(flightTime);}}><Square size={14}/></button></div><div className="timeline"><div className="timeline-label"><span>SIMULATION TIME</span><b>{elapsed.toFixed(2)} s</b></div><div className="timeline-track"><i style={{width: `${progress * 100}%`}}/></div></div><span className="speed-label"><Clock3 size={14}/> 1×</span></div>
         </div>
         <div className="data-card"><div className="panel-heading"><div><span className="panel-kicker">04 / LIVE OUTPUT</span><h3>Measurements</h3></div><span className="unit-pill">SI</span></div><div className="metrics-grid"><div className="metric"><span>MAX. HEIGHT</span><strong>{maxHeight.toFixed(2)} <small>m</small></strong></div><div className="metric"><span>RANGE</span><strong>{range.toFixed(2)} <small>m</small></strong></div><div className="metric"><span>FLIGHT TIME</span><strong>{flightTime.toFixed(2)} <small>s</small></strong></div><div className="metric"><span>HORIZONTAL SPEED</span><strong>{(speed * Math.cos(angle * Math.PI / 180)).toFixed(2)} <small>m/s</small></strong></div></div></div>
       </section>

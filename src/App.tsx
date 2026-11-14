@@ -157,10 +157,10 @@ const equationLibrary: Record<LabId, EquationEntry[]> = {
  ],
  collision:[
   {id:"momentum",titleID:"Kekekalan momentum",titleEN:"Conservation of momentum",formula:String.raw`m_1u_1+m_2u_2=m_1v_1+m_2v_2`,noteID:"Momentum total sistem dua benda tetap jika resultan impuls eksternal dapat diabaikan.",noteEN:"Total system momentum is conserved when external impulse is negligible."},
-  {id:"restitution",titleID:"Koefisien restitusi",titleEN:"Coefficient of restitution",formula:String.raw`e=\\frac{v_2-v_1}{u_1-u_2},\\quad 0\\le e\\le1`,noteID:"e = 1 lenting sempurna; e = 0 tidak lenting sama sekali pada arah normal tumbukan.",noteEN:"e = 1 is perfectly elastic; e = 0 is perfectly inelastic along the collision axis."},
-  {id:"impulse",titleID:"Impuls pada benda 1",titleEN:"Impulse on body 1",formula:String.raw`J_1=\\Delta p_1=m_1(v_1-u_1)`,noteID:"Impuls adalah perubahan momentum dan sama dengan integral gaya terhadap waktu.",noteEN:"Impulse is the change in momentum and equals the time integral of force."},
-  {id:"kinetic",titleID:"Energi kinetik total",titleEN:"Total kinetic energy",formula:String.raw`K=\\frac12m_1v_1^2+\\frac12m_2v_2^2`,noteID:"Momentum selalu kekal pada sistem terisolasi, tetapi energi kinetik hanya kekal pada tumbukan lenting sempurna.",noteEN:"Momentum is conserved in an isolated system, while kinetic energy is conserved only in an elastic collision."},
-  {id:"final",titleID:"Kecepatan akhir",titleEN:"Final velocities",formula:String.raw`v_1=\\frac{m_1u_1+m_2u_2-m_2e(u_1-u_2)}{m_1+m_2},\\quad v_2=v_1+e(u_1-u_2)`,noteID:"Hasil diperoleh dari gabungan kekekalan momentum dan definisi koefisien restitusi.",noteEN:"These results combine momentum conservation with the coefficient-of-restitution definition."}
+  {id:"restitution",titleID:"Koefisien restitusi",titleEN:"Coefficient of restitution",formula:String.raw`e=\frac{v_2-v_1}{u_1-u_2},\quad 0\le e\le1`,noteID:"e = 1 lenting sempurna; e = 0 tidak lenting sama sekali pada arah normal tumbukan.",noteEN:"e = 1 is perfectly elastic; e = 0 is perfectly inelastic along the collision axis."},
+  {id:"impulse",titleID:"Impuls pada benda 1",titleEN:"Impulse on body 1",formula:String.raw`J_1=\Delta p_1=m_1(v_1-u_1)`,noteID:"Impuls adalah perubahan momentum dan sama dengan integral gaya terhadap waktu.",noteEN:"Impulse is the change in momentum and equals the time integral of force."},
+  {id:"kinetic",titleID:"Energi kinetik total",titleEN:"Total kinetic energy",formula:String.raw`K=\frac12m_1v_1^2+\frac12m_2v_2^2`,noteID:"Momentum selalu kekal pada sistem terisolasi, tetapi energi kinetik hanya kekal pada tumbukan lenting sempurna.",noteEN:"Momentum is conserved in an isolated system, while kinetic energy is conserved only in an elastic collision."},
+  {id:"final",titleID:"Kecepatan akhir",titleEN:"Final velocities",formula:String.raw`v_1=\frac{m_1u_1+m_2u_2-m_2e(u_1-u_2)}{m_1+m_2},\quad v_2=v_1+e(u_1-u_2)`,noteID:"Hasil diperoleh dari gabungan kekekalan momentum dan definisi koefisien restitusi.",noteEN:"These results combine momentum conservation with the coefficient-of-restitution definition."}
  ],
  spring:[
   {id:"hooke",titleID:"Hukum Hooke",titleEN:"Hooke's law",formula:String.raw`F=-kx`,noteID:"Tanda negatif menunjukkan gaya pegas mengarah menuju posisi setimbang.",noteEN:"The negative sign means spring force points toward equilibrium."},
@@ -348,7 +348,7 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
 
 function collisionResults(v:Record<string,number>){
   const m1=v.mass1??2,m2=v.mass2??2,u1=v.velocity1??6,u2=v.velocity2??0,e=Math.max(0,Math.min(1,v.restitution??1));
-  const separation=v.separation??6,contactDistance:.8;
+  const separation=v.separation??6,contactDistance=0.8;
   const relative=u1-u2,collisionTime=relative>0?Math.max(0,separation-contactDistance)/relative:Infinity;
   const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2);
   const v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);

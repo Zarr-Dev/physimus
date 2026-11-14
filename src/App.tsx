@@ -28,6 +28,7 @@ const labs: Lab[] = [
       {key:"speed",label:"Kecepatan awal",min:5,max:50,step:1,unit:"m/s",initial:24},
       {key:"angle",label:"Sudut peluncuran",min:5,max:85,step:1,unit:"°",initial:52},
       {key:"height",label:"Ketinggian awal",min:0,max:30,step:1,unit:"m",initial:0},
+      {key:"mass",label:"Massa benda",min:.1,max:20,step:.1,unit:"kg",initial:1},
       {key:"gravity",label:"Gravitasi",min:1,max:20,step:.01,unit:"m/s²",initial:9.81}
     ], duration: 8, color:"#347fd5"
   },

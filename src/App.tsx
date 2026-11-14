@@ -386,7 +386,6 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const [showVectors,setShowVectors]=useState(true);
   const [showTrail,setShowTrail]=useState(true);
   const [notice,setNotice]=useState("");
-  const [menuOpen,setMenuOpen]=useState(false);
   const [drawerTab,setDrawerTab]=useState<"model"|"parameters"|"equations"|"tools">("parameters");
   const [showRuler,setShowRuler]=useState(false);
   const [graphMode,setGraphMode]=useState<"trajectory"|"position-time"|"velocity-time"|"acceleration-time">("trajectory");

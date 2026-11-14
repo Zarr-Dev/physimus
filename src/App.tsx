@@ -347,10 +347,11 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
 
 function collisionResults(v:Record<string,number>){
   const m1=v.mass1??2,m2=v.mass2??2,u1=v.velocity1??6,u2=v.velocity2??0,e=Math.max(0,Math.min(1,v.restitution??1));
-  const relative=u1-u2,collisionTime=relative>0?(v.separation??6)/relative:Infinity;
+  const separation=v.separation??6,contactDistance:.8;
+  const relative=u1-u2,collisionTime=relative>0?Math.max(0,separation-contactDistance)/relative:Infinity;
   const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2);
   const v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
-  return {m1,m2,u1,u2,e,separation:v.separation??6,collisionTime,v1,v2,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
+  return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,v1,v2,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
 }
 
 function makePoints(lab:Lab,values:Record<string,number>):Point[] {
@@ -397,8 +398,8 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
     } else if(lab.id==="collision") {
       const c=collisionResults(values),elapsed=Math.max(0,time-c.collisionTime),hasCollided=time>=c.collisionTime;
       if(hasCollided&&Number.isFinite(c.collisionTime)){
-        const contactX=-c.separation/2+c.u1*c.collisionTime;
-        x=contactX+c.v1*elapsed;x2=contactX+c.v2*elapsed;vx=c.v1;vx2=c.v2;
+        const contactX1=-c.separation/2+c.u1*c.collisionTime,contactX2=c.separation/2+c.u2*c.collisionTime;
+        x=contactX1+c.v1*elapsed;x2=contactX2+c.v2*elapsed;vx=c.v1;vx2=c.v2;
       }else{
         x=-(values.separation??6)/2+c.u1*time;x2=(values.separation??6)/2+c.u2*time;vx=c.u1;vx2=c.u2;
       }
@@ -612,6 +613,11 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
     const angle=r(28,55,1),mu=r(.05,.2,.01),g=9.81,rad=angle*Math.PI/180,answer=g*(Math.sin(rad)-mu*Math.cos(rad));
     return {prompt:en?"A block is already sliding downhill. Find its acceleration.":"Balok sudah meluncur menuruni bidang. Hitung percepatannya.",given:"θ = "+angle+"°, μₖ = "+mu.toFixed(2)+", g = 9.81 m/s²",formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta)",answer,unit:"m/s²",resultLabel:en?"Down-slope acceleration":"Percepatan turun bidang",steps:["a=9.81(\\sin "+angle+"^\\circ-"+mu.toFixed(2)+"\\cos "+angle+"^\\circ)","a="+f(answer)+"\\;\\mathrm{m/s^2}"]};
   }
+  if(id==="collision"){
+    const m1=r(1,4,.5),m2=r(1,4,.5),u1=r(5,10,.5),u2=r(-2,2,.5),e=r(0,1,.1);
+    const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),answer=m1*(v1-u1);
+    return {prompt:en?"Find the impulse delivered to body 1 during the collision.":"Tentukan impuls yang diterima benda 1 selama tumbukan.",given:"m₁ = "+m1+" kg, m₂ = "+m2+" kg, u₁ = "+u1+" m/s, u₂ = "+u2+" m/s, e = "+e.toFixed(1),formula:"J_1=m_1(v_1-u_1)",answer,unit:"N·s",resultLabel:en?"Impulse on body 1":"Impuls benda 1",steps:["v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}","v_1="+f(v1)+"\\;\\mathrm{m/s}","J_1=("+m1+")("+f(v1)+"-"+u1+")","J_1="+f(answer)+"\\;\\mathrm{N\\,s}"]};
+  }
   const m=r(.5,5,.5),k=r(10,100,5),answer=2*Math.PI*Math.sqrt(m/k);
   return {prompt:en?"Calculate the period of an ideal mass–spring oscillator.":"Hitung periode osilasi sistem massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"T=2\\pi\\sqrt{\\frac{m}{k}}",answer,unit:"s",resultLabel:en?"Oscillation period":"Periode osilasi",steps:["T=2\\pi\\sqrt{\\frac{"+m+"}{"+k+"}}","T="+f(answer)+"\\;\\mathrm{s}"]};
 }
@@ -663,6 +669,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const [showTangent,setShowTangent]=useState(false);
   const [graphMode,setGraphMode]=useState<"trajectory"|"position-time"|"velocity-time"|"acceleration-time">("trajectory");
   const [selectedObject,setSelectedObject]=useState(()=>objectOptionsFor(lab.id,language)[0].value);
+  const [selectedObject2,setSelectedObject2]=useState(()=>objectOptionsFor(lab.id,language)[1]?.value??objectOptionsFor(lab.id,language)[0].value);
   const canvasRef=useRef<HTMLCanvasElement>(null);
   const drawRef=useRef<()=>void>(()=>{});
   const timeRef=useRef(0);
@@ -675,7 +682,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
 
   useEffect(()=>{
     const initial=Object.fromEntries(lab.params.map(p=>[p.key,p.initial]));
-    setValues(initial);setTime(0);timeRef.current=0;setPlaying(false);setNotice("");
+    setValues(initial);setSelectedObject(objectOptionsFor(lab.id,language)[0].value);setSelectedObject2(objectOptionsFor(lab.id,language)[1]?.value??objectOptionsFor(lab.id,language)[0].value);setTime(0);timeRef.current=0;setPlaying(false);setNotice("");
   },[lab.id]);
 
   useEffect(()=>{
@@ -715,6 +722,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       const localSlope=(slopeAfter.y-slopeBefore.y)/Math.max(1e-9,slopeAfter.x-slopeBefore.x);
       let minX=Math.min(...plotted.map(p=>p.x)),maxX=Math.max(...plotted.map(p=>p.x));
       let minY=Math.min(...plotted.map(p=>p.y)),maxY=Math.max(...plotted.map(p=>p.y));
+      if(graphMode==="trajectory"&&lab.id==="collision"){const positions=points.flatMap(p=>[p.x,p.x2??p.x]);minX=Math.min(...positions);maxX=Math.max(...positions);minY=-1;maxY=1;}
       if(graphMode==="trajectory"){
         if(lab.id==="circular"){minX=-values.radius*1.3;maxX=values.radius*1.3;minY=-values.radius*1.3;maxY=values.radius*1.3;}
         if(lab.id==="spring"){minX=-values.amplitude*1.35;maxX=values.amplitude*1.35;minY=-.5;maxY=.5;}
@@ -766,7 +774,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
 
       if(graphMode==="trajectory"){
         ctx.save();
-        if(lab.id==="projectile"||lab.id==="mru"||lab.id==="mrua"){
+        if(lab.id==="projectile"||lab.id==="mru"||lab.id==="mrua"||lab.id==="collision"){
           const ground=Y(0);ctx.strokeStyle="#b9c8d7";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(left,ground);ctx.lineTo(left+pw,ground);ctx.stroke();
           if(lab.id==="projectile"){
             const ox=X(0);ctx.fillStyle="#71879d";ctx.fillRect(ox-17,ground-8,18,8);ctx.beginPath();ctx.arc(ox-8,ground-8,8,Math.PI,Math.PI*1.5);ctx.fill();
@@ -831,6 +839,14 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
         }else if(lab.id==="circular"){
           vector(current.vx,current.vy,"#347fd5",current.speed);vector(-current.x,-current.y,"#d99a46",Math.max((values.omega??0)**2*(values.radius??0),1e-6));
           tag("v","#347fd5",px+12,py-14);tag("aᶜ","#d99a46",px-25,py+24);
+        }else if(lab.id==="collision"){
+          vector(current.vx,0,"#347fd5",Math.max(Math.abs(current.vx),1e-6));
+          if(current.x2!==undefined&&current.vx2!==undefined){
+            const secondX=X(current.x2),scale=.20*Math.min(pw,ph)*Math.max(1e-8,Math.min(sx/pw,sy/ph))/Math.max(Math.abs(current.vx2),1e-7);
+            if(Math.abs(current.vx2)>1e-7)drawArrow(ctx,secondX,py,secondX+current.vx2*scale*pw/sx,py,"#d99a46");
+            tag("v₂","#d99a46",secondX+12,py+25);
+          }
+          tag("v₁","#347fd5",px+12,py-14);
         }else if(lab.id==="incline"||lab.id==="energy"){
           const theta=lab.id==="energy"?Math.PI/6:(values.angle??0)*Math.PI/180;
           const mass=values.mass??1,g=values.gravity??9.81,mu=values.friction??0;
@@ -855,13 +871,14 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           }
         }
       }
+      if(lab.id==="collision"&&current.x2!==undefined)drawLabObject(ctx,X(current.x2),py,selectedObject2,"#d99a46");
       drawLabObject(ctx,px,py,selectedObject,lab.color);
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
@@ -936,7 +953,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       </aside>
       <section className="graph-panel">
         <div className="graph-header"><div><span className="eyebrow">{w.graph}</span><strong>{language==="ID"?"Visualisasi sistem":"System visualization"}</strong></div><div className="graph-tools">
-          <label className="object-picker"><span>{language==="ID"?"Objek":"Object"}</span><select value={selectedObject} onChange={e=>setSelectedObject(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+          <label className="object-picker"><span>{language==="ID"?"Objek 1":"Object 1"}</span><select value={selectedObject} onChange={e=>setSelectedObject(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>{lab.id==="collision"&&<label className="object-picker"><span>{language==="ID"?"Objek 2":"Object 2"}</span><select value={selectedObject2} onChange={e=>setSelectedObject2(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>}
           <button className={showGrid?"tool-active":""} onClick={()=>setShowGrid(v=>!v)} title={w.grid}><Grid3X3 size={18}/><span>{w.grid}</span></button>
           <button className={showVectors?"tool-active":""} onClick={()=>setShowVectors(v=>!v)} title={w.vectors}><Activity size={18}/><span>{w.vectors}</span></button>
           <button className={showTrail?"tool-active":""} onClick={()=>setShowTrail(v=>!v)} title={w.trail}><Waves size={18}/><span>{w.trail}</span></button>

@@ -145,7 +145,25 @@ export default function PhysicsSandbox({language}:{language:Language}){
       <label>{w.stiffness}<input type="number" min="0" max="100000" step="1" value={stiffness} onChange={e=>setStiffness(Math.max(0,Math.min(100000,Number(e.target.value)||0)))}/></label>
       <label>{w.phase}<input type="number" min="-1000" max="1000" step=".01" value={phase} onChange={e=>setPhase(Math.max(-1000,Math.min(1000,Number(e.target.value)||0)))}/></label>
     </div>
-    <div className="sandbox-analysis"><strong>{w.motion}</strong>{current?<div className="sandbox-analysis-grid"><div><span>r · Position</span><b>{current.x.toFixed(2)}, {current.y.toFixed(2)} m</b><small dangerouslySetInnerHTML={mathHtml("x(t),\\;y(t)")}/></div><div><span>v · Velocity</span><b>{current.speed.toFixed(2)} m/s</b><small dangerouslySetInnerHTML={mathHtml("|\\vec v|=\\sqrt{v_x^2+v_y^2}")}/></div><div><span>a · Acceleration</span><b>{current.acceleration.toFixed(2)} m/s²</b><small dangerouslySetInnerHTML={mathHtml("|\\vec a|=\\sqrt{a_x^2+a_y^2}")}/></div>{showEnergy&&<><div><span>Kinetic energy</span><b>{current.energy.toFixed(2)} J</b><small dangerouslySetInnerHTML={mathHtml("K=\\frac12m|\\vec v|^2")}/></div><div><span>Gravitational potential</span><b>{current.potential.toFixed(2)} J</b><small dangerouslySetInnerHTML={mathHtml("U=mgy")}/></div><div><span>Mechanical energy</span><b>{current.mechanical.toFixed(2)} J</b><small dangerouslySetInnerHTML={mathHtml("E_m=K+U")}/></div></>}{showMomentum&&<div><span>Momentum</span><b>{current.momentum.toFixed(2)} kg·m/s</b><small dangerouslySetInnerHTML={mathHtml("|\\vec p|=m|\\vec v|")}/></div>}{showForce&&<div><span>Net force</span><b>{current.force.toFixed(2)} N</b><small dangerouslySetInnerHTML={mathHtml("|\\vec F|=m|\\vec a|")}/></div>}{showWeight&&<div><span>Weight</span><b>{current.weight.toFixed(2)} N</b><small dangerouslySetInnerHTML={mathHtml("W=mg")}/></div></div>:<p className="sandbox-empty">{w.notMotion}</p>}<p className="sandbox-footnote">{w.warning} {w.noBackend}</p></div>
+    <div className="sandbox-analysis">
+      <strong>{w.motion}</strong>
+      {current ? (
+        <div className="sandbox-analysis-grid">
+          <div><span>r · Position</span><b>{current.x.toFixed(2)}, {current.y.toFixed(2)} m</b><small dangerouslySetInnerHTML={mathHtml("x(t),\\;y(t)")}/></div>
+          <div><span>v · Velocity</span><b>{current.speed.toFixed(2)} m/s</b><small dangerouslySetInnerHTML={mathHtml("|\\vec v|=\\sqrt{v_x^2+v_y^2}")}/></div>
+          <div><span>a · Acceleration</span><b>{current.acceleration.toFixed(2)} m/s²</b><small dangerouslySetInnerHTML={mathHtml("|\\vec a|=\\sqrt{a_x^2+a_y^2}")}/></div>
+          {showEnergy && <>
+            <div><span>Kinetic energy</span><b>{current.energy.toFixed(2)} J</b><small dangerouslySetInnerHTML={mathHtml("K=\\frac12m|\\vec v|^2")}/></div>
+            <div><span>Gravitational potential</span><b>{current.potential.toFixed(2)} J</b><small dangerouslySetInnerHTML={mathHtml("U=mgy")}/></div>
+            <div><span>Mechanical energy</span><b>{current.mechanical.toFixed(2)} J</b><small dangerouslySetInnerHTML={mathHtml("E_m=K+U")}/></div>
+          </>}
+          {showMomentum && <div><span>Momentum</span><b>{current.momentum.toFixed(2)} kg·m/s</b><small dangerouslySetInnerHTML={mathHtml("|\\vec p|=m|\\vec v|")}/></div>}
+          {showForce && <div><span>Net force</span><b>{current.force.toFixed(2)} N</b><small dangerouslySetInnerHTML={mathHtml("|\\vec F|=m|\\vec a|")}/></div>}
+          {showWeight && <div><span>Weight</span><b>{current.weight.toFixed(2)} N</b><small dangerouslySetInnerHTML={mathHtml("W=mg")}/></div>}
+        </div>
+      ) : <p className="sandbox-empty">{w.notMotion}</p>}
+      <p className="sandbox-footnote">{w.warning} {w.noBackend}</p>
+    </div>
    </section>
   </div>
  </main>;

@@ -22,7 +22,7 @@ const labs: Lab[] = [
   {
     id: "projectile", category: "KINEMATIKA", title: "Gerak Parabola", subtitle: "Projectile Motion",
     description: "Pelajari gerak dua dimensi dengan memisahkan komponen horizontal dan vertikal. Ubah kecepatan, sudut, ketinggian awal, dan gravitasi.",
-    formula: "x(t)=v_0\cos\theta\,t,\quad y(t)=h_0+v_0\sin\theta\,t-\frac12gt^2",
+    formula: String.raw`x(t)=v_0\cos\theta\,t,\quad y(t)=h_0+v_0\sin\theta\,t-\frac12gt^2`,
     question: "Bagaimana sudut dan ketinggian awal memengaruhi jangkauan serta waktu terbang?",
     params: [
       {key:"speed",label:"Kecepatan awal",min:5,max:50,step:1,unit:"m/s",initial:24},
@@ -35,7 +35,7 @@ const labs: Lab[] = [
   {
     id: "mru", category: "KINEMATIKA", title: "Gerak Lurus Beraturan", subtitle: "Uniform Linear Motion",
     description: "Amati benda yang bergerak pada lintasan lurus dengan kecepatan konstan dan percepatan nol.",
-    formula: "x(t)=x_0+vt,\quad v(t)=v_0,\quad a(t)=0",
+    formula: String.raw`x(t)=x_0+vt,\quad v(t)=v_0,\quad a(t)=0`,
     question: "Jika kecepatan tetap, bagaimana posisi berubah setiap detik?",
     params: [{key:"speed",label:"Kecepatan",min:1,max:30,step:.5,unit:"m/s",initial:8}],
     duration: 10, color:"#347fd5"
@@ -43,7 +43,7 @@ const labs: Lab[] = [
   {
     id: "mrua", category: "KINEMATIKA", title: "Gerak Lurus Berubah Beraturan", subtitle: "Constant Acceleration",
     description: "Eksplorasi gerak satu dimensi dengan percepatan konstan. Coba percepatan positif, negatif, atau kondisi benda mulai diam.",
-    formula: "x(t)=x_0+v_0t+\frac12at^2,\quad v(t)=v_0+at",
+    formula: String.raw`x(t)=x_0+v_0t+\frac12at^2,\quad v(t)=v_0+at`,
     question: "Apa yang terjadi pada grafik posisi dan kecepatan ketika percepatan berubah tanda?",
     params: [
       {key:"speed",label:"Kecepatan awal",min:0,max:25,step:.5,unit:"m/s",initial:4},
@@ -53,7 +53,7 @@ const labs: Lab[] = [
   {
     id: "circular", category: "KINEMATIKA", title: "Gerak Melingkar Beraturan", subtitle: "Uniform Circular Motion",
     description: "Visualisasikan gerak melingkar, kecepatan sudut, kecepatan tangensial, dan percepatan sentripetal.",
-    formula: "\theta(t)=\omega t,\quad v=\omega r,\quad a_c=\omega^2r",
+    formula: String.raw`\theta(t)=\omega t,\quad v=\omega r,\quad a_c=\omega^2r`,
     question: "Jika jari-jari diperbesar pada kecepatan sudut tetap, bagaimana kelajuan dan percepatan sentripetal berubah?",
     params: [
       {key:"radius",label:"Jari-jari",min:.5,max:10,step:.1,unit:"m",initial:3},
@@ -63,7 +63,7 @@ const labs: Lab[] = [
   {
     id: "energy", category: "DINAMIKA & ENERGI", title: "Kekekalan Energi Mekanik", subtitle: "Mechanical Energy",
     description: "Ikuti perubahan energi potensial gravitasi menjadi energi kinetik saat benda meluncur menuruni bidang miring. Gesekan dapat diatur.",
-    formula: "E_m=E_k+E_p=\frac12mv^2+mgh",
+    formula: String.raw`E_m=E_k+E_p=\frac12mv^2+mgh`,
     question: "Apakah energi mekanik tetap ketika ada gaya gesek? Ke mana energi mekanik berpindah?",
     params: [
       {key:"mass",label:"Massa benda",min:.5,max:20,step:.5,unit:"kg",initial:2},
@@ -74,7 +74,7 @@ const labs: Lab[] = [
   {
     id: "incline", category: "DINAMIKA & ENERGI", title: "Hukum II Newton", subtitle: "Inclined Plane & Forces",
     description: "Analisis gaya berat, gaya normal, gesekan, dan percepatan balok pada bidang miring.",
-    formula: "\sum F=ma,\quad a=g(\sin\theta-\mu\cos\theta)",
+    formula: String.raw`\sum F=ma,\quad a=g(\sin\theta-\mu\cos\theta)`,
     question: "Pada sudut dan koefisien gesek berapa benda mulai bergerak menuruni bidang?",
     params: [
       {key:"mass",label:"Massa benda",min:.5,max:20,step:.5,unit:"kg",initial:5},
@@ -86,7 +86,7 @@ const labs: Lab[] = [
   {
     id: "spring", category: "GETARAN", title: "Gerak Harmonik Sederhana", subtitle: "Simple Harmonic Motion",
     description: "Amati osilasi massa-pegas, hubungan gaya pemulih, konstanta pegas, massa, periode, dan frekuensi.",
-    formula: "x(t)=A\cos(\omega t),\quad \omega=\sqrt{\frac{k}{m}}",
+    formula: String.raw`x(t)=A\cos(\omega t),\quad \omega=\sqrt{\frac{k}{m}}`,
     question: "Bagaimana massa dan konstanta pegas memengaruhi periode osilasi?",
     params: [
       {key:"mass",label:"Massa",min:.2,max:10,step:.1,unit:"kg",initial:1},
@@ -387,6 +387,9 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
   const [showTrail,setShowTrail]=useState(true);
   const [notice,setNotice]=useState("");
   const [menuOpen,setMenuOpen]=useState(false);
+  const [drawerTab,setDrawerTab]=useState<"model"|"parameters"|"equations"|"tools">("parameters");
+  const [showRuler,setShowRuler]=useState(false);
+  const [graphMode,setGraphMode]=useState<"trajectory"|"position-time"|"velocity-time"|"acceleration-time">("trajectory");
   const canvasRef=useRef<HTMLCanvasElement>(null);
   const drawRef=useRef<()=>void>(()=>{});
   const timeRef=useRef(0);
@@ -427,13 +430,20 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       const width=rect.width,height=rect.height,left=76,right=34,top=36,bottom=65;
       const pw=width-left-right,ph=height-top-bottom;
       ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
-      let minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x));
-      let minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y));
-      if(lab.id==="circular"){minX=-values.radius*1.3;maxX=values.radius*1.3;minY=-values.radius*1.3;maxY=values.radius*1.3;}
-      if(lab.id==="spring"){minX=-values.amplitude*1.35;maxX=values.amplitude*1.35;minY=-.5;maxY=.5;}
-      if(lab.id==="mru"||lab.id==="mrua"||lab.id==="incline"){minY=-1;maxY=1;}
-      if(lab.id==="energy"){minY=0;maxY=values.height*1.2;}
-      if(lab.id==="projectile"){minY=0;maxY=Math.max(1,maxY*1.18);}
+      const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
+        const acceleration= i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t);
+        return graphMode==="position-time"?{...p,x:p.t,y:p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:p.vx}:{...p,x:p.t,y:acceleration};
+      });
+      const plottedCurrent=graphMode==="trajectory"?current:plotted[Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)))];
+      let minX=Math.min(...plotted.map(p=>p.x)),maxX=Math.max(...plotted.map(p=>p.x));
+      let minY=Math.min(...plotted.map(p=>p.y)),maxY=Math.max(...plotted.map(p=>p.y));
+      if(graphMode==="trajectory"){
+        if(lab.id==="circular"){minX=-values.radius*1.3;maxX=values.radius*1.3;minY=-values.radius*1.3;maxY=values.radius*1.3;}
+        if(lab.id==="spring"){minX=-values.amplitude*1.35;maxX=values.amplitude*1.35;minY=-.5;maxY=.5;}
+        if(lab.id==="mru"||lab.id==="mrua"||lab.id==="incline"){minY=-1;maxY=1;}
+        if(lab.id==="energy"){minY=0;maxY=values.height*1.2;}
+        if(lab.id==="projectile"){minY=0;maxY=Math.max(1,maxY*1.18);}
+      }
       const padX=Math.max((maxX-minX)*.08,.5),padY=Math.max((maxY-minY)*.08,.5);
       minX-=padX;maxX+=padX;minY-=padY;maxY+=padY;
       const sx=(maxX-minX)||1,sy=(maxY-minY)||1;
@@ -451,8 +461,8 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.textAlign="right";
       for(let i=0;i<=4;i++){const val=minY+sy*i/4;ctx.fillText(val.toFixed(1),left-12,top+ph-ph*i/4+4);}
       ctx.fillStyle="#60758c";ctx.font="600 12px Inter, sans-serif";ctx.textAlign="center";
-      ctx.fillText(lab.id==="circular"?"x (m)":lab.id==="spring"?"x (m)":lab.id==="energy"?(language==="ID"?"Jarak sepanjang bidang (m)":"Distance along slope (m)"):(language==="ID"?"Posisi / jarak (m)":"Position / distance (m)"),left+pw/2,height-14);
-      ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)"),0,0);ctx.restore();
+      ctx.fillText(graphMode==="trajectory"?(lab.id==="circular"||lab.id==="spring"?"x (m)":lab.id==="energy"?(language==="ID"?"Jarak sepanjang bidang (m)":"Distance along slope (m)"):(language==="ID"?"Posisi / jarak (m)":"Position / distance (m)")):(language==="ID"?"Waktu (s)":"Time (s)"),left+pw/2,height-14);
+      ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(graphMode==="trajectory"?(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)")):graphMode==="position-time"?(language==="ID"?"Posisi (m)":"Position (m)"):graphMode==="velocity-time"?(language==="ID"?"Kecepatan (m/s)":"Velocity (m/s)"):(language==="ID"?"Percepatan (m/s²)":"Acceleration (m/s²)"),0,0);ctx.restore();
 
       if(lab.id==="circular"){
         const r=values.radius;
@@ -461,14 +471,18 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       if(showTrail){
         ctx.beginPath();
         const end=Math.max(1,Math.round(time/duration*(points.length-1)));
-        points.slice(0,end+1).forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
+        plotted.slice(0,end+1).forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
         ctx.strokeStyle=lab.color;ctx.lineWidth=3.5;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();
       }else if(points.length>1){
-        ctx.beginPath();points.forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
+        ctx.beginPath();plotted.forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
         ctx.strokeStyle="#c6d4e3";ctx.lineWidth=2;ctx.setLineDash([5,7]);ctx.stroke();ctx.setLineDash([]);
       }
-      const px=X(current.x),py=Y(current.y);
-      if(showVectors){
+      const px=X(plottedCurrent.x),py=Y(plottedCurrent.y);
+      if(showRuler){
+        ctx.strokeStyle="#d99a46";ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,top+ph);ctx.moveTo(left,py);ctx.lineTo(left+pw,py);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle="#9b6b27";ctx.font="11px DM Sans";ctx.textAlign="left";ctx.fillText(`${plottedCurrent.x.toFixed(2)}, ${plottedCurrent.y.toFixed(2)}`,Math.min(px+9,left+pw-100),Math.max(top+14,py-9));
+      }
+      if(showVectors&&graphMode==="trajectory"){
         if(lab.id==="projectile"||lab.id==="circular"){
           const scale=.22;
           drawArrow(ctx,px,py,px+current.vx*scale/sx*pw,py-current.vy*scale/sy*ph,"#d99a46");
@@ -542,13 +556,19 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       </div>
     </div>
     <div className="lab-studio">
-      <aside className="control-panel">
-        <div className="panel-title"><span>01</span><h2>{w.expr}</h2></div>
-        <div className="formula-box"><Equation value={lab.formula} display/></div>
-        <div className="panel-title parameter-title"><span>02</span><h2>{w.parameters}</h2><Settings2 size={18}/></div>
-        <div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div>
-        <div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div>
-        <div className="panel-actions"><button onClick={()=>setMenuOpen(!menuOpen)}><SlidersHorizontal size={16}/>{w.assumptions}<ChevronDown size={15}/></button>{menuOpen&&<p>{lab.id==="projectile"?w.noDrag:language==="ID"?"Model menggunakan parameter ideal dan mengabaikan faktor yang tidak tercantum pada kontrol.":"The model uses idealized parameters and ignores factors not listed in the controls."}</p>}</div>
+      <aside className="control-drawer">
+        <nav className="drawer-rail" aria-label={language==="ID"?"Panel laboratorium":"Laboratory panels"}>
+          <button className={drawerTab==="parameters"?"selected":""} onClick={()=>setDrawerTab("parameters")} title={w.parameters}><SlidersHorizontal/><span>{language==="ID"?"Atur":"Setup"}</span></button>
+          <button className={drawerTab==="equations"?"selected":""} onClick={()=>setDrawerTab("equations")} title={w.expr}><Atom/><span>{language==="ID"?"Rumus":"Math"}</span></button>
+          <button className={drawerTab==="tools"?"selected":""} onClick={()=>setDrawerTab("tools")} title={language==="ID"?"Alat grafik":"Graph tools"}><Settings2/><span>{language==="ID"?"Alat":"Tools"}</span></button>
+          <button className={drawerTab==="model"?"selected":""} onClick={()=>setDrawerTab("model")} title={w.question}><CircleHelp/><span>{language==="ID"?"Model":"Model"}</span></button>
+        </nav>
+        <div className="drawer-content">
+          {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
+          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="formula-box"><Equation value={lab.formula} display/></div><p className="drawer-help">{language==="ID"?"Persamaan ditampilkan dalam notasi LaTeX. Variabel mengikuti parameter eksperimen yang aktif.":"Equations are rendered from LaTeX. Variables follow the active experiment parameters."}</p><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
+          {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
+          {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><p className="drawer-help">{lab.id==="projectile"?w.noDrag:language==="ID"?"Model menggunakan parameter ideal. Batasan dan asumsi disederhanakan untuk pembelajaran.":"This is an idealized teaching model. Some real-world effects are intentionally simplified."}</p></>}
+        </div>
       </aside>
       <section className="graph-panel">
         <div className="graph-header"><div><span className="eyebrow">{w.graph}</span><strong>{language==="ID"?"Visualisasi sistem":"System visualization"}</strong></div><div className="graph-tools">

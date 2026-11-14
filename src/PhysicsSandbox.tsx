@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import katex from "katex";
-import { Activity, AlertTriangle, Download, Eye, EyeOff, Grid3X3, Minus, Pause, Play, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, Eye, EyeOff, Minus, Pause, Play, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 
 type Language = "ID" | "EN";
 type Row = { id:number; text:string; enabled:boolean };
@@ -68,7 +68,6 @@ function motionAt(list:Compiled[],t:number,m:number):Motion|null {
  return Object.values(result).every(Number.isFinite)&&Object.values(result).every(q=>Math.abs(q)<1e6)?result:null;
 }
 function arrow(ctx:CanvasRenderingContext2D,x1:number,y1:number,x2:number,y2:number,color:string){const a=Math.atan2(y2-y1,x2-x1);ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-9*Math.cos(a-.45),y2-9*Math.sin(a-.45));ctx.lineTo(x2-9*Math.cos(a+.45),y2-9*Math.sin(a+.45));ctx.closePath();ctx.fill();}
-function math(value:string){return katex.renderToString(value,{throwOnError:false});}
 
 export default function PhysicsSandbox({language}:{language:Language}){
  const w=copy[language];

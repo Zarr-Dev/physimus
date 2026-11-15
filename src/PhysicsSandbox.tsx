@@ -24,7 +24,7 @@ function tokenize(source:string):string[] {
  const tokens:string[]=[];
  const re=/\s*([0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?|\.[0-9]+(?:e[+-]?[0-9]+)?|[a-zA-Z_][a-zA-Z0-9_]*|\*\*|[+\-*/^(),])/gy;
  let pos=0;
- while(pos<source.length){re.lastIndex=pos;const match=re.exec(source);if(!match)throw new Error("Karakter tidak dikenal: "+source[pos]);tokens.push(match[1].toLowerCase());pos=re.lastIndex;}
+ while(pos<source.length){re.lastIndex=pos;const match=re.exec(source);if(!match)throw new Error("Karakter tidak dikenal: "+source[pos]);const token=match[1].toLowerCase();if(/^[a-z]{2}$/.test(token)&&!allowedFunctions.has(token)&&!["pi","mu","nu","xi"].includes(token)){tokens.push(token[0],token[1]);}else tokens.push(token);pos=re.lastIndex;}
  const out:string[]=[];
  const isEnd=(v:string)=>/^([0-9]|\.)/.test(v)||/^[a-z_]/.test(v)||v===")";
  const isStart=(v:string)=>/^([0-9]|\.)/.test(v)||/^[a-z_]/.test(v)||v==="(";
@@ -117,7 +117,7 @@ function variableDescription(name:string,language:Language){
 
 
 function variableLatex(name:string){
- const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",phi:"\\phi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda"};
+ const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",phi:"\\phi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda",nu:"\\nu",xi:"\\xi"};
  if(greek[name])return greek[name];
  if(name==="sum"||name==="sumsymbol")return "\\sum";
  const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);

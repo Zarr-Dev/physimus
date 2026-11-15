@@ -300,7 +300,35 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const update=(id:number,text:string)=>setRows(old=>old.map(r=>r.id===id?{...r,text}:r));
  const insertToken=(token:string)=>{const row=rows.find(item=>item.id===focusedEquationId)??rows[rows.length-1];if(!row)return;const join=row.text.trim()&&!/[=+\\-*/^(,]$/.test(row.text.trim())?"*":"";update(row.id,row.text+join+token);setFocusedEquationId(row.id);};
  const reset=()=>{setTime(0);timeRef.current=0;setPlaying(false);};
- const preset=(kind:string)=>{const data:Record<string,string[]>={circle:["x(t)=A*cos(omega*t)","y(t)=A*sin(omega*t)"],projectile:["x(t)=v0*cos(theta)*t","y(t)=v0*sin(theta)*t-0.5*g*t^2"],spring:["x(t)=A*cos(omega*t)","y(t)=0"],curve:["y=0.2x^2-2"]};const list=data[kind]||[];setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);if(kind==="circle"){setAmplitude(4);setAngularSpeed(1);}if(kind==="projectile"){setInitialSpeed(12);setPhase(Math.PI/4);setGravity(9.81);}if(kind==="spring"){setAmplitude(2);setAngularSpeed(2);}reset();};
+ const preset=(kind:string)=>{
+  const data:Record<string,string[]>={
+   circle:["x(t)=A*cos(omega*t)","y(t)=A*sin(omega*t)"],
+   projectile:["x(t)=v0*cos(theta)*t","y(t)=v0*sin(theta)*t-0.5*g*t^2"],
+   spring:["x(t)=A*cos(sqrt(k/m)*t)","y(t)=0"],
+   curve:["y=0.2*x^2-2"],
+   mru:["x(t)=x0+v0*t","y(t)=0"],
+   mrua:["x(t)=x0+v0*t+0.5*accel*t^2","y(t)=0"],
+   pendulum:["x(t)=L*sin(theta*cos(sqrt(g/L)*t))","y(t)=-L*cos(theta*cos(sqrt(g/L)*t))"],
+   incline:["x(t)=0.5*g*(sin(theta)-mu*cos(theta))*cos(theta)*t^2","y(t)=-0.5*g*(sin(theta)-mu*cos(theta))*sin(theta)*t^2"],
+   energy:["x(t)=0.5*g*(sin(theta)-mu*cos(theta))*cos(theta)*t^2","y(t)=h-0.5*g*(sin(theta)-mu*cos(theta))*sin(theta)*t^2"],
+   integral:["y=int(u^2,u,0,x)"],
+   summation:["y=sum(i^2,i,1,floor(x))"],
+   derivative:["y=diff(sin(x),x)"]
+  };
+  const list=data[kind]||[];if(!list.length)return;
+  setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);setFocusedEquationId(1);setEditorTab("equations");setPlaying(false);setTime(0);timeRef.current=0;setCustomVariables({});
+  if(kind==="circle"){setAmplitude(4);setAngularSpeed(1);}
+  if(kind==="projectile"){setInitialSpeed(12);setPhase(Math.PI/4);setGravity(9.81);}
+  if(kind==="spring"){setAmplitude(2);setStiffness(25);setMass(1);}
+  if(kind==="mru"){setCustomVariables({x0:0,v0:4});}
+  if(kind==="mrua"){setCustomVariables({x0:0,v0:2,accel:1.5});}
+  if(kind==="pendulum"){setCustomVariables({L:2});setPhase(.22);setGravity(9.81);}
+  if(kind==="incline"){setCustomVariables({mu:.18});setPhase(35*Math.PI/180);setGravity(9.81);}
+  if(kind==="energy"){setCustomVariables({mu:.12,h:8});setPhase(Math.PI/6);setGravity(9.81);setMass(2);}
+  if(kind==="integral"){setView({xmin:0,xmax:5,ymin:0,ymax:40});setScale(1);}
+  if(kind==="summation"){setView({xmin:0,xmax:10,ymin:0,ymax:400});setScale(1);}
+  if(kind==="derivative"){setView({xmin:-10,xmax:10,ymin:-1.5,ymax:1.5});setScale(1);}
+ };
  const updateBound=(key:"xmin"|"xmax"|"ymin"|"ymax",value:number)=>{
   if(!Number.isFinite(value))return;
   setView(old=>{

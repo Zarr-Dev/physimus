@@ -89,7 +89,7 @@ function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
 }
 function arrow(ctx:CanvasRenderingContext2D,x1:number,y1:number,x2:number,y2:number,color:string){const a=Math.atan2(y2-y1,x2-x1);ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-9*Math.cos(a-.45),y2-9*Math.sin(a-.45));ctx.lineTo(x2-9*Math.cos(a+.45),y2-9*Math.sin(a+.45));ctx.closePath();ctx.fill();}
 
-export default function PhysicsSandbox({language}:{language:Language}){
+export default function PhysicsSandbox({language,theme}:{language:Language;theme:"light"|"dark"}){
  const w=copy[language];
  const [rows,setRows]=useState<Row[]>([{id:1,text:"",enabled:true}]);const [nextId,setNextId]=useState(2);
  const [time,setTime]=useState(0);const [duration,setDuration]=useState(12);const [mass,setMass]=useState(1);const [customVariables,setCustomVariables]=useState<Record<string,number>>({});const [gravity,setGravity]=useState(9.81);const [amplitude,setAmplitude]=useState(2);const [initialSpeed,setInitialSpeed]=useState(5);const [angularSpeed,setAngularSpeed]=useState(1);const [stiffness,setStiffness]=useState(10);const [phase,setPhase]=useState(Math.PI/4);const [playing,setPlaying]=useState(false);
@@ -106,13 +106,48 @@ export default function PhysicsSandbox({language}:{language:Language}){
  const badSample=useMemo(()=>{for(const item of valid){for(let i=0;i<=100;i++){const q=item.target==="y(x)"?calc(item.root,{...parameterSet,x:view.xmin+(view.xmax-view.xmin)*i/100,t:0}):calc(item.root,{...parameterSet,x:0,t:duration*i/100});if(!Number.isFinite(q)||Math.abs(q)>1e6)return true;}}return false;},[valid,view,duration,parameterSet]);
  const warning=errors.length>0||badSample||(hasMotion&&!current);
  useEffect(()=>{if(!playing)return;let frame=0,last=0;const tick=(now:number)=>{if(!last)last=now;const next=timeRef.current+Math.min((now-last)/1000,.05);last=now;timeRef.current=Math.min(duration,next);setTime(timeRef.current);if(next>=duration){setPlaying(false);return;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,duration]);
- useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const ctx=canvas.getContext("2d");if(!ctx)return;const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;const dpr=Math.min(devicePixelRatio||1,2),width=rect.width,height=rect.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
+ useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const ctx=canvas.getContext("2d");if(!ctx)return;const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;const dpr=Math.min(devicePixelRatio||1,2),width=rect.width,height=rect.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);const canvasStyle=getComputedStyle(canvas),plotBg=canvasStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=canvasStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf1f5"),axisColor=canvasStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#627b94");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
   const spanX=(view.xmax-view.xmin)/scale,spanY=(view.ymax-view.ymin)/scale,mx=(view.xmax+view.xmin)/2,my=(view.ymax+view.ymin)/2,xmin=mx-spanX/2,xmax=mx+spanX/2,ymin=my-spanY/2,ymax=my+spanY/2;const left=58,right=20,top=22,bottom=40,pw=width-left-right,ph=height-top-bottom;const X=(x:number)=>left+(x-xmin)/(xmax-xmin)*pw,Y=(y:number)=>top+ph-(y-ymin)/(ymax-ymin)*ph;
   const nice=(span:number)=>{const raw=span/9,p=10**Math.floor(Math.log10(Math.max(raw,1e-9))),q=raw/p;return (q<=1?1:q<=2?2:q<=5?5:10)*p;};const dx=nice(xmax-xmin),dy=nice(ymax-ymin);
-  if(showGrid){for(let x=Math.ceil(xmin/dx)*dx;x<=xmax;x+=dx){ctx.strokeStyle=Math.abs(x)<1e-9?"#aebdca":"#edf1f5";ctx.beginPath();ctx.moveTo(X(x),top);ctx.lineTo(X(x),top+ph);ctx.stroke();}for(let y=Math.ceil(ymin/dy)*dy;y<=ymax;y+=dy){ctx.strokeStyle=Math.abs(y)<1e-9?"#aebdca":"#edf1f5";ctx.beginPath();ctx.moveTo(left,Y(y));ctx.lineTo(left+pw,Y(y));ctx.stroke();}}
-  if(showAxes){ctx.strokeStyle="#627b94";ctx.lineWidth=1.6;if(xmin<=0&&xmax>=0){ctx.beginPath();ctx.moveTo(X(0),top);ctx.lineTo(X(0),top+ph);ctx.stroke();}if(ymin<=0&&ymax>=0){ctx.beginPath();ctx.moveTo(left,Y(0));ctx.lineTo(left+pw,Y(0));ctx.stroke();}}
-  ctx.fillStyle="#8795a5";ctx.font="11px DM Sans";ctx.textAlign="center";for(let x=Math.ceil(xmin/dx)*dx;x<=xmax;x+=dx)ctx.fillText(Number(x.toPrecision(4)).toString(),X(x),top+ph+18);ctx.textAlign="right";for(let y=Math.ceil(ymin/dy)*dy;y<=ymax;y+=dy)ctx.fillText(Number(y.toPrecision(4)).toString(),left-8,Y(y)+4);
+  if(showGrid){
+  ctx.lineWidth=.8;ctx.strokeStyle=gridMajor;
+  for(let x=Math.ceil(xmin/dx)*dx;x<=xmax;x+=dx){for(let sub=1;sub<5;sub++){const minor=x+dx*sub/5;if(minor<xmax){ctx.strokeStyle=theme==="dark"?"#1c2c3e":"#f5f7f9";ctx.beginPath();ctx.moveTo(X(minor),top);ctx.lineTo(X(minor),top+ph);ctx.stroke();}}ctx.strokeStyle=Math.abs(x)<1e-9?axisColor:gridMajor;ctx.lineWidth=Math.abs(x)<1e-9?1.3:.8;ctx.beginPath();ctx.moveTo(X(x),top);ctx.lineTo(X(x),top+ph);ctx.stroke();}
+  for(let y=Math.ceil(ymin/dy)*dy;y<=ymax;y+=dy){for(let sub=1;sub<5;sub++){const minor=y+dy*sub/5;if(minor<ymax){ctx.strokeStyle=theme==="dark"?"#1c2c3e":"#f5f7f9";ctx.beginPath();ctx.moveTo(left,Y(minor));ctx.lineTo(left+pw,Y(minor));ctx.stroke();}}ctx.strokeStyle=Math.abs(y)<1e-9?axisColor:gridMajor;ctx.lineWidth=Math.abs(y)<1e-9?1.3:.8;ctx.beginPath();ctx.moveTo(left,Y(y));ctx.lineTo(left+pw,Y(y));ctx.stroke();}
+}
+  if(showAxes){ctx.strokeStyle=axisColor;ctx.lineWidth=1.6;if(xmin<=0&&xmax>=0){ctx.beginPath();ctx.moveTo(X(0),top);ctx.lineTo(X(0),top+ph);ctx.stroke();}if(ymin<=0&&ymax>=0){ctx.beginPath();ctx.moveTo(left,Y(0));ctx.lineTo(left+pw,Y(0));ctx.stroke();}}
+  ctx.fillStyle=theme==="dark"?"#91a4b7":"#8795a5";ctx.font="12px DM Sans";ctx.textAlign="center";for(let x=Math.ceil(xmin/dx)*dx;x<=xmax;x+=dx)ctx.fillText(Number(x.toPrecision(4)).toString(),X(x),top+ph+18);ctx.textAlign="right";for(let y=Math.ceil(ymin/dy)*dy;y<=ymax;y+=dy)ctx.fillText(Number(y.toPrecision(4)).toString(),left-8,Y(y)+4);
   const drawLine=(points:{x:number;y:number}[],color:string,dashed=false)=>{ctx.beginPath();let open=false;points.forEach(p=>{if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||Math.abs(p.y)>1e6){open=false;return;}if(!open){ctx.moveTo(X(p.x),Y(p.y));open=true;}else ctx.lineTo(X(p.x),Y(p.y));});ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineCap="round";ctx.lineJoin="round";ctx.setLineDash(dashed?[5,6]:[]);ctx.stroke();ctx.setLineDash([]);};
+
+  sceneObjects.filter(item=>item.enabled).forEach(item=>{
+    const px=X(item.x),py=Y(item.y),radius=Math.max(6,Math.min(70,Math.abs(X(item.x+item.radius)-px)));
+    ctx.save();ctx.translate(px,py);ctx.rotate(-item.angle);
+    if(item.kind==="box"){
+      ctx.fillStyle="#d99a46";ctx.strokeStyle=theme==="dark"?"#f1d2a4":"#94652e";ctx.lineWidth=2;
+      ctx.fillRect(-radius,-radius*.72,radius*2,radius*1.44);ctx.strokeRect(-radius,-radius*.72,radius*2,radius*1.44);
+      ctx.fillStyle=theme==="dark"?"#25384c":"#fff";ctx.font="600 10px DM Sans";ctx.textAlign="center";ctx.fillText(item.mass+" kg",0,4);
+    }else if(item.kind==="circle"){
+      ctx.fillStyle="#72a9d8";ctx.strokeStyle=theme==="dark"?"#b8d9f7":"#356e9e";ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
+    }else if(item.kind==="spring"){
+      const wPx=Math.max(45,radius*2),omega=Math.sqrt(item.stiffness/Math.max(item.mass,.01)),displacement=radius*.55*Math.cos(omega*time);
+      const anchor=-wPx,blockX=displacement+wPx*.42;
+      ctx.strokeStyle="#91a5b8";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(anchor,0);ctx.lineTo(anchor,0);
+      for(let i=0;i<=12;i++){const q=i/12;const xx=anchor+(blockX-12-anchor)*q;const yy=i===0||i===12?0:(i%2===0?-1:1)*Math.min(8,radius*.22);ctx.lineTo(xx,yy);}
+      ctx.stroke();ctx.fillStyle="#8b6bd6";ctx.fillRect(blockX-12,-11,24,22);ctx.strokeStyle="#fff";ctx.strokeRect(blockX-12,-11,24,22);
+    }else if(item.kind==="rope"){
+      const length=Math.max(45,radius*4);ctx.strokeStyle="#4da786";ctx.lineWidth=3;ctx.setLineDash([7,4]);ctx.beginPath();ctx.moveTo(-length/2,0);ctx.lineTo(length/2,0);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle="#4da786";ctx.beginPath();ctx.arc(length/2,0,4,0,Math.PI*2);ctx.fill();
+    }else if(item.kind==="pulley"){
+      const r=Math.max(10,radius*.7),turn=time*Math.sqrt(gravity/Math.max(item.radius,.05))+item.angle;
+      ctx.strokeStyle="#8b9caf";ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();
+      ctx.strokeStyle="#d99a46";ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(turn)*r,Math.sin(turn)*r);ctx.moveTo(0,0);ctx.lineTo(-Math.cos(turn)*r,-Math.sin(turn)*r);ctx.stroke();
+      ctx.fillStyle="#d99a46";ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle="#4da786";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-r,-r);ctx.lineTo(-r,-r*2.3);ctx.moveTo(r,-r);ctx.lineTo(r,-r*2.3);ctx.stroke();
+    }
+    ctx.restore();
+    if(showLabels){ctx.fillStyle=theme==="dark"?"#d3dfeb":"#536b83";ctx.font="600 11px DM Sans";ctx.textAlign="center";ctx.fillText(item.kind+" · "+item.mass+" kg",px,py-radius-9);}
+  });
+
   valid.filter(x=>x.target==="y(x)").forEach((item,index)=>{const pts=Array.from({length:501},(_,i)=>{const x=xmin+(xmax-xmin)*i/500;return {x,y:calc(item.root,{...parameterSet,x,t:0})};});drawLine(pts,["#347fd5","#4da786","#d99a46","#8b6bd6"][index%4]);});
   if(hasMotion){const at=(t:number)=>motionAt(valid,t,{...parameterSet,t});const all=Array.from({length:401},(_,i)=>{const p=at(duration*i/400);return p?{x:p.x,y:p.y}:{x:NaN,y:NaN};});const seen=all.filter((_,i)=>i<=Math.round(time/duration*400));drawLine(showTrail?seen:all,showTrail?"#347fd5":"#b7c9dc",!showTrail);
    if(current){const px=X(current.x),py=Y(current.y);if(showVelocity)arrow(ctx,px,py,X(current.x+current.vx*.28),Y(current.y+current.vy*.28),"#347fd5");if(showAcceleration)arrow(ctx,px,py,X(current.x+current.ax*.07),Y(current.y+current.ay*.07),"#d99a46");if(showForce)arrow(ctx,px,py,X(current.x+current.ax*mass*.07),Y(current.y+current.ay*mass*.07),"#d36f72");if(showWeight)arrow(ctx,px,py,X(current.x),Y(current.y-gravity*.07),"#d36f72");if(showMomentum)arrow(ctx,px,py,X(current.x+current.vx*.24*mass),Y(current.y+current.vy*.24*mass),"#8b6bd6");
@@ -160,10 +195,10 @@ export default function PhysicsSandbox({language}:{language:Language}){
    return next;
   });
  };
- const zoom=(n:number)=>setScale(v=>Math.max(.25,Math.min(8,v*n)));
+ const zoom=(n:number)=>setScale(v=>Math.max(.2,Math.min(12,v*n)));
  const exportCsv=()=>{const lines=["t_s,x_m,y_m,vx_m_s,vy_m_s,ax_m_s2,ay_m_s2,kinetic_energy_J,potential_energy_J,mechanical_energy_J,momentum_kg_m_s,net_force_N,weight_N"];for(let i=0;i<=300;i++){const t=duration*i/300,p=motionAt(valid,t,{...parameterSet,t});lines.push([t,p?.x??"",p?.y??"",p?.vx??"",p?.vy??"",p?.ax??"",p?.ay??"",p?.energy??"",p?.potential??"",p?.mechanical??"",p?.momentum??"",p?.force??"",p?.weight??""].join(","));}const url=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"}));const a=document.createElement("a");a.href=url;a.download="physimus-sandbox.csv";a.click();URL.revokeObjectURL(url);};
  const Toggle=({label,value,onClick}:{label:string;value:boolean;onClick:()=>void})=><button className={value?"sandbox-toggle active":"sandbox-toggle"} onClick={onClick}>{label}<span>{value?"ON":"OFF"}</span></button>;
- const mathHtml=(value:string)=>({__html:katex.renderToString(value,{throwOnError:false})});
+ const mathHtml=(value:string)=>{try{return {__html:katex.renderToString(value,{throwOnError:false,strict:"ignore",trust:false})};}catch{return {__html:"<span class=\"math-render-error\">LaTeX error</span>"};}};
  return <main className="sandbox-workspace">
   <header className="sandbox-heading"><div><span className="eyebrow">PHYSIMUS / EQUATION SANDBOX</span><h1>{w.title}</h1><p>{w.hint}</p></div><div className="sandbox-heading-actions"><button className="secondary-button" onClick={exportCsv}><Download size={16}/>{w.export}</button><button className="secondary-button" onClick={()=>{setRows([{id:1,text:"",enabled:true}]);setNextId(2);reset();}}><RotateCcw size={16}/>{w.reset}</button></div></header>
   <div className="sandbox-top-tabs" role="tablist" aria-label={w.title}>
@@ -225,16 +260,15 @@ export default function PhysicsSandbox({language}:{language:Language}){
     <div className="sandbox-toolbar"><div className="sandbox-switches">
      <Toggle label={w.grid} value={showGrid} onClick={()=>setShowGrid(v=>!v)}/><Toggle label={w.axes} value={showAxes} onClick={()=>setShowAxes(v=>!v)}/><Toggle label={w.trail} value={showTrail} onClick={()=>setShowTrail(v=>!v)}/><Toggle label={w.velocity} value={showVelocity} onClick={()=>setShowVelocity(v=>!v)}/><Toggle label={w.acceleration} value={showAcceleration} onClick={()=>setShowAcceleration(v=>!v)}/><Toggle label={w.force} value={showForce} onClick={()=>setShowForce(v=>!v)}/><Toggle label={language==="ID"?"Berat":"Weight"} value={showWeight} onClick={()=>setShowWeight(v=>!v)}/><Toggle label={language==="ID"?"Momentum":"Momentum"} value={showMomentum} onClick={()=>setShowMomentum(v=>!v)}/><Toggle label={w.energy} value={showEnergy} onClick={()=>setShowEnergy(v=>!v)}/><Toggle label={w.labels} value={showLabels} onClick={()=>setShowLabels(v=>!v)}/>
     </div><div className="sandbox-zoom"><button title="Zoom in" onClick={()=>zoom(1.25)}><Plus size={15}/></button><button title="Zoom out" onClick={()=>zoom(.8)}><Minus size={15}/></button><button title="Reset zoom" onClick={()=>{setScale(1);setView({xmin:-10,xmax:10,ymin:-10,ymax:10});}}><RotateCcw size={15}/></button></div></div>
-    <div className="sandbox-canvas-wrap"><canvas ref={canvasRef} onMouseMove={e=>{const rect=e.currentTarget.getBoundingClientRect();setCursor({x:view.xmin+(e.clientX-rect.left-58)/(rect.width-78)*(view.xmax-view.xmin)/scale,y:view.ymax-(e.clientY-rect.top-22)/(rect.height-62)*(view.ymax-view.ymin)/scale});}} onMouseLeave={()=>setCursor(null)}/><span className="sandbox-canvas-badge">{hasMotion?w.parametric:w.function} · SI</span><span className="sandbox-cursor">{cursor?"x "+cursor.x.toFixed(2)+" · y "+cursor.y.toFixed(2):w.inspector}</span></div>
+    <div className="sandbox-canvas-wrap"><canvas ref={canvasRef}
+      onPointerDown={e=>{if(e.button!==0)return;e.currentTarget.setPointerCapture(e.pointerId);dragRef.current={x:e.clientX,y:e.clientY,view:{...view}};}}
+      onPointerMove={e=>{const rect=e.currentTarget.getBoundingClientRect();const active=dragRef.current;if(active){const dx=e.clientX-active.x,dy=e.clientY-active.y,spanX=(active.view.xmax-active.view.xmin)/scale,spanY=(active.view.ymax-active.view.ymin)/scale,shiftX=-dx/Math.max(1,rect.width-78)*spanX,shiftY=dy/Math.max(1,rect.height-62)*spanY;setView({xmin:active.view.xmin+shiftX,xmax:active.view.xmax+shiftX,ymin:active.view.ymin+shiftY,ymax:active.view.ymax+shiftY});}
+        const spanX=(view.xmax-view.xmin)/scale,spanY=(view.ymax-view.ymin)/scale,minX=(view.xmin+view.xmax)/2-spanX/2,minY=(view.ymin+view.ymax)/2-spanY/2;setCursor({x:minX+(e.clientX-rect.left-58)/Math.max(1,rect.width-78)*spanX,y:minY+spanY-(e.clientY-rect.top-22)/Math.max(1,rect.height-62)*spanY});}}
+      onPointerUp={e=>{dragRef.current=null;if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}}
+      onPointerCancel={()=>{dragRef.current=null;}}
+      onWheel={e=>{e.preventDefault();zoom(e.deltaY<0?1.12:.89);}}
+      onPointerLeave={()=>{if(!dragRef.current)setCursor(null);}}/><span className="sandbox-canvas-badge">{hasMotion?w.parametric:w.function} · SI</span><span className="sandbox-cursor">{cursor?"x "+cursor.x.toFixed(2)+" · y "+cursor.y.toFixed(2):w.inspector}</span><span className="sandbox-pan-hint">{w.panHint}</span></div>
     <div className="sandbox-playback"><button className="play-control" disabled={!hasMotion||warning} onClick={()=>{if(time>=duration)reset();setPlaying(v=>!v);}}>{playing?<Pause size={18}/>:<Play size={18} fill="currentColor"/>}</button><button className="reset-control" onClick={reset}><RotateCcw size={16}/></button><div className="sandbox-timeline"><div><span>{w.time}</span><strong>{time.toFixed(2)} / {duration.toFixed(1)} s</strong></div><input type="range" min="0" max={duration} step=".01" value={time} onChange={e=>{setTime(Number(e.target.value));timeRef.current=Number(e.target.value);}}/></div><label>{w.duration}<input type="number" min="1" max="120" value={duration} onChange={e=>setDuration(Math.max(1,Math.min(120,Number(e.target.value)||1)))}/></label><label>{w.mass}<input type="number" min=".01" max="10000" step=".1" value={mass} onChange={e=>setMass(Math.max(.01,Math.min(10000,Number(e.target.value)||1)))}/></label><label>{w.object}<select value={object} onChange={e=>setObject(e.target.value)}><option value="particle">{w.particle}</option><option value="ball">{w.ball}</option><option value="cart">{w.cart}</option><option value="satellite">{w.satellite}</option><option value="rocket">{w.rocket}</option></select></label></div>
-    <div className="sandbox-constants">
-      <label>{w.gravity}<input type="number" min="0" max="10000" step=".01" value={gravity} onChange={e=>setGravity(Math.max(0,Math.min(10000,Number(e.target.value)||0)))}/></label>
-      <label>{w.amplitude}<input type="number" min="-10000" max="10000" step=".1" value={amplitude} onChange={e=>setAmplitude(Math.max(-10000,Math.min(10000,Number(e.target.value)||0)))}/></label>
-      <label>{w.initialSpeed}<input type="number" min="-10000" max="10000" step=".1" value={initialSpeed} onChange={e=>setInitialSpeed(Math.max(-10000,Math.min(10000,Number(e.target.value)||0)))}/></label>
-      <label>{w.angularSpeed}<input type="number" min="-1000" max="1000" step=".1" value={angularSpeed} onChange={e=>setAngularSpeed(Math.max(-1000,Math.min(1000,Number(e.target.value)||0)))}/></label>
-      <label>{w.stiffness}<input type="number" min="0" max="100000" step="1" value={stiffness} onChange={e=>setStiffness(Math.max(0,Math.min(100000,Number(e.target.value)||0)))}/></label>
-      <label>{w.phase}<input type="number" min="-1000" max="1000" step=".01" value={phase} onChange={e=>setPhase(Math.max(-1000,Math.min(1000,Number(e.target.value)||0)))}/></label>
-    </div>
     <div className="sandbox-analysis">
       <strong>{w.motion}</strong>
       {current ? (

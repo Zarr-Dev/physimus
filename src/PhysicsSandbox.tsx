@@ -26,7 +26,7 @@ function tokenize(source:string):string[] {
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
  const superscripts:Record<string,string>={"⁰":"^0","¹":"^1","²":"^2","³":"^3","⁴":"^4","⁵":"^5","⁶":"^6","⁷":"^7","⁸":"^8","⁹":"^9"};
  const subscripts:Record<string,string>={"₀":"_0","₁":"_1","₂":"_2","₃":"_3","₄":"_4","₅":"_5","₆":"_6","₇":"_7","₈":"_8","₉":"_9"};
- source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char).replace(/\b([a-zA-Z]+)_([0-9]+)\b/g,"$1$2").replace(/\b([a-zA-Z]+)_([a-zA-Z])\b/g,"$1$2");
+ source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char).replace(/\b([a-zA-Z]+)_([0-9]+)\b/g,"$1$2").replace(/\b(v|a|F|p|r|E|f)_([xyz])\b/gi,"$1$2");
  const tokens:string[]=[];
  const re=/\s*([0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?|\.[0-9]+(?:e[+-]?[0-9]+)?|[a-zA-Z_][a-zA-Z0-9_]*|\*\*|[+\-*/^(),])/gy;
  let pos=0;

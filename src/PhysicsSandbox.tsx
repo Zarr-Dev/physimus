@@ -182,32 +182,69 @@ function equationPreviewHtml(source:string){
  const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true} as const;
  try{return katex.renderToString(equationToLatex(source),options);}
  catch{
-  let token=source.trim().match(/(int|sum|diff|sqrt|sin|cos|tan|ln|log)$/i)?.[1]?.toLowerCase();if(source.trim().endsWith("∫"))token="int";if(/[Σ∑]$/.test(source.trim()))token="sum";
-  const pending:Record<string,string>={int:"\\int\\,\\square",sum:"\\sum\\limits_{i=1}^{n}\\square",diff:"\\frac{d}{dx}\\square",sqrt:"\\sqrt{\\square}",sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"};
-  return katex.renderToString(token&&pending[token]?pending[token]:"\\text{Continue the expression}",options);
+  const tail=source.trim().slice(-1);
+  const token=tail==="∫"?"int":tail==="Σ"||tail==="∑"?"sum":source.trim().match(/(int|sum|diff|sqrt|sin|cos|tan|ln|log)$/i)?.[1]?.toLowerCase();
+  const pending:Record<string,string>={int:"\\int_0^x\\square\\,dx",sum:"\\sum_{i=1}^{n}\\square",diff:"\\frac{d}{dx}\\square",sqrt:"\\sqrt{\\square}",sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"};
+  return katex.renderToString(token&&pending[token]?pending[token]:"\\text{Complete the expression}",options);
  }
 }
 
 type EquationSuggestion={title:string;description:string;insert:string;trigger:string};
 function equationSuggestions(source:string,language:Language):EquationSuggestion[]{
- const match=source.match(/([a-zA-Z]+)$/);if(!match)return [];
- const token=match[1].toLowerCase(),labels=language==="ID";
- const catalog:Record<string,EquationSuggestion[]> = {
-  int:[
-   {title:labels?"Integral akumulasi 0 sampai x":"Accumulation integral from 0 to x",description:"\\\\int_0^x f(u)\\\\,du",insert:"int(u^2, u, 0, x)",trigger:token},
-   {title:labels?"Integral tentu":"Definite integral",description:"\\\\int_a^b f(x)\\\\,dx",insert:"int(x^2, x, 0, 1)",trigger:token}
-  ],
-  sum:[{title:labels?"Notasi sigma / jumlah":"Sigma summation",description:"\\\\sum_{i=1}^{n}f(i)",insert:"sum(i^2, i, 1, 5)",trigger:token}],
-  sigma:[{title:labels?"Huruf sigma":"Greek sigma",description:"\\\\sigma",insert:"sigma",trigger:token},{title:labels?"Operator jumlah":"Summation operator",description:"\\\\sum",insert:"sum(i^2, i, 1, 5)",trigger:token}],
-  theta:[{title:labels?"Huruf theta":"Greek theta",description:"\\\\theta",insert:"theta",trigger:token}],
-  omega:[{title:labels?"Huruf omega":"Greek omega",description:"\\\\omega",insert:"omega",trigger:token}],
-  alpha:[{title:labels?"Huruf alpha":"Greek alpha",description:"\\\\alpha",insert:"alpha",trigger:token}],
-  beta:[{title:labels?"Huruf beta":"Greek beta",description:"\\\\beta",insert:"beta",trigger:token}],
-  pi:[{title:labels?"Konstanta pi":"Pi constant",description:"\\\\pi",insert:"pi",trigger:token}],
-  diff:[{title:labels?"Turunan numerik":"Numerical derivative",description:"\\\\frac{d}{dx}f(x)",insert:"diff(x^2, x)",trigger:token}],
-  sqrt:[{title:labels?"Akar kuadrat":"Square root",description:"\\\\sqrt{x}",insert:"sqrt(x)",trigger:token}]
+ const trimmed=source.trimEnd();
+ const symbol=trimmed.slice(-1);
+ const match=trimmed.match(/([a-zA-Z]+)$/);
+ const token=symbol==="∫"?"int":symbol==="Σ"||symbol==="∑"?"sum":match?.[1].toLowerCase()??"";
+ if(!token)return [];
+ const labels=language==="ID";
+ const greek:Record<string,{latex:string;id:string;en:string}>={
+  theta:{latex:"\\theta",id:"Theta",en:"Theta"},omega:{latex:"\\omega",id:"Omega",en:"Omega"},
+  alpha:{latex:"\\alpha",id:"Alpha",en:"Alpha"},beta:{latex:"\\beta",id:"Beta",en:"Beta"},
+  gamma:{latex:"\\gamma",id:"Gamma",en:"Gamma"},delta:{latex:"\\delta",id:"Delta",en:"Delta"},
+  epsilon:{latex:"\\varepsilon",id:"Epsilon",en:"Epsilon"},phi:{latex:"\\phi",id:"Phi",en:"Phi"},
+  psi:{latex:"\\psi",id:"Psi",en:"Psi"},mu:{latex:"\\mu",id:"Mu",en:"Mu"},
+  sigma:{latex:"\\sigma",id:"Sigma",en:"Sigma"},rho:{latex:"\\rho",id:"Rho",en:"Rho"},
+  lambda:{latex:"\\lambda",id:"Lambda",en:"Lambda"},tau:{latex:"\\tau",id:"Tau",en:"Tau"},
+  pi:{latex:"\\pi",id:"Pi",en:"Pi"},nu:{latex:"\\nu",id:"Nu",en:"Nu"},xi:{latex:"\\xi",id:"Xi",en:"Xi"}
  };
- return catalog[token]??[];
+ const make=(title:string,description:string,insert:string,trigger:string):EquationSuggestion=>({title,description,insert,trigger});
+ const suggestions:EquationSuggestion[]=[];
+ const addGreek=(name:string,trigger:string)=>{
+  const item=greek[name];
+  if(item)suggestions.push(make((labels?"Simbol ":"Symbol ")+item[labels?"id":"en"],item.latex,name+" ",trigger));
+ };
+ const trigger=match?.[1]??token;
+ if(token==="int"||("integral".startsWith(token)&&token.length>=3)){
+  suggestions.push(make(labels?"Integral akumulasi dari 0 ke x":"Accumulation integral from 0 to x","\\int_0^x f(u)\\,du","int(u^2, u, 0, x)",trigger));
+  suggestions.push(make(labels?"Integral tentu":"Definite integral","\\int_a^b f(x)\\,dx","int(x^2, x, 0, 1)",trigger));
+  return suggestions;
+ }
+ if(token==="sum"||token==="sigma"||token==="sig"||("summation".startsWith(token)&&token.length>=3)){
+  if(token==="sigma"||token==="sig")addGreek("sigma",trigger);
+  suggestions.push(make(labels?"Operator sigma / penjumlahan":"Sigma summation operator","\\sum_{i=1}^{n}f(i)","sum(i^2, i, 1, 5)",trigger));
+  return suggestions;
+ }
+ if(token==="diff"||("derivative".startsWith(token)&&token.length>=3)){
+  suggestions.push(make(labels?"Turunan numerik":"Numerical derivative","\\frac{d}{dx}f(x)","diff(x^2, x)",trigger));
+  return suggestions;
+ }
+ for(const name of Object.keys(greek)){
+  if(token.length>=2&&name.startsWith(token)&&token!==name)addGreek(name,trigger);
+ }
+ const functions:Record<string,{latex:string;insert:string}>={
+  sin:{latex:"\\sin(x)",insert:"sin(x)"},cos:{latex:"\\cos(x)",insert:"cos(x)"},tan:{latex:"\\tan(x)",insert:"tan(x)"},
+  asin:{latex:"\\arcsin(x)",insert:"asin(x)"},acos:{latex:"\\arccos(x)",insert:"acos(x)"},atan:{latex:"\\arctan(x)",insert:"atan(x)"},
+  sqrt:{latex:"\\sqrt{x}",insert:"sqrt(x)"},cbrt:{latex:"\\sqrt[3]{x}",insert:"cbrt(x)"},abs:{latex:"\\left|x\\right|",insert:"abs(x)"},
+  exp:{latex:"e^x",insert:"exp(x)"},ln:{latex:"\\ln(x)",insert:"ln(x)"},log:{latex:"\\log_{10}(x)",insert:"log(x)"},log2:{latex:"\\log_2(x)",insert:"log2(x)"},
+  floor:{latex:"\\lfloor x\\rfloor",insert:"floor(x)"},ceil:{latex:"\\lceil x\\rceil",insert:"ceil(x)"},round:{latex:"\\operatorname{round}(x)",insert:"round(x)"},
+  min:{latex:"\\min(a,b)",insert:"min(x, y)"},max:{latex:"\\max(a,b)",insert:"max(x, y)"},atan2:{latex:"\\operatorname{atan2}(y,x)",insert:"atan2(y, x)"},hypot:{latex:"\\operatorname{hypot}(x,y)",insert:"hypot(x, y)"}
+ };
+ if(functions[token]){
+  const item=functions[token];suggestions.push(make((labels?"Fungsi ":"Function ")+token,item.latex,item.insert,trigger));
+ }else if(token.length>=2){
+  for(const [name,item] of Object.entries(functions))if(name.startsWith(token))suggestions.push(make((labels?"Fungsi ":"Function ")+name,item.latex,item.insert,trigger));
+ }
+ return suggestions.slice(0,8);
 }
 function acceptSuggestion(source:string,suggestion:EquationSuggestion){
  return source.replace(new RegExp(suggestion.trigger+"$","i"),suggestion.insert);

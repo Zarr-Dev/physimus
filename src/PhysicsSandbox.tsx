@@ -78,6 +78,42 @@ function variableDescription(name:string,language:Language){
  return item?{label:language==="ID"?item.id:item.en,unit:item.unit}:{label:name,unit:language==="ID"?"nilai bebas":"custom"};
 }
 
+
+function variableLatex(name:string){
+ const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",phi:"\\phi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda"};
+ if(greek[name])return greek[name];
+ const sub=name.match(/^([a-zA-Z]+)(\d+)$/);
+ if(sub)return sub[1]+"_{"+sub[2]+"}";
+ return name.length===1?name:"\\mathrm{"+name+"}";
+}
+function equationToLatex(source:string){
+ const match=source.trim().match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);
+ if(!match)throw new Error("Equation must start with y=, x(t)= or y(t)=");
+ const lhs=match[1].replace(/\s/g,"").replace(/([xy])\(/g,"$1\\left(").replace(/\)/g,"\\right)");
+ const root=parse(match[2]);
+ const render=(node:Node):string=>{
+  if(node.kind==="num")return String(node.n);
+  if(node.kind==="var")return variableLatex(node.name);
+  if(node.kind==="unary")return node.op==="-"?"-\\left("+render(node.child)+"\\right)":render(node.child);
+  if(node.kind==="binary"){
+   if(node.op==="/")return "\\frac{"+render(node.a)+"}{"+render(node.b)+"}";
+   if(node.op==="^")return "{"+render(node.a)+"}^{"+render(node.b)+"}";
+   if(node.op==="*")return render(node.a)+"\\,\\cdot\\,"+render(node.b);
+   return "\\left("+render(node.a)+node.op+render(node.b)+"\\right)";
+  }
+  const name=node.name;
+  if(name==="sqrt")return "\\sqrt{"+render(node.args[0])+"}";
+  if(name==="abs")return "\\left|"+render(node.args[0])+"\\right|";
+  const operators:Record<string,string>={sin:"\\sin",cos:"\\cos",tan:"\\tan",asin:"\\arcsin",acos:"\\arccos",atan:"\\arctan",ln:"\\ln",log:"\\log",exp:"\\exp",min:"\\min",max:"\\max"};
+  return (operators[name]??("\\operatorname{"+name+"}"))+"\\left("+node.args.map(render).join(", ")+"\\right)";
+ };
+ return lhs+"="+render(root);
+}
+function equationPreviewHtml(source:string){
+ try{return katex.renderToString(equationToLatex(source),{throwOnError:false,strict:"ignore",trust:false,displayMode:true});}
+ catch{return katex.renderToString("\\text{Complete expression to preview}",{throwOnError:false,strict:"ignore",trust:false,displayMode:true});}
+}
+
 function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
  const m=vars.m;
  const fx=list.find(q=>q.target==="x(t)"&&!q.error),fy=list.find(q=>q.target==="y(t)"&&!q.error);if(!fx&&!fy)return null;
@@ -208,7 +244,7 @@ export default function PhysicsSandbox({language,theme,motionLevel}:{language:La
    <aside className="sandbox-editor">
     {editorTab==="equations"&&<>
       <div className="sandbox-editor-heading"><strong>{w.math}</strong><button onClick={add}><Plus size={15}/>{w.add}</button></div>
-      <div className="sandbox-equations">{rows.map((row,index)=><div className="sandbox-equation-row" key={row.id}><span>{index+1}</span><button title={row.enabled?w.hide:w.show} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><input aria-label={"Equation "+(index+1)} value={row.text} onChange={e=>update(row.id,e.target.value)} placeholder="x(t)=A*cos(omega*t)"/><button title={w.delete} onClick={()=>setRows(old=>old.filter(q=>q.id!==row.id))}><Trash2 size={14}/></button></div>)}</div>
+      <div className="sandbox-equations">{rows.map((row,index)=><div className={row.enabled?"sandbox-equation-item":"sandbox-equation-item disabled"} key={row.id}><div className="sandbox-equation-row"><span>{index+1}</span><button title={row.enabled?w.hide:w.show} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><input aria-label={"Equation "+(index+1)} value={row.text} onChange={e=>update(row.id,e.target.value)} placeholder="x(t)=A*cos(omega*t)"/><button title={w.delete} onClick={()=>setRows(old=>old.filter(q=>q.id!==row.id))}><Trash2 size={14}/></button></div><div className="sandbox-equation-preview"><span>LaTeX preview</span><div dangerouslySetInnerHTML={{__html:row.text.trim()?equationPreviewHtml(row.text):""}}/></div></div>)}</div>
       <section className="sandbox-variable-panel">
         <div className="sandbox-panel-title"><strong>{w.variables}</strong><span>{usedVariables.length}</span></div>
         {usedVariables.length===0?<p className="sandbox-variable-empty">{w.noVariables}</p>:<div className="sandbox-variable-grid">{usedVariables.map(name=>{const meta=variableDescription(name,language);return <label key={name}><span>{meta.label} <code>{name}</code></span><div><input type="number" step="any" value={parameterSet[name]??variableDefaults(name)} onChange={e=>setVariable(name,Number(e.target.value))}/><small>{meta.unit}</small></div></label>;})}</div>}

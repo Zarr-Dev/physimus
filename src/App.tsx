@@ -1380,14 +1380,14 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
   </svg>;
  }
  if(id==="mru"||id==="mrua"){
-  const v0= id==="mru"?value:3,a=id==="mru"?0:value,t=4,x=v0*t+.5*a*t*t,v=v0+a*t;
+  const v0= id==="mru"?value:3,a=id==="mru"?0:value,t=id==="mru"?5:4,x=v0*t+.5*a*t*t,v=v0+a*t;
   const px=Math.max(48,Math.min(328,45+x*4));
   return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Linear motion experiment":"Eksperimen gerak lurus"}>
    <path d="M28 124 H350" className="diagram-ground"/>{Array.from({length:11},(_,i)=><path key={i} d={"M"+(35+i*30)+" 119 v10"} className="diagram-tick"/>)}
    <rect x={px-18} y="88" width="36" height="30" rx="5" className="diagram-block"/>
    {stage===0&&<><path d={"M52 74 H"+px} className="diagram-vector"/><text x="35" y="52">{id==="mru"?"v = "+v0+" m/s":"a = "+a+" m/s²"}</text><text x="35" y="164">x(0) = 0</text></>}
-   {stage===1&&<><path d="M45 170 H165 V130" className="diagram-guide"/><path d={id==="mru"?"M49 165 L160 132":"M49 165 Q105 157 160 132"} className="diagram-trajectory"/><text x="182" y="137">x(t)</text><text x="182" y="153">{x.toFixed(1)} m at t = 4 s</text></>}
-   {stage===2&&<><path d="M45 170 H165 V130" className="diagram-guide"/><path d={"M49 165 L160 "+(stage===2?132:150)} className="diagram-vector-alt"/><text x="180" y="137">v(4 s) = {v.toFixed(1)} m/s</text><text x="180" y="155">a = {a.toFixed(1)} m/s²</text></>}
+   {stage===1&&<><path d="M45 170 H165 V130" className="diagram-guide"/><path d={id==="mru"?"M49 165 L160 132":"M49 165 Q105 157 160 132"} className="diagram-trajectory"/><text x="182" y="137">x(t)</text><text x="182" y="153">{x.toFixed(1)} m at t = {t} s</text></>}
+   {stage===2&&<><path d="M45 170 H165 V130" className="diagram-guide"/><path d={"M49 165 L160 "+(stage===2?132:150)} className="diagram-vector-alt"/><text x="180" y="137">v({t} s) = {v.toFixed(1)} m/s</text><text x="180" y="155">a = {a.toFixed(1)} m/s²</text></>}
    <text x="27" y="19">{id==="mru"?(en?"Constant velocity":"Kecepatan konstan"):(en?"Constant acceleration":"Percepatan konstan")}</text>
   </svg>;
  }

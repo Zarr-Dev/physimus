@@ -494,51 +494,51 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
 
 
 function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,time:number,duration:number){
- const n=(x:number,digits=2)=>Number.isFinite(x)?Number(x.toFixed(digits)).toString():"\\\\text{—}";
- const qty=(x:number,unit:string)=>"("+n(x)+")\\\\,\\\\mathrm{"+unit+"}";
+ const n=(x:number,digits=2)=>Number.isFinite(x)?Number(x.toFixed(digits)).toString():"\\text{—}";
+ const qty=(x:number,unit:string)=>"("+n(x)+")\\,\\mathrm{"+unit+"}";
  const m=v.mass??1,g=v.gravity??9.81,theta=(v.angle??0)*Math.PI/180;
  if(id==="projectile"){
   const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,range=v0*Math.cos(theta)*tf,peak=h0+(v0*Math.sin(theta))**2/(2*g);
   return [
-   "x(t)=x_0+v_0\\\\cos\\\\theta\\\\,t=0+"+qty(v0,"m/s")+"\\\\cos("+n(angle)+"^\\\\circ)("+n(time)+"\\\\,\\\\mathrm{s})="+qty(p.x,"m"),
-   "y(t)=h_0+v_0\\\\sin\\\\theta\\\\,t-\\\\frac12gt^2="+qty(h0,"m")+"+"+qty(v0,"m/s")+"\\\\sin("+n(angle)+"^\\\\circ)("+n(time)+"\\\\,\\\\mathrm{s})-\\\\frac12("+n(g)+"\\\\,\\\\mathrm{m/s^2})("+n(time)+"\\\\,\\\\mathrm{s})^2="+qty(p.y,"m"),
-   "v=\\\\sqrt{v_x^2+v_y^2}=\\\\sqrt{("+n(p.vx)+"\\\\,\\\\mathrm{m/s})^2+("+n(p.vy)+"\\\\,\\\\mathrm{m/s})^2)="+qty(p.speed,"m/s"),
-   "R=v_0\\\\cos\\\\theta\\\\,t_f=("+n(v0)+"\\\\,\\\\mathrm{m/s})\\\\cos("+n(angle)+"^\\\\circ)("+n(tf)+"\\\\,\\\\mathrm{s})="+qty(range,"m"),
-   "H_{\\\\max}=h_0+\\\\frac{v_0^2\\\\sin^2\\\\theta}{2g}="+n(h0)+"+\\\\frac{("+n(v0)+")^2\\\\sin^2("+n(angle)+"^\\\\circ)}{2("+n(g)+")}="+qty(peak,"m"),
-   "t_f=\\\\frac{v_0\\\\sin\\\\theta+\\\\sqrt{(v_0\\\\sin\\\\theta)^2+2gh_0}}{g}=\\\\frac{("+n(v0)+")\\\\sin("+n(angle)+"^\\\\circ)+\\\\sqrt{[("+n(v0)+")\\\\sin("+n(angle)+"^\\\\circ)]^2+2("+n(g)+")("+n(h0)+")}}{"+n(g)+"}="+qty(tf,"s")
+   "x(t)=x_0+v_0\\cos\\theta\\,t=0+"+qty(v0,"m/s")+"\\cos("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})="+qty(p.x,"m"),
+   "y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2="+qty(h0,"m")+"+"+qty(v0,"m/s")+"\\sin("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})-\\frac12("+n(g)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})^2="+qty(p.y,"m"),
+   "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+n(p.vx)+"\\,\\mathrm{m/s})^2+("+n(p.vy)+"\\,\\mathrm{m/s})^2)="+qty(p.speed,"m/s"),
+   "R=v_0\\cos\\theta\\,t_f=("+n(v0)+"\\,\\mathrm{m/s})\\cos("+n(angle)+"^\\circ)("+n(tf)+"\\,\\mathrm{s})="+qty(range,"m"),
+   "H_{\\max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+n(h0)+"+\\frac{("+n(v0)+")^2\\sin^2("+n(angle)+"^\\circ)}{2("+n(g)+")}="+qty(peak,"m"),
+   "t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}=\\frac{("+n(v0)+")\\sin("+n(angle)+"^\\circ)+\\sqrt{[("+n(v0)+")\\sin("+n(angle)+"^\\circ)]^2+2("+n(g)+")("+n(h0)+")}}{"+n(g)+"}="+qty(tf,"s")
   ][index];
  }
  if(id==="mru"){
   const x0=v.x0??0,speed=v.speed??0;
   return [
-   "x=x_0+vt=("+n(x0)+"\\\\,\\\\mathrm{m})+("+n(speed)+"\\\\,\\\\mathrm{m/s})("+n(time)+"\\\\,\\\\mathrm{s})="+qty(p.x,"m"),
+   "x=x_0+vt=("+n(x0)+"\\,\\mathrm{m})+("+n(speed)+"\\,\\mathrm{m/s})("+n(time)+"\\,\\mathrm{s})="+qty(p.x,"m"),
    "v=v_0="+qty(speed,"m/s"),
-   "a=0\\\\;\\\\mathrm{m/s^2}",
-   "|v|=\\\\sqrt{v_x^2+v_y^2}=\\\\sqrt{("+n(p.vx)+")^2+0^2}="+qty(p.speed,"m/s"),
-   "E_k=\\\\frac12mv^2=\\\\frac12("+n(m)+"\\\\,\\\\mathrm{kg})("+n(p.speed)+"\\\\,\\\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
+   "a=0\\;\\mathrm{m/s^2}",
+   "|v|=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+n(p.vx)+")^2+0^2}="+qty(p.speed,"m/s"),
+   "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
    "t="+qty(time,"s")
   ][index];
  }
  if(id==="mrua"){
   const v0=v.speed??0,a=v.acceleration??0,x0=v.x0??0;
   return [
-   "x=x_0+v_0t+\\\\frac12at^2="+n(x0)+"+("+n(v0)+")("+n(time)+")+\\\\frac12("+n(a)+")("+n(time)+")^2="+qty(p.x,"m"),
-   "v=v_0+at=("+n(v0)+"\\\\,\\\\mathrm{m/s})+("+n(a)+"\\\\,\\\\mathrm{m/s^2})("+n(time)+"\\\\,\\\\mathrm{s})="+qty(p.vx,"m/s"),
+   "x=x_0+v_0t+\\frac12at^2="+n(x0)+"+("+n(v0)+")("+n(time)+")+\\frac12("+n(a)+")("+n(time)+")^2="+qty(p.x,"m"),
+   "v=v_0+at=("+n(v0)+"\\,\\mathrm{m/s})+("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.vx,"m/s"),
    "a="+qty(a,"m/s^2"),
-   "|v|=\\\\sqrt{v_x^2+v_y^2}=\\\\sqrt{("+n(p.vx)+")^2+0^2}="+qty(p.speed,"m/s"),
-   "E_k=\\\\frac12mv^2=\\\\frac12("+n(m)+"\\\\,\\\\mathrm{kg})("+n(p.speed)+"\\\\,\\\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
+   "|v|=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+n(p.vx)+")^2+0^2}="+qty(p.speed,"m/s"),
+   "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
    "t="+qty(time,"s")
   ][index];
  }
  if(id==="circular"){
   const r=v.radius??0,omega=v.omega??0;
   return [
-   "x=r\\\\cos(\\\\omega t)=("+n(r)+"\\\\,\\\\mathrm{m})\\\\cos(("+n(omega)+"\\\\,\\\\mathrm{rad/s})("+n(time)+"\\\\,\\\\mathrm{s}))="+qty(p.x,"m"),
-   "y=r\\\\sin(\\\\omega t)=("+n(r)+"\\\\,\\\\mathrm{m})\\\\sin(("+n(omega)+"\\\\,\\\\mathrm{rad/s})("+n(time)+"\\\\,\\\\mathrm{s}))="+qty(p.y,"m"),
-   "v=\\\\omega r=("+n(omega)+"\\\\,\\\\mathrm{rad/s})("+n(r)+"\\\\,\\\\mathrm{m})="+qty(p.speed,"m/s"),
-   "T=\\\\frac{2\\\\pi}{\\\\omega}=\\\\frac{2\\\\pi}{"+n(omega)+"}="+qty(2*Math.PI/(omega||1),"s"),
-   "\\\\omega="+qty(omega,"rad/s"),
-   "a_c=\\\\omega^2r=("+n(omega)+"\\\\,\\\\mathrm{rad/s})^2("+n(r)+"\\\\,\\\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
+   "x=r\\cos(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.x,"m"),
+   "y=r\\sin(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.y,"m"),
+   "v=\\omega r=("+n(omega)+"\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+qty(p.speed,"m/s"),
+   "T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"}="+qty(2*Math.PI/(omega||1),"s"),
+   "\\omega="+qty(omega,"rad/s"),
+   "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
   ][index];
  }
  if(id==="collision"){
@@ -546,14 +546,14 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   const impulse=c.m1*(v1-c.u1);
   const tc=Number.isFinite(c.collisionTime)?c.collisionTime:NaN;
   const tExpression=Number.isFinite(tc)
-   ?"t_c=\\\\frac{s-d}{u_1-u_2}=\\\\frac{"+n(c.separation)+"-"+n(c.contactDistance)+"}{"+n(c.u1)+"-("+n(c.u2)+")}="+qty(tc,"s")
-   :"\\\\text{Tidak terjadi kontak: }u_1\\\\leq u_2";
+   ?"t_c=\\frac{s-d}{u_1-u_2}=\\frac{"+n(c.separation)+"-"+n(c.contactDistance)+"}{"+n(c.u1)+"-("+n(c.u2)+")}="+qty(tc,"s")
+   :"\\text{Tidak terjadi kontak: }u_1\\leq u_2";
   return [
-   "v_1=\\\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\\\frac{("+n(c.m1)+"-"+n(c.e)+"("+n(c.m2)+"))("+n(c.u1)+")+(1+"+n(c.e)+")("+n(c.m2)+")("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v1,"m/s"),
-   "v_2=\\\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\\\frac{(1+"+n(c.e)+")("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+"-"+n(c.e)+"("+n(c.m1)+"))("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v2,"m/s"),
-   "p_{total}=m_1u_1+m_2u_2=("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+")("+n(c.u2)+")="+n(c.initialMomentum)+"\\\\,\\\\mathrm{kg\\\\,m/s}",
-   "K=\\\\frac12m_1v_1^2+\\\\frac12m_2v_2^2=\\\\frac12("+n(c.m1)+")("+n(v1)+")^2+\\\\frac12("+n(c.m2)+")("+n(v2)+")="+qty(p.kinetic,"J"),
-   "J_1=m_1(v_1-u_1)=("+n(c.m1)+")("+n(v1)+"-("+n(c.u1)+"))="+qty(impulse,"N\\\\,s"),
+   "v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+n(c.m1)+"-"+n(c.e)+"("+n(c.m2)+"))("+n(c.u1)+")+(1+"+n(c.e)+")("+n(c.m2)+")("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v1,"m/s"),
+   "v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+"-"+n(c.e)+"("+n(c.m1)+"))("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v2,"m/s"),
+   "p_{total}=m_1u_1+m_2u_2=("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+")("+n(c.u2)+")="+n(c.initialMomentum)+"\\,\\mathrm{kg\\,m/s}",
+   "K=\\frac12m_1v_1^2+\\frac12m_2v_2^2=\\frac12("+n(c.m1)+")("+n(v1)+")^2+\\frac12("+n(c.m2)+")("+n(v2)+")="+qty(p.kinetic,"J"),
+   "J_1=m_1(v_1-u_1)=("+n(c.m1)+")("+n(v1)+"-("+n(c.u1)+"))="+qty(impulse,"N\\,s"),
    tExpression
   ][index];
  }
@@ -561,34 +561,34 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   const h0=v.height??0,mu=v.friction??0,alpha=Math.PI/6,staticHolds=Math.tan(alpha)<=(v.staticFriction??0),a=staticHolds?0:g*(Math.sin(alpha)-mu*Math.cos(alpha)),distance=Math.hypot(p.x,(h0-p.y)/Math.tan(alpha));
   const dissipated=Math.max(0,m*g*h0-p.kinetic-p.potential);
   return [
-   "E_k=\\\\frac12mv^2=\\\\frac12("+n(m)+"\\\\,\\\\mathrm{kg})("+n(p.speed)+"\\\\,\\\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
-   "E_p=mgh=("+n(m)+"\\\\,\\\\mathrm{kg})("+n(g)+"\\\\,\\\\mathrm{m/s^2})("+n(p.y)+"\\\\,\\\\mathrm{m})="+qty(p.potential,"J"),
-   "E_m=E_k+E_p="+n(p.kinetic)+"\\\\,\\\\mathrm{J}+"+n(p.potential)+"\\\\,\\\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
+   "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
+   "E_p=mgh=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})("+n(p.y)+"\\,\\mathrm{m})="+qty(p.potential,"J"),
+   "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
    "E_{diss}=mgh_0-E_m=("+n(m)+")("+n(g)+")("+n(h0)+")-("+n(p.kinetic+p.potential)+")="+qty(dissipated,"J"),
-   "h=h_0-s\\\\sin\\\\alpha="+n(h0)+"-("+n(distance)+")\\\\sin(30^\\\\circ)="+qty(p.y,"m"),
-   "v=at=("+n(Math.max(0,a))+"\\\\,\\\\mathrm{m/s^2})("+n(time)+"\\\\,\\\\mathrm{s})="+qty(p.speed,"m/s")
+   "h=h_0-s\\sin\\alpha="+n(h0)+"-("+n(distance)+")\\sin(30^\\circ)="+qty(p.y,"m"),
+   "v=at=("+n(Math.max(0,a))+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
   ][index];
  }
  if(id==="incline"){
   const mu=v.friction??0,muS=v.staticFriction??0,a=Math.tan(theta)<=muS?0:Math.max(0,g*(Math.sin(theta)-mu*Math.cos(theta)));
   const normal=m*g*Math.cos(theta),friction=a===0?m*g*Math.sin(theta):mu*normal;
   return [
-   "a=g(\\\\sin\\\\theta-\\\\mu_k\\\\cos\\\\theta)=("+n(g)+")[\\\\sin("+n(v.angle??0)+"^\\\\circ)-("+n(mu)+")\\\\cos("+n(v.angle??0)+"^\\\\circ)]="+qty(a,"m/s^2"),
-   "\\\\sum F_{\\\\parallel}=ma=("+n(m)+"\\\\,\\\\mathrm{kg})("+n(a)+"\\\\,\\\\mathrm{m/s^2})="+qty(m*a,"N"),
-   "N=mg\\\\cos\\\\theta=("+n(m)+")("+n(g)+")\\\\cos("+n(v.angle??0)+"^\\\\circ)="+qty(normal,"N"),
-   "f=\\\\mu_kN\\\\;(\\\\text{atau }f_s\\\\text{ saat diam})="+n(friction)+"\\\\,\\\\mathrm{N}",
-   "v=at=("+n(a)+"\\\\,\\\\mathrm{m/s^2})("+n(time)+"\\\\,\\\\mathrm{s})="+qty(p.speed,"m/s"),
-   "s=\\\\frac12at^2=\\\\frac12("+n(a)+")("+n(time)+")^2="+qty(Math.hypot(p.x,p.y),"m")
+   "a=g(\\sin\\theta-\\mu_k\\cos\\theta)=("+n(g)+")[\\sin("+n(v.angle??0)+"^\\circ)-("+n(mu)+")\\cos("+n(v.angle??0)+"^\\circ)]="+qty(a,"m/s^2"),
+   "\\sum F_{\\parallel}=ma=("+n(m)+"\\,\\mathrm{kg})("+n(a)+"\\,\\mathrm{m/s^2})="+qty(m*a,"N"),
+   "N=mg\\cos\\theta=("+n(m)+")("+n(g)+")\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
+   "f=\\mu_kN\\;(\\text{atau }f_s\\text{ saat diam})="+n(friction)+"\\,\\mathrm{N}",
+   "v=at=("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s"),
+   "s=\\frac12at^2=\\frac12("+n(a)+")("+n(time)+")^2="+qty(Math.hypot(p.x,p.y),"m")
   ][index];
  }
  const k=v.spring??0,A=v.amplitude??0,omega=Math.sqrt(k/Math.max(m,.01)),acceleration=-omega*omega*p.x;
  return [
-  "x(t)=A\\\\cos(\\\\omega t)=("+n(A)+"\\\\,\\\\mathrm{m})\\\\cos(("+n(omega)+"\\\\,\\\\mathrm{rad/s})("+n(time)+"\\\\,\\\\mathrm{s}))="+qty(p.x,"m"),
-  "v(t)=-A\\\\omega\\\\sin(\\\\omega t)=-("+n(A)+")("+n(omega)+")\\\\sin(("+n(omega)+")("+n(time)+"))="+qty(p.vx,"m/s"),
-  "a(t)=-\\\\omega^2x=-("+n(omega)+")^2("+n(p.x)+")="+qty(acceleration,"m/s^2"),
-  "E_k=\\\\frac12mv^2=\\\\frac12("+n(m)+")("+n(p.speed)+")^2="+qty(p.kinetic,"J"),
-  "E_p=\\\\frac12kx^2=\\\\frac12("+n(k)+")("+n(p.x)+")^2="+qty(p.potential,"J"),
-  "T=2\\\\pi\\\\sqrt{\\\\frac{m}{k}}=2\\\\pi\\\\sqrt{\\\\frac{"+n(m)+"}{"+n(k)+"}}="+qty(2*Math.PI*Math.sqrt(m/(k||1)),"s")
+  "x(t)=A\\cos(\\omega t)=("+n(A)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.x,"m"),
+  "v(t)=-A\\omega\\sin(\\omega t)=-("+n(A)+")("+n(omega)+")\\sin(("+n(omega)+")("+n(time)+"))="+qty(p.vx,"m/s"),
+  "a(t)=-\\omega^2x=-("+n(omega)+")^2("+n(p.x)+")="+qty(acceleration,"m/s^2"),
+  "E_k=\\frac12mv^2=\\frac12("+n(m)+")("+n(p.speed)+")^2="+qty(p.kinetic,"J"),
+  "E_p=\\frac12kx^2=\\frac12("+n(k)+")("+n(p.x)+")^2="+qty(p.potential,"J"),
+  "T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+n(m)+"}{"+n(k)+"}}="+qty(2*Math.PI*Math.sqrt(m/(k||1)),"s")
  ][index];
 }
 function objectOptionsFor(id:LabId,language:Language):{value:string;label:string}[] {

@@ -674,3 +674,49 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .app-root[data-theme="dark"] .sandbox-section-intro{color:#98aabd}
 .app-root[data-theme="dark"] .sandbox-variable-grid code,
 .app-root[data-theme="dark"] .sandbox-example-list code{color:#8ec3f3}
+
+/* Dark-mode details for the full lab control surface. */
+.app-root[data-theme="dark"] .graph-header,
+.app-root[data-theme="dark"] .measurement-area,
+.app-root[data-theme="dark"] .graph-footer,
+.app-root[data-theme="dark"] .playback-bar{background:#131f2d;color:#a6b7c7}
+.app-root[data-theme="dark"] .measurement-heading{color:#c0d0df}
+.app-root[data-theme="dark"] .measurement-heading>span{color:#7e93a7}
+.app-root[data-theme="dark"] .measurement strong{color:#dce9f5}
+.app-root[data-theme="dark"] .measurement small{color:#95aabd}
+.app-root[data-theme="dark"] .live-equation-panel{border-color:#304358}
+.app-root[data-theme="dark"] .live-equation-row{background:#172637;border-color:#34495f}
+.app-root[data-theme="dark"] .drawer-tool,
+.app-root[data-theme="dark"] .tool-select-label select,
+.app-root[data-theme="dark"] .graph-tools select,
+.app-root[data-theme="dark"] .object-picker select{background:#172637;color:#d4e1ed;border-color:#34495f}
+.app-root[data-theme="dark"] .drawer-tool span{background:#26384b;color:#a6b8c8}
+.app-root[data-theme="dark"] .drawer-tool.active{background:#1b344b;border-color:#3a5c7b;color:#a8d2fa}
+.app-root[data-theme="dark"] .drawer-rail button{color:#9badbe}
+.app-root[data-theme="dark"] .drawer-rail button.selected{background:#20384f;color:#9bcaf4}
+.app-root[data-theme="dark"] .slider-heading{color:#aabccc}
+.app-root[data-theme="dark"] .slider-heading strong{color:#e2edf6}
+.app-root[data-theme="dark"] .slider-heading small,
+.app-root[data-theme="dark"] .slider-limits{color:#879bad}
+.app-root[data-theme="dark"] .question-box{background:#172638;border-color:#34495f;color:#d4e1ed}
+.app-root[data-theme="dark"] .question-box p{color:#a6b8c8}
+.app-root[data-theme="dark"] .breadcrumb{color:#96acc0}
+.app-root[data-theme="dark"] .model-pill{background:#1e3851;color:#9ec9f1}
+.app-root[data-theme="dark"] .canvas-label{color:#8ea4b8}
+.app-root[data-theme="dark"] .graph-footer button{color:#a8bbcb}
+.app-root[data-theme="dark"] .play-speeds button{color:#9db0c0}
+.app-root[data-theme="dark"] .play-speeds button.selected{background:#203a53;color:#c5e1fb}
+.app-root[data-theme="dark"] .sandbox-pan-hint{background:#152638e8;color:#a8b9c8;border-color:#34495e}
+.app-root[data-theme="dark"] .practice-answer label{color:#a7b8c8}
+.app-root[data-theme="dark"] .practice-solution{background:#172637;border-color:#34495f}
+.app-root[data-theme="dark"] .practice-solution>strong{color:#b6d3ec}
+.app-root[data-theme="dark"] .practice-solution>div{border-color:#2b3f54}
+.app-root[data-theme="dark"] .practice-solution>div>span{background:#203a52;color:#b2d4f2}
+.app-root[data-theme="dark"] .practice-answer input{background:#101a27;color:#e2edf6;border-color:#3a4e63}
+
+/* Motion preference changes decorative feedback, never the physical time model. */
+@keyframes physimus-soft-pulse{0%,100%{box-shadow:0 0 0 0 #4db48b30}50%{box-shadow:0 0 0 7px #4db48b00}}
+.app-root[data-motion="low"] .ready-dot{animation:none!important}
+.app-root[data-motion="medium"] .ready-dot{animation:physimus-soft-pulse 3.8s ease-in-out infinite}
+.app-root[data-motion="high"] .ready-dot{animation:physimus-soft-pulse 1.8s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.app-root .ready-dot{animation:none!important}}

@@ -298,7 +298,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const selectedSceneObject=sceneObjects.find(item=>item.id===selectedObjectId)??null;
 
  const update=(id:number,text:string)=>setRows(old=>old.map(r=>r.id===id?{...r,text}:r));
- const insertToken=(token:string)=>{const row=rows.find(item=>item.id===focusedEquationId)??rows[rows.length-1];if(!row)return;const join=row.text.trim()&&!/[=+\\-*/^(,]$/.test(row.text.trim())?"*":"";update(row.id,row.text+join+token);setFocusedEquationId(row.id);};
+ const insertToken=(token:string)=>{const row=rows.find(item=>item.id===focusedEquationId)??rows[rows.length-1];if(!row)return;const trimmed=row.text.trim();const join=trimmed&&!["=","+","-","*","/","^","(",","].some(symbol=>trimmed.endsWith(symbol))?"*":"";update(row.id,row.text+join+token);setFocusedEquationId(row.id);};
  const reset=()=>{setTime(0);timeRef.current=0;setPlaying(false);};
  const preset=(kind:string)=>{
   const data:Record<string,string[]>={

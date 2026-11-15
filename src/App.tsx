@@ -1474,12 +1474,12 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
 }
 function Learn({language}:{language:Language}) {
  const [selectedTopic,setSelectedTopic]=useState<LabId>("projectile");
- const [selectedChapter,setSelectedChapter]=useState(0);
+ const [selectedChapter,setSelectedChapter]=useState(0);const [activeLessonStep,setActiveLessonStep]=useState(0);
  const control=lessonExperimentControl(selectedTopic);
  const [experimentValue,setExperimentValue]=useState(control.initial);
  const lesson=lessonModules[selectedTopic],chapter=lesson.chapters[selectedChapter],experiment=calculateLessonExperiment(selectedTopic,experimentValue,language);
  const en=language==="EN";
- const chooseTopic=(id:LabId)=>{setSelectedTopic(id);setSelectedChapter(0);setExperimentValue(lessonExperimentControl(id).initial);};
+ const chooseTopic=(id:LabId)=>{setSelectedTopic(id);setSelectedChapter(0);setActiveLessonStep(0);setExperimentValue(lessonExperimentControl(id).initial);};
  return <main className="secondary-page lesson-page">
   <div className="secondary-intro"><span className="eyebrow">PHYSIMUS ACADEMY / LEARNING PATH</span><h1>{en?"Physics learning modules":"Modul belajar Fisika"}</h1><p>{en?"A structured high-school physics course: understand the phenomenon, derive the model, experiment, then practise.":"Materi Fisika SMA yang tersusun: pahami fenomena, turunkan model, bereksperimen, lalu berlatih."}</p></div>
   <div className="lesson-layout">
@@ -1487,22 +1487,22 @@ function Learn({language}:{language:Language}) {
    <article className="lesson-content">
     <div className="lesson-topic-heading"><span className="eyebrow">{en?labs.find(x=>x.id===selectedTopic)?.category:"MATERI SMA · "+labs.find(x=>x.id===selectedTopic)?.category}</span><h2>{en?labs.find(x=>x.id===selectedTopic)?.subtitle:labs.find(x=>x.id===selectedTopic)?.title}</h2><p>{lessonText(lesson.overview,language)}</p></div>
     <div className="lesson-goals"><strong>{en?"Learning objectives":"Tujuan pembelajaran"}</strong><ul>{lesson.goals.map((goal,i)=><li key={i}>{lessonText(goal,language)}</li>)}</ul></div>
-    <div className="lesson-chapter-tabs" role="tablist">{lesson.chapters.map((item,i)=><button key={i} role="tab" aria-selected={selectedChapter===i} className={selectedChapter===i?"active":""} onClick={()=>setSelectedChapter(i)}><span>{String(i+1).padStart(2,"0")}</span>{lessonText(item.title,language)}</button>)}</div>
+    <div className="lesson-chapter-tabs" role="tablist">{lesson.chapters.map((item,i)=><button key={i} role="tab" aria-selected={selectedChapter===i} className={selectedChapter===i?"active":""} onClick={()=>{setSelectedChapter(i);setActiveLessonStep(0);}}><span>{String(i+1).padStart(2,"0")}</span>{lessonText(item.title,language)}</button>)}</div>
     <section className="lesson-chapter-card">
      <div className="lesson-chapter-title"><span>{en?"SUBCHAPTER":"SUBBAB"} {selectedChapter+1} / {lesson.chapters.length}</span><h3>{lessonText(chapter.title,language)}</h3></div>
      <p className="lesson-intro-text">{lessonText(chapter.idea,language)}</p>
-     <LessonDiagram id={selectedTopic} value={experimentValue} stage={selectedChapter} language={language}/>
-     <div className="lesson-steps"><strong>{en?"Step-by-step explanation":"Penjelasan langkah demi langkah"}</strong>{chapter.steps.map((step,i)=><div className="lesson-step" key={i}><span>{i+1}</span><p>{lessonText(step,language)}</p></div>)}</div>
+     <LessonDiagram id={selectedTopic} value={experimentValue} stage={activeLessonStep} language={language}/>
+     <div className="lesson-steps"><strong>{en?"Step-by-step explanation":"Penjelasan langkah demi langkah"}</strong><p className="lesson-step-hint">{en?"Select a step to focus the experiment diagram on that part of the explanation.":"Pilih langkah untuk mengarahkan visual eksperimen ke bagian penjelasan tersebut."}</p>{chapter.steps.map((step,i)=><button type="button" className={activeLessonStep===i?"lesson-step active":"lesson-step"} key={i} onClick={()=>setActiveLessonStep(i)} aria-pressed={activeLessonStep===i} title={en?"Show experiment state for step "+(i+1):"Tampilkan eksperimen untuk langkah "+(i+1)}><span>{i+1}</span><p>{lessonText(step,language)}</p><small>{activeLessonStep===i?(en?"Visual active":"Visual aktif"):(en?"View experiment":"Lihat eksperimen")}</small></button>)}</div>
      <div className="lesson-formula-block"><span>{en?"MATHEMATICAL MODEL":"MODEL MATEMATIKA"}</span><Equation value={chapter.formula} display/></div>
      <div className="lesson-takeaway"><strong>{en?"Key idea":"Inti pemahaman"}</strong><p>{lessonText(chapter.takeaway,language)}</p></div>
     </section>
-    <div className="lesson-chapter-nav"><button className="secondary-button" disabled={selectedChapter===0} onClick={()=>setSelectedChapter(v=>Math.max(0,v-1))}><ArrowLeft size={15}/>{en?"Previous subchapter":"Subbab sebelumnya"}</button><button className="primary-button" disabled={selectedChapter===lesson.chapters.length-1} onClick={()=>setSelectedChapter(v=>Math.min(lesson.chapters.length-1,v+1))}>{en?"Next subchapter":"Subbab berikutnya"}<ArrowRight size={15}/></button></div>
+    <div className="lesson-chapter-nav"><button className="secondary-button" disabled={selectedChapter===0} onClick={()=>{setSelectedChapter(v=>Math.max(0,v-1));setActiveLessonStep(0);}}><ArrowLeft size={15}/>{en?"Previous subchapter":"Subbab sebelumnya"}</button><button className="primary-button" disabled={selectedChapter===lesson.chapters.length-1} onClick={()=>{setSelectedChapter(v=>Math.min(lesson.chapters.length-1,v+1));setActiveLessonStep(0);}}>{en?"Next subchapter":"Subbab berikutnya"}<ArrowRight size={15}/></button></div>
     <div className="lesson-practice-intro"><span className="eyebrow">{en?"CHECK YOUR UNDERSTANDING":"UJI PEMAHAMAN"}</span><h3>{en?"Practice this topic":"Latihan soal materi ini"}</h3><p>{en?"A separate practice set is provided for this lesson. Generate a new question and reveal the worked solution when ready.":"Latihan ini berdiri sendiri untuk materi yang sedang dipelajari. Buat soal baru dan buka pembahasan langkah demi langkah."}</p></div>
     <PracticePanel labId={selectedTopic} language={language} variant="lesson"/>
    </article>
    <aside className="lesson-experiment">
     <div className="lesson-experiment-head"><span className="eyebrow">{en?"INTERACTIVE EXPERIMENT":"EKSPERIMEN INTERAKTIF"}</span><h3>{en?"Change one parameter":"Ubah satu parameter"}</h3><p>{en?"Move the slider and observe how the measured result changes.":"Geser parameter dan amati perubahan hasil pengukuran."}</p></div>
-    <LessonDiagram id={selectedTopic} value={experimentValue} stage={selectedChapter} language={language}/>
+    <LessonDiagram id={selectedTopic} value={experimentValue} stage={activeLessonStep} language={language}/>
     <label className="lesson-experiment-slider"><span>{lessonText(control.label,language)} <strong>{experimentValue.toFixed(control.step<1?1:0)} {control.unit}</strong></span><input type="range" min={control.min} max={control.max} step={control.step} value={experimentValue} onChange={e=>setExperimentValue(Number(e.target.value))}/><small>{control.min} {control.unit}<span>{control.max} {control.unit}</span></small></label>
      <div className="lesson-result"><span>{experiment.result}</span><strong>{experiment.value.toFixed(2)} {experiment.unit}</strong><div className="lesson-result-formula"><Equation value={experiment.formula} display/></div><div className="lesson-experiment-steps"><strong>{en?"Calculation steps":"Langkah perhitungan"}</strong>{experiment.steps.map((step,index)=><div className="lesson-experiment-step" key={index}><span>{index+1}</span><div><Equation value={step} display/></div></div>)}</div><p>{experiment.extra}</p></div>
     <p className="lesson-assumption">{en?"Illustrative model: idealised conditions are stated in the lesson. Air resistance is omitted unless specified.":"Model ilustratif: asumsi ideal dijelaskan dalam materi. Hambatan udara diabaikan kecuali dinyatakan lain."}</p>

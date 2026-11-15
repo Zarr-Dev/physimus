@@ -735,7 +735,7 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
   const answer=2*Math.PI*Math.sqrt(m/k);
   return {prompt:en?"Calculate the period of an ideal mass–spring oscillator.":"Hitung periode osilasi sistem massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"T=2\\pi\\sqrt{\\frac{m}{k}}",answer,unit:"s",resultLabel:en?"Oscillation period":"Periode osilasi",steps:["T=2\\pi\\sqrt{\\frac{"+m+"}{"+k+"}}","T="+f(answer)+"\\;\\mathrm{s}"]};
 }
-function PracticePanel({labId,language}:{labId:LabId;language:Language}) {
+function PracticePanel({labId,language,variant="lab"}:{labId:LabId;language:Language;variant?:"lab"|"lesson"}) {
   const en=language==="EN";
   const [question,setQuestion]=useState(()=>makePracticeQuestion(labId,language));
   const [answer,setAnswer]=useState("");const [checked,setChecked]=useState(false);const [showSolution,setShowSolution]=useState(false);
@@ -744,7 +744,7 @@ function PracticePanel({labId,language}:{labId:LabId;language:Language}) {
   const correct=answer.trim()!==""&&Number.isFinite(numeric)&&Math.abs(numeric-question.answer)<=Math.max(.02,Math.abs(question.answer)*.01);
   const replace=()=>{setQuestion(makePracticeQuestion(labId,language));setAnswer("");setChecked(false);setShowSolution(false);};
   return <section className="practice-panel">
-    <div className="practice-top"><div><span className="eyebrow">{en?"PRACTICE LAB":"LATIHAN LABORATORIUM"}</span><h2>{en?"Random challenge":"Tantangan acak"}</h2><p>{en?"Solve a short problem using the active topic.":"Selesaikan soal singkat sesuai materi laboratorium yang sedang dibuka."}</p></div><button className="secondary-button" onClick={replace}><RotateCcw size={15}/>{en?"New question":"Soal baru"}</button></div>
+    <div className="practice-top"><div><span className="eyebrow">{variant==="lesson"?(en?"LEARNING MODULE PRACTICE":"LATIHAN MODUL BELAJAR"):(en?"PRACTICE LAB":"LATIHAN LABORATORIUM")}</span><h2>{variant==="lesson"?(en?"Topic exercises":"Latihan materi"):(en?"Random challenge":"Tantangan acak")}</h2><p>{variant==="lesson"?(en?"Check your understanding without leaving this lesson.":"Uji pemahaman tanpa meninggalkan materi yang sedang dipelajari."):(en?"Solve a short problem using the active topic.":"Selesaikan soal singkat sesuai materi laboratorium yang sedang dibuka.")}</p></div><button className="secondary-button" onClick={replace}><RotateCcw size={15}/>{en?"New question":"Soal baru"}</button></div>
     <div className="practice-content"><div className="practice-question"><strong>{question.prompt}</strong><p>{question.given}</p><div className="practice-formula"><Equation value={question.formula} display/></div></div>
       <div className="practice-answer"><label>{en?"Your answer":"Jawabanmu"} ({question.unit})<input type="number" value={answer} onChange={e=>{setAnswer(e.target.value);setChecked(false);}} placeholder={en?"Enter a number":"Masukkan angka"}/></label><button className="primary-button" onClick={()=>setChecked(true)} disabled={!answer.trim()}>{en?"Check answer":"Periksa jawaban"}</button>
       {checked&&<p className={correct?"practice-correct":"practice-incorrect"}>{correct?(en?"Correct — well done!":"Benar — perhitungannya tepat!"):(en?"Not quite. Recheck the substitution and units.":"Belum tepat. Periksa kembali substitusi angka dan satuannya.")}</p>}
@@ -1340,7 +1340,7 @@ export default function App() {
     <Header page={page} setPage={setPage} language={language} onLanguage={setLanguage} theme={theme} onTheme={setTheme} fontScale={fontScale} onFontScale={setFontScale} motionLevel={motionLevel} onMotionLevel={setMotionLevel} renderMode={renderMode} onRenderMode={setRenderMode}/>
     {page==="discover"&&<Discover language={language} onOpen={openLab}/>}
     {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode} onBack={()=>setPage("discover")} onChoose={openLab}/>}
-    {page==="learn"&&<Learn language={language} onOpen={openLab}/>}
+    {page==="learn"&&<Learn language={language}/>}
     {page==="sandbox"&&<Suspense fallback={<main className="sandbox-workspace sandbox-loading"><span className="eyebrow">PHYSIMUS / SANDBOX</span><p>{language==="ID"?"Menyiapkan ruang eksperimen…":"Preparing the experiment workspace…"}</p></main>}><PhysicsSandbox language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode}/></Suspense>}
   </div>;
 }

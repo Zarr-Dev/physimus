@@ -320,9 +320,9 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   if(kind==="circle"){setAmplitude(4);setAngularSpeed(1);}
   if(kind==="projectile"){setInitialSpeed(12);setPhase(Math.PI/4);setGravity(9.81);}
   if(kind==="spring"){setAmplitude(2);setStiffness(25);setMass(1);}
-  if(kind==="mru"){setCustomVariables({x0:0,v0:4});}
-  if(kind==="mrua"){setCustomVariables({x0:0,v0:2,accel:1.5});}
-  if(kind==="pendulum"){setCustomVariables({L:2});setPhase(.22);setGravity(9.81);}
+  if(kind==="mru"){setInitialSpeed(4);setCustomVariables({x0:0});}
+  if(kind==="mrua"){setInitialSpeed(2);setCustomVariables({x0:0,accel:1.5});}
+  if(kind==="pendulum"){setCustomVariables({l:2});setPhase(.22);setGravity(9.81);}
   if(kind==="incline"){setCustomVariables({mu:.18});setPhase(35*Math.PI/180);setGravity(9.81);}
   if(kind==="energy"){setCustomVariables({mu:.12,h:8});setPhase(Math.PI/6);setGravity(9.81);setMass(2);}
   if(kind==="integral"){setView({xmin:0,xmax:5,ymin:0,ymax:40});setScale(1);}
@@ -418,8 +418,16 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       <div className="sandbox-example-list">
         <button onClick={()=>preset("circle")}><strong>01 · {language==="ID"?"Gerak melingkar beraturan":"Uniform circular motion"}</strong><code>x(t)=A cos(ωt), y(t)=A sin(ωt)</code></button>
         <button onClick={()=>preset("projectile")}><strong>02 · {language==="ID"?"Gerak parabola":"Projectile motion"}</strong><code>x(t)=v₀ cos(θ)t, y(t)=v₀ sin(θ)t − ½gt²</code></button>
-        <button onClick={()=>preset("spring")}><strong>03 · {language==="ID"?"Osilasi harmonik":"Harmonic oscillation"}</strong><code>x(t)=A cos(ωt)</code></button>
-        <button onClick={()=>preset("curve")}><strong>04 · {language==="ID"?"Kurva fungsi":"Function curve"}</strong><code>y = 0.2x² − 2</code></button>
+        <button onClick={()=>preset("spring")}><strong>03 · {language==="ID"?"Osilasi harmonik pegas":"Mass–spring SHM"}</strong><code>x(t)=A cos(√(k/m)t)</code></button>
+        <button onClick={()=>preset("mru")}><strong>04 · {language==="ID"?"Gerak lurus beraturan":"Uniform linear motion"}</strong><code>x(t)=x₀+v₀t</code></button>
+        <button onClick={()=>preset("mrua")}><strong>05 · {language==="ID"?"Gerak lurus berubah beraturan":"Constant acceleration"}</strong><code>x(t)=x₀+v₀t+½at²</code></button>
+        <button onClick={()=>preset("pendulum")}><strong>06 · {language==="ID"?"Bandul sudut kecil":"Small-angle pendulum"}</strong><code>x(t)=L sin(θ cos(√(g/L)t))</code></button>
+        <button onClick={()=>preset("incline")}><strong>07 · {language==="ID"?"Balok pada bidang miring":"Block on an incline"}</strong><code>a=g(sin θ−μ cos θ)</code></button>
+        <button onClick={()=>preset("energy")}><strong>08 · {language==="ID"?"Energi pada bidang miring":"Energy on an incline"}</strong><code>Eₘ=Eₖ+Eₚ</code></button>
+        <button onClick={()=>preset("curve")}><strong>09 · {language==="ID"?"Kurva fungsi kuadrat":"Quadratic function"}</strong><code>y=0.2x²−2</code></button>
+        <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><code>y=∫₀ˣ u² du</code></button>
+        <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><code>y=Σᵢ₌₁ⁿ i²</code></button>
+        <button onClick={()=>preset("derivative")}><strong>12 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><code>y=d(sin x)/dx</code></button>
       </div>
     </>}
     {editorTab==="graph"&&<>

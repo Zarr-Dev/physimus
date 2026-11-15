@@ -181,6 +181,7 @@ function equationToLatex(source:string){
  };
  return lhs+render(root);
 }
+const scalarVariableUnits:Record<string,string>={m:"kg",g:"m/s^2",a:"m/s^2",A:"m",v0:"m/s",omega:"rad/s",k:"N/m",theta:"rad",r:"m",f:"N",h:"m",x:"m",t:"s"};
 function substitutedAstLatex(node:Node,vars:Vars):string{
  const num=(value:number)=>Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
  if(node.kind==="num")return num(node.n);
@@ -188,7 +189,8 @@ function substitutedAstLatex(node:Node,vars:Vars):string{
   if(node.name==="pi")return "\\pi";
   if(node.name==="e")return "e";
   const value=vars[node.name];
-  return Number.isFinite(value)?"\\left("+num(value)+"\\right)":variableLatex(node.name);
+  if(Number.isFinite(value)){const unit=scalarVariableUnits[node.name];return "\\left("+num(value)+(unit?"\\,\\mathrm{"+unit+"}":"")+"\\right)";}
+  return variableLatex(node.name);
  }
  if(node.kind==="unary")return node.op==="-"?"-\\left("+substitutedAstLatex(node.child,vars)+"\\right)":substitutedAstLatex(node.child,vars);
  if(node.kind==="binary"){
@@ -205,7 +207,9 @@ function substitutedAstLatex(node:Node,vars:Vars):string{
  if(name==="ceil")return "\\left\\lceil "+a[0]+"\\right\\rceil";
  if(name==="int"){
   const variable=node.args[1].kind==="var"?variableLatex(node.args[1].name):"x";
-  return node.args.length===2?"\\int_{0}^{"+variable+"} "+a[0]+"\\,d"+variable:"\\int_{"+a[2]+"}^{"+a[3]+"} "+a[0]+"\\,d"+variable;
+  const upperValue=node.args.length===2?vars[(node.args[1] as Extract<Node,{kind:"var"}>).name]:NaN;
+  const upperLatex=node.args.length===2&&Number.isFinite(upperValue)?num(upperValue):variable;
+  return node.args.length===2?"\\int_{0}^{"+upperLatex+"} "+a[0]+"\\,d"+variable:"\\int_{"+a[2]+"}^{"+a[3]+"} "+a[0]+"\\,d"+variable;
  }
  if(name==="sum"){
   const variable=node.args[1].kind==="var"?variableLatex(node.args[1].name):"i";

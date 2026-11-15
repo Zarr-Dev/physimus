@@ -230,26 +230,25 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
 
 function calculatorMath(value:string) {
  let out=value
-  .replace(/θ_c/g,"\\\\theta_c").replace(/θ/g,"\\\\theta").replace(/ω/g,"\\\\omega")
-  .replace(/Δx/g,"\\\\Delta x").replace(/Δt/g,"\\\\Delta t")
+  .replace(/θ_c/g,"\\theta_c").replace(/θ/g,"\\theta").replace(/ω/g,"\\omega")
+  .replace(/Δx/g,"\\Delta x").replace(/Δt/g,"\\Delta t")
   .replace(/v₀/g,"v_0").replace(/v₁/g,"v_1").replace(/v₂/g,"v_2")
-  .replace(/μₖ/g,"\\\\mu_k").replace(/μₛ/g,"\\\\mu_s").replace(/μ/g,"\\\\mu")
+  .replace(/μₖ/g,"\\mu_k").replace(/μₛ/g,"\\mu_s").replace(/μ/g,"\\mu")
   .replace(/Eₖ/g,"E_k").replace(/Eₚ/g,"E_p").replace(/Eₘ/g,"E_m")
   .replace(/²/g,"^2").replace(/⁻¹/g,"^{-1}")
-  .replace(/½/g,"\\\\frac{1}{2}").replace(/π/g,"\\\\pi").replace(/×/g,"\\\\times")
-  .replace(/−/g,"-").replace(/√\\(/g,"\\\\sqrt{");
- // Convert each square-root parenthesis group into a proper LaTeX braced group.
- let start=out.indexOf("\\\\sqrt{");
+  .replace(/½/g,"\\frac{1}{2}").replace(/π/g,"\\pi").replace(/×/g,"\\times")
+  .replace(/−/g,"-").replace(/√\(/g,"\\sqrt{");
+ let start=out.indexOf("\\sqrt{");
  while(start!==-1){
   const open=start+6; let depth=0, close=-1;
   for(let i=open;i<out.length;i++){
    if(out[i]==="(")depth++;
-   else if(out[i]===")" ){depth--;if(depth===0){close=i;break;}}
+   else if(out[i]===")"){depth--;if(depth===0){close=i;break;}}
   }
   if(close!==-1)out=out.slice(0,open)+out.slice(open,close+1)+"}"+out.slice(close+1);
-  start=out.indexOf("\\\\sqrt{",start+6);
+  start=out.indexOf("\\sqrt{",start+6);
  }
- out=out.replace(/\\b(sin|cos|tan)\\(/g,(_,fn)=>"\\\\\\\"+fn+"(");
+ out=out.replace(/\b(sin|cos|tan)\(/g,(_,fn)=>"\\"+fn+"(");
  return out;
 }
 

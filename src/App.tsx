@@ -497,18 +497,20 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  const n=(x:number)=>Number.isFinite(x)?x.toFixed(2):"0.00";
  const m=v.mass??1,g=v.gravity??9.81,theta=(v.angle??30)*Math.PI/180,t=time;
  if(id==="projectile"){
-  const speed=v.speed??0,a=v.angle??0;
+  const speed=v.speed??0,angle=v.angle??0,rad=angle*Math.PI/180,h0=v.height??0;
+  const range=speed*Math.cos(rad)*duration;
+  const peak=h0+(speed*Math.sin(rad))**2/(2*g);
   return [
-   "x(t)=v_0\\cos\\theta\\,t="+n(speed)+"\\cos("+n(a)+"^\\circ)("+n(t)+")="+n(p.x)+"\\,\\mathrm{m}",
+   "x(t)=x_0+v_0\\cos\\theta\\,t="+n(p.x)+"\\,\\mathrm{m}",
    "y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2="+n(p.y)+"\\,\\mathrm{m}",
    "v=\\sqrt{v_x^2+v_y^2}="+n(p.speed)+"\\,\\mathrm{m/s}",
-   "R=v_0\\cos\\theta\\,t_f="+n(p.x)+"\\,\\mathrm{m}",
-   "H=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+n(p.y)+"\\,\\mathrm{m}",
+   "R=v_0\\cos\\theta\\,t_f="+n(range)+"\\,\\mathrm{m}",
+   "H_{max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+n(peak)+"\\,\\mathrm{m}",
    "t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}="+n(duration)+"\\,\\mathrm{s}"
   ][index];
  }
  if(id==="mru")return [
-  "x(t)=x_0+vt="+n((v.x0??0)+(v.speed??0)*t)+"\\,\\mathrm{m}",
+  "x(t)=x_0+vt="+n(p.x)+"\\,\\mathrm{m}",
   "v(t)=v_0="+n(v.speed??0)+"\\,\\mathrm{m/s}",
   "a(t)=0\\,\\mathrm{m/s^2}",
   "|v|="+n(p.speed)+"\\,\\mathrm{m/s}",
@@ -533,32 +535,35 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  ][index];
  if(id==="collision"){
   const c=collisionResults(v),hit=p.collisionOccurred??false,v1=hit?c.v1:c.u1,v2=hit?c.v2:c.u2;
-  return [
+  const expressions=[
    "v_1="+n(v1)+"\\,\\mathrm{m/s}",
    "v_2="+n(v2)+"\\,\\mathrm{m/s}",
-   "p_{\\mathrm{total}}=m_1u_1+m_2u_2="+n(c.initialMomentum)+"\\,\\mathrm{kg\\,m/s}",
+   "p_{total}=m_1u_1+m_2u_2="+n(c.initialMomentum)+"\\,\\mathrm{kg\\,m/s}",
    "K=\\frac12m_1v_1^2+\\frac12m_2v_2^2="+n(p.kinetic)+"\\,\\mathrm{J}",
    "J_1=m_1(v_1-u_1)="+n(c.m1*(v1-c.u1))+"\\,\\mathrm{N\\,s}",
-   "t_c="+n(c.collisionTime)+"\\,\\mathrm{s}"
-  ][index];
+   Number.isFinite(c.collisionTime)?"t_c=\\frac{s-d}{u_1-u_2}="+n(c.collisionTime)+"\\,\\mathrm{s}":"\\text{No collision for these initial velocities}"
+  ];
+  return expressions[index];
  }
  if(id==="energy")return [
   "E_k=\\frac12mv^2="+n(p.kinetic)+"\\,\\mathrm{J}",
   "E_p=mgh="+n(p.potential)+"\\,\\mathrm{J}",
   "E_m=E_k+E_p="+n(p.kinetic+p.potential)+"\\,\\mathrm{J}",
-  "E_{\\mathrm{diss}}=mg h_0-E_m="+n(Math.max(0,m*g*(v.height??0)-p.kinetic-p.potential))+"\\,\\mathrm{J}",
+  "E_{diss}=mgh_0-E_m="+n(Math.max(0,m*g*(v.height??0)-p.kinetic-p.potential))+"\\,\\mathrm{J}",
   "h="+n(p.y)+"\\,\\mathrm{m}",
   "v=\\sqrt{2(E_{m,0}-E_p)/m}="+n(p.speed)+"\\,\\mathrm{m/s}"
  ][index];
  if(id==="incline"){
-  const a=Math.tan(theta)<=(v.staticFriction??0)?0:Math.max(0,g*(Math.sin(theta)-(v.friction??0)*Math.cos(theta)));
+  const holds=Math.tan(theta)<=(v.staticFriction??0);
+  const a=holds?0:Math.max(0,g*(Math.sin(theta)-(v.friction??0)*Math.cos(theta)));
+  const friction=holds?m*g*Math.sin(theta):(v.friction??0)*m*g*Math.cos(theta);
   return [
    "a=g(\\sin\\theta-\\mu_k\\cos\\theta)="+n(a)+"\\,\\mathrm{m/s^2}",
-   "\\sum F=ma="+n(m*a)+"\\,\\mathrm{N}",
+   "\\sum F_{parallel}=ma="+n(m*a)+"\\,\\mathrm{N}",
    "N=mg\\cos\\theta="+n(m*g*Math.cos(theta))+"\\,\\mathrm{N}",
-   "f_k=\\mu_kN="+n((v.friction??0)*m*g*Math.cos(theta))+"\\,\\mathrm{N}",
+   "f=\\mu_kN\\;\\text{(sliding)}="+n(friction)+"\\,\\mathrm{N}",
    "v=at="+n(p.speed)+"\\,\\mathrm{m/s}",
-   "s=\\frac12at^2="+n(Math.hypot(p.x,p.y))+"\\,\\mathrm{m}"
+   "s=\\sqrt{x^2+y^2}="+n(Math.hypot(p.x,p.y))+"\\,\\mathrm{m}"
   ][index];
  }
  const omega=Math.sqrt((v.spring??0)/m);
@@ -571,7 +576,6 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   "T=2\\pi\\sqrt{\\frac{m}{k}}="+n(2*Math.PI*Math.sqrt(m/(v.spring||1)))+"\\,\\mathrm{s}"
  ][index];
 }
-
 function objectOptionsFor(id:LabId,language:Language):{value:string;label:string}[] {
   const data:Record<LabId,{value:string;id:string;en:string}[]> = {
     projectile:[{value:"ball",id:"Bola",en:"Ball"},{value:"football",id:"Bola sepak",en:"Football"},{value:"rocket",id:"Roket",en:"Rocket"}],

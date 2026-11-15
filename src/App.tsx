@@ -715,37 +715,76 @@ type PracticeQuestion={prompt:string;given:string;formula:string;answer:number;u
 function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
   const r=(min:number,max:number,step:number)=>Math.round((min+Math.random()*(max-min))/step)*step;
   const f=(x:number)=>Number(x.toFixed(2));
-  const en=language==="EN";
+  const en=language==="EN",variant=Math.random()<.5;
   if(id==="projectile"){
-    const v=r(14,28,1),a=r(25,65,1),g=9.81,rad=a*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
+    const g=9.81;
+    if(variant){
+      const v=r(14,28,1),a=r(25,65,1),rad=a*Math.PI/180,answer=v*v*Math.sin(2*rad)/g;
+      return {prompt:en?"A projectile lands at the same height from which it was launched. Calculate its horizontal range.":"Sebuah benda ditembakkan dan mendarat pada ketinggian yang sama. Hitung jangkauan horizontalnya.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"R=\\frac{v_0^2\\sin(2\\theta)}{g}",answer,unit:"m",resultLabel:en?"Horizontal range":"Jangkauan horizontal",steps:["R=\\frac{("+v+")^2\\sin(2\\times"+a+"^\\circ)}{9.81}","R="+f(answer)+"\\;\\mathrm{m}"]};
+    }
+    const v=r(14,28,1),a=r(25,65,1),rad=a*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
     return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"\\Delta h_{max}=\\frac{v_0^2\\sin^2\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\Delta h=\\frac{("+v+")^2\\sin^2("+a+"^\\circ)}{2(9.81)}","\\Delta h="+f(answer)+"\\;\\mathrm{m}"]};
   }
   if(id==="mru"){
-    const v=r(3,18,1),t=r(2,12,1),answer=v*t;
+    const v=r(3,18,1),t=r(2,12,1);
+    if(variant){
+      const x0=r(-12,12,1),answer=x0+v*t;
+      return {prompt:en?"Determine the final position of the object relative to the origin.":"Tentukan posisi akhir benda terhadap titik asal.",given:"x₀ = "+x0+" m, v = "+v+" m/s, t = "+t+" s",formula:"x=x_0+vt",answer,unit:"m",resultLabel:en?"Final position":"Posisi akhir",steps:["x=("+x0+")+("+v+")("+t+")","x="+f(answer)+"\\;\\mathrm{m}"]};
+    }
+    const answer=v*t;
     return {prompt:en?"How far does the object travel in the given time?":"Berapa perpindahan benda selama waktu tersebut?",given:"v = "+v+" m/s, t = "+t+" s, x₀ = 0",formula:"\\Delta x=vt",answer,unit:"m",resultLabel:en?"Displacement":"Perpindahan",steps:["\\Delta x=("+v+")("+t+")","\\Delta x="+f(answer)+"\\;\\mathrm{m}"]};
   }
   if(id==="mrua"){
-    const v0=r(0,8,1),a=r(.5,3,.5),t=r(2,8,1),answer=v0+a*t;
+    const v0=r(0,8,1),a=r(.5,3,.5),t=r(2,8,1);
+    if(variant){
+      const answer=v0*t+.5*a*t*t;
+      return {prompt:en?"Find the displacement under constant acceleration.":"Hitung perpindahan benda dengan percepatan konstan.",given:"v₀ = "+v0+" m/s, a = "+a+" m/s², t = "+t+" s",formula:"\\Delta x=v_0t+\\frac12at^2",answer,unit:"m",resultLabel:en?"Displacement":"Perpindahan",steps:["\\Delta x=("+v0+")("+t+")+\\frac12("+a+")("+t+")^2","\\Delta x="+f(answer)+"\\;\\mathrm{m}"]};
+    }
+    const answer=v0+a*t;
     return {prompt:en?"Determine the velocity after the stated time.":"Tentukan kecepatan setelah selang waktu tersebut.",given:"v₀ = "+v0+" m/s, a = "+a+" m/s², t = "+t+" s",formula:"v=v_0+at",answer,unit:"m/s",resultLabel:en?"Final velocity":"Kecepatan akhir",steps:["v="+v0+"+("+a+")("+t+")","v="+f(answer)+"\\;\\mathrm{m/s}"]};
   }
   if(id==="circular"){
-    const omega=r(.5,4,.5),radius=r(1,8,1),answer=omega*omega*radius;
+    const omega=r(.5,4,.5),radius=r(1,8,1);
+    if(variant){
+      const answer=omega*radius;
+      return {prompt:en?"Calculate the tangential speed of the rotating object.":"Hitung kelajuan tangensial benda yang bergerak melingkar.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"v=\\omega r",answer,unit:"m/s",resultLabel:en?"Tangential speed":"Kelajuan tangensial",steps:["v=("+omega+")("+radius+")","v="+f(answer)+"\\;\\mathrm{m/s}"]};
+    }
+    const answer=omega*omega*radius;
     return {prompt:en?"Calculate the centripetal acceleration.":"Hitung percepatan sentripetal benda.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"a_c=\\omega^2r",answer,unit:"m/s²",resultLabel:en?"Centripetal acceleration":"Percepatan sentripetal",steps:["a_c=("+omega+")^2("+radius+")","a_c="+f(answer)+"\\;\\mathrm{m/s^2}"]};
   }
   if(id==="energy"){
-    const h=r(1,15,.5),g=9.81,answer=Math.sqrt(2*g*h);
+    const g=9.81;
+    if(variant){
+      const m=r(1,5,.5),h=r(1,12,.5),answer=m*g*h;
+      return {prompt:en?"Calculate the gravitational potential energy relative to the ground.":"Hitung energi potensial gravitasi benda terhadap permukaan tanah.",given:"m = "+m+" kg, h = "+h+" m, g = 9.81 m/s²",formula:"E_p=mgh",answer,unit:"J",resultLabel:en?"Gravitational potential energy":"Energi potensial gravitasi",steps:["E_p=("+m+")("+g+")("+h+")","E_p="+f(answer)+"\\;\\mathrm{J}"]};
+    }
+    const h=r(1,15,.5),answer=Math.sqrt(2*g*h);
     return {prompt:en?"Find the speed after a frictionless drop from rest.":"Tentukan kelajuan setelah benda turun tanpa gesekan dari keadaan diam.",given:"Δh = "+h+" m, v₀ = 0, g = 9.81 m/s²",formula:"v=\\sqrt{2g\\Delta h}",answer,unit:"m/s",resultLabel:en?"Speed":"Kelajuan",steps:["\\frac12mv^2=mg\\Delta h","v=\\sqrt{2(9.81)("+h+")}","v="+f(answer)+"\\;\\mathrm{m/s}"]};
   }
   if(id==="incline"){
+    if(variant){
+      const mu=r(.15,.65,.01),answer=Math.atan(mu)*180/Math.PI;
+      return {prompt:en?"Find the critical incline angle at which a block is just about to slide from rest.":"Tentukan sudut kritis bidang miring saat balok tepat akan mulai meluncur dari diam.",given:"μₛ = "+mu.toFixed(2),formula:"\\tan\\theta_c=\\mu_s",answer,unit:"°",resultLabel:en?"Critical angle":"Sudut kritis",steps:["\\theta_c=\\arctan("+mu.toFixed(2)+")","\\theta_c="+f(answer)+"^\\circ"]};
+    }
     const angle=r(28,55,1),mu=r(.05,.2,.01),g=9.81,rad=angle*Math.PI/180,answer=g*(Math.sin(rad)-mu*Math.cos(rad));
     return {prompt:en?"A block is already sliding downhill. Find its acceleration.":"Balok sudah meluncur menuruni bidang. Hitung percepatannya.",given:"θ = "+angle+"°, μₖ = "+mu.toFixed(2)+", g = 9.81 m/s²",formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta)",answer,unit:"m/s²",resultLabel:en?"Down-slope acceleration":"Percepatan turun bidang",steps:["a=9.81(\\sin "+angle+"^\\circ-"+mu.toFixed(2)+"\\cos "+angle+"^\\circ)","a="+f(answer)+"\\;\\mathrm{m/s^2}"]};
   }
   if(id==="collision"){
     const m1=r(1,4,.5),m2=r(1,4,.5),u1=r(5,10,.5),u2=r(-2,2,.5),e=r(0,1,.1);
-    const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),answer=m1*(v1-u1);
+    const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
+    if(variant){
+      const answer=v2;
+      return {prompt:en?"Find the final velocity of body 2 after a one-dimensional collision.":"Tentukan kecepatan akhir benda 2 setelah tumbukan satu dimensi.",given:"m₁ = "+m1+" kg, m₂ = "+m2+" kg, u₁ = "+u1+" m/s, u₂ = "+u2+" m/s, e = "+e.toFixed(1),formula:"v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}",answer,unit:"m/s",resultLabel:en?"Final velocity of body 2":"Kecepatan akhir benda 2",steps:["v_2=\\frac{(1+"+e.toFixed(1)+")("+m1+")("+u1+")+("+m2+"-"+e.toFixed(1)+"("+m1+"))("+u2+")}{"+m1+"+"+m2+"}","v_2="+f(answer)+"\\;\\mathrm{m/s}"]};
+    }
+    const answer=m1*(v1-u1);
     return {prompt:en?"Find the impulse delivered to body 1 during the collision.":"Tentukan impuls yang diterima benda 1 selama tumbukan.",given:"m₁ = "+m1+" kg, m₂ = "+m2+" kg, u₁ = "+u1+" m/s, u₂ = "+u2+" m/s, e = "+e.toFixed(1),formula:"J_1=m_1(v_1-u_1)",answer,unit:"N·s",resultLabel:en?"Impulse on body 1":"Impuls benda 1",steps:["v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}","v_1="+f(v1)+"\\;\\mathrm{m/s}","J_1=("+m1+")("+f(v1)+"-"+u1+")","J_1="+f(answer)+"\\;\\mathrm{N\\,s}"]};
   }
-  const m=r(.5,5,.5),k=r(10,100,5),answer=2*Math.PI*Math.sqrt(m/k);
+  const m=r(.5,5,.5),k=r(10,100,5);
+  if(variant){
+    const answer=Math.sqrt(k/m)/(2*Math.PI);
+    return {prompt:en?"Calculate the natural frequency of an ideal mass–spring oscillator.":"Hitung frekuensi alami osilator massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"f=\\frac{1}{2\\pi}\\sqrt{\\frac{k}{m}}",answer,unit:"Hz",resultLabel:en?"Natural frequency":"Frekuensi alami",steps:["f=\\frac{1}{2\\pi}\\sqrt{\\frac{"+k+"}{"+m+"}}","f="+f(answer)+"\\;\\mathrm{Hz}"]};
+  }
+  const answer=2*Math.PI*Math.sqrt(m/k);
   return {prompt:en?"Calculate the period of an ideal mass–spring oscillator.":"Hitung periode osilasi sistem massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"T=2\\pi\\sqrt{\\frac{m}{k}}",answer,unit:"s",resultLabel:en?"Oscillation period":"Periode osilasi",steps:["T=2\\pi\\sqrt{\\frac{"+m+"}{"+k+"}}","T="+f(answer)+"\\;\\mathrm{s}"]};
 }
 function PracticePanel({labId,language}:{labId:LabId;language:Language}) {

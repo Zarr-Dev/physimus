@@ -96,11 +96,11 @@ function collectVariables(node:Node,result:Set<string>){
  if(node.kind==="call"){if(["int","sum","diff"].includes(node.name)&&node.args[1]?.kind==="var"){collectVariables(node.args[0],result);node.args.slice(2).forEach(child=>collectVariables(child,result));return;}node.args.forEach(child=>collectVariables(child,result));}
 }
 function variableDefaults(name:string){
- const defaults:Record<string,number>={m:1,g:9.81,a:2,v0:5,omega:1,k:10,theta:Math.PI/4,r:3,e:1,mu:.2,F:10,h:2};
+ const defaults:Record<string,number>={m:1,g:9.81,a:2,v0:5,omega:1,k:10,theta:Math.PI/4,r:3,e:1,mu:.2,f:10,h:2,sigma:1,alpha:1,beta:1,phi:0,lambda:1};
  return defaults[name]??1;
 }
 function variableDescription(name:string,language:Language){
- const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Amplitudo / percepatan",en:"Amplitude / acceleration",unit:"m atau m/s²"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},F:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"}};
+ const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Amplitudo / percepatan",en:"Amplitude / acceleration",unit:"m atau m/s²"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},f:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"}};
  const item=labels[name];
  return item?{label:language==="ID"?item.id:item.en,unit:item.unit}:{label:name,unit:language==="ID"?"nilai bebas":"custom"};
 }
@@ -131,7 +131,19 @@ function equationToLatex(source:string){
   const name=node.name;
   if(name==="sqrt")return "\\sqrt{"+render(node.args[0])+"}";
   if(name==="abs")return "\\left|"+render(node.args[0])+"\\right|";
-  const operators:Record<string,string>={sin:"\\sin",cos:"\\cos",tan:"\\tan",asin:"\\arcsin",acos:"\\arccos",atan:"\\arctan",ln:"\\ln",log:"\\log",exp:"\\exp",min:"\\min",max:"\\max"};
+  if(name==="int"){
+   const variable=variableLatex((node.args[1] as Extract<Node,{kind:"var"}>).name);
+   return node.args.length===2?"\\int "+render(node.args[0])+"\\,d"+variable:"\\int_{"+render(node.args[2])+"}^{"+render(node.args[3])+"} "+render(node.args[0])+"\\,d"+variable;
+  }
+  if(name==="sum"){
+   const variable=variableLatex((node.args[1] as Extract<Node,{kind:"var"}>).name);
+   return "\\sum_{"+variable+"="+render(node.args[2])+"}^{"+render(node.args[3])+"} "+render(node.args[0]);
+  }
+  if(name==="diff"){
+   const variable=variableLatex((node.args[1] as Extract<Node,{kind:"var"}>).name);
+   return "\\frac{d}{d"+variable+"}\\left("+render(node.args[0])+"\\right)";
+  }
+  const operators:Record<string,string>={sin:"\\sin",cos:"\\cos",tan:"\\tan",asin:"\\arcsin",acos:"\\arccos",atan:"\\arctan",sec:"\\sec",csc:"\\csc",cot:"\\cot",sinh:"\\sinh",cosh:"\\cosh",tanh:"\\tanh",ln:"\\ln",log:"\\log",log2:"\\log_2",exp:"\\exp",min:"\\min",max:"\\max"};
   return (operators[name]??("\\operatorname{"+name+"}"))+"\\left("+node.args.map(render).join(", ")+"\\right)";
  };
  return lhs+"="+render(root);

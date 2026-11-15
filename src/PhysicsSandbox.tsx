@@ -119,6 +119,7 @@ function variableDescription(name:string,language:Language){
 function variableLatex(name:string){
  const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",phi:"\\phi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda"};
  if(greek[name])return greek[name];
+ if(name==="sum")return "\\sum";
  const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);
  if(namedSub)return namedSub[1]+"_{"+namedSub[2]+"}";
  const numericSub=name.match(/^([a-zA-Z]+)(\\d+)$/);
@@ -163,8 +164,13 @@ function equationToLatex(source:string){
  return lhs+render(root);
 }
 function equationPreviewHtml(source:string){
- try{return katex.renderToString(equationToLatex(source),{throwOnError:false,strict:"ignore",trust:false,displayMode:true});}
- catch{return katex.renderToString("\\text{Complete expression to preview}",{throwOnError:false,strict:"ignore",trust:false,displayMode:true});}
+ const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true};
+ try{return katex.renderToString(equationToLatex(source),options);}
+ catch{
+  const token=source.trim().match(/(int|sum|diff|sqrt|sin|cos|tan|ln|log)$/i)?.[1]?.toLowerCase();
+  const pending:Record<string,string>={int:"\\int\\,\\square",sum:"\\sum\\limits_{i=1}^{n}\\square",diff:"\\frac{d}{dx}\\square",sqrt:"\\sqrt{\\square}",sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"};
+  return katex.renderToString(token&&pending[token]?pending[token]:"\\text{Continue the expression}",options);
+ }
 }
 
 type EquationSuggestion={title:string;description:string;insert:string;trigger:string};

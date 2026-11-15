@@ -1435,3 +1435,21 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .app-root[data-theme="dark"] .sandbox-object-advanced summary{color:#c8d8e6}
 .app-root[data-theme="dark"] .sandbox-property-slider output{color:#d9e8f5}
 .app-root[data-theme="dark"] .lesson-page .practice-panel{background:#101923;border-color:#2e3c4a}
+
+
+.sandbox-scalar-result{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:5px 6px 2px 36px;
+  padding:7px 9px;
+  border-left:2px solid #68a58e;
+  border-radius:0 6px 6px 0;
+  background:#f1f8f4;
+}
+.sandbox-scalar-result span{color:#719184;font-size:9px;font-weight:700}
+.sandbox-scalar-result strong{color:#2c7858;font-family:"DM Mono","SFMono-Regular",Consolas,monospace;font-size:12px;font-variant-numeric:tabular-nums}
+.app-root[data-theme="dark"] .sandbox-scalar-result{background:#14251f;border-left-color:#5b9f83}
+.app-root[data-theme="dark"] .sandbox-scalar-result span{color:#9abcae}
+.app-root[data-theme="dark"] .sandbox-scalar-result strong{color:#a8e0c5}

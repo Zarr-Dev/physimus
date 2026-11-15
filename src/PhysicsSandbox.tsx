@@ -156,7 +156,7 @@ export default function PhysicsSandbox({language,theme,motionLevel}:{language:La
 
   sceneObjects.filter(item=>item.enabled).forEach(item=>{
     const px=X(item.x),py=Y(item.y),radius=Math.max(6,Math.min(70,Math.abs(X(item.x+item.radius)-px)));
-    ctx.save();ctx.translate(px,py);ctx.rotate(-item.angle);
+    ctx.save();ctx.translate(px,py);ctx.rotate(-item.angle);ctx.shadowColor=theme==="dark"?"#00000088":"#32465a33";ctx.shadowBlur=9;ctx.shadowOffsetY=3;
     if(item.kind==="box"){
       ctx.fillStyle="#d99a46";ctx.strokeStyle=theme==="dark"?"#f1d2a4":"#94652e";ctx.lineWidth=2;
       ctx.fillRect(-radius,-radius*.72,radius*2,radius*1.44);ctx.strokeRect(-radius,-radius*.72,radius*2,radius*1.44);
@@ -165,13 +165,13 @@ export default function PhysicsSandbox({language,theme,motionLevel}:{language:La
       ctx.fillStyle="#72a9d8";ctx.strokeStyle=theme==="dark"?"#b8d9f7":"#356e9e";ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
     }else if(item.kind==="spring"){
-      const wPx=Math.max(45,radius*2),omega=Math.sqrt(item.stiffness/Math.max(item.mass,.01)),displacement=radius*.55*Math.cos(omega*time);
+      const wPx=Math.max(45,item.length*radius),omega=Math.sqrt(item.stiffness/Math.max(item.mass,.01)),displacement=radius*.55*Math.exp(-item.damping*time)*Math.cos(omega*time);
       const anchor=-wPx,blockX=displacement+wPx*.42;
       ctx.strokeStyle="#91a5b8";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(anchor,0);ctx.lineTo(anchor,0);
       for(let i=0;i<=12;i++){const q=i/12;const xx=anchor+(blockX-12-anchor)*q;const yy=i===0||i===12?0:(i%2===0?-1:1)*Math.min(8,radius*.22);ctx.lineTo(xx,yy);}
       ctx.stroke();ctx.fillStyle="#8b6bd6";ctx.fillRect(blockX-12,-11,24,22);ctx.strokeStyle="#fff";ctx.strokeRect(blockX-12,-11,24,22);
     }else if(item.kind==="rope"){
-      const length=Math.max(45,radius*4);ctx.strokeStyle="#4da786";ctx.lineWidth=3;ctx.setLineDash([7,4]);ctx.beginPath();ctx.moveTo(-length/2,0);ctx.lineTo(length/2,0);ctx.stroke();ctx.setLineDash([]);
+      const length=Math.max(45,item.length*radius);ctx.strokeStyle="#4da786";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-length/2,0);ctx.quadraticCurveTo(0,Math.max(5,item.damping*radius*1.8),length/2,0);ctx.stroke();
       ctx.fillStyle="#4da786";ctx.beginPath();ctx.arc(length/2,0,4,0,Math.PI*2);ctx.fill();
     }else if(item.kind==="pulley"){
       const r=Math.max(10,radius*.7),turn=time*Math.sqrt(gravity/Math.max(item.radius,.05))+item.angle;
@@ -179,6 +179,16 @@ export default function PhysicsSandbox({language,theme,motionLevel}:{language:La
       ctx.strokeStyle="#d99a46";ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(turn)*r,Math.sin(turn)*r);ctx.moveTo(0,0);ctx.lineTo(-Math.cos(turn)*r,-Math.sin(turn)*r);ctx.stroke();
       ctx.fillStyle="#d99a46";ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle="#4da786";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-r,-r);ctx.lineTo(-r,-r*2.3);ctx.moveTo(r,-r);ctx.lineTo(r,-r*2.3);ctx.stroke();
+    }else if(item.kind==="wheel"){
+      const r=Math.max(10,radius*.9),grad=ctx.createRadialGradient(-r*.3,-r*.3,2,0,0,r);grad.addColorStop(0,"#c7dced");grad.addColorStop(1,"#355e82");ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#8eaac3";ctx.lineWidth=3;ctx.stroke();ctx.strokeStyle="#f1f6fb";ctx.lineWidth=2;for(let i=0;i<10;i++){const a=i*Math.PI/5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*r*.82,Math.sin(a)*r*.82);ctx.stroke();}ctx.fillStyle="#d99a46";ctx.beginPath();ctx.arc(0,0,Math.max(4,r*.14),0,Math.PI*2);ctx.fill();
+    }else if(item.kind==="beam"){
+      const length=Math.max(42,item.length*radius);ctx.fillStyle="#c28c51";ctx.strokeStyle="#76512e";ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-length/2,-5,length,10,4);ctx.fill();ctx.stroke();ctx.fillStyle="#d99a46";ctx.beginPath();ctx.moveTo(0,7);ctx.lineTo(-11,25);ctx.lineTo(11,25);ctx.closePath();ctx.fill();ctx.strokeStyle="#8b9caf";ctx.beginPath();ctx.moveTo(-length/2,15);ctx.lineTo(length/2,15);ctx.stroke();
+    }else if(item.kind==="ramp"){
+      const length=Math.max(42,item.length*radius),rise=Math.min(length*.8,Math.max(16,radius));ctx.fillStyle="#dbe5ef";ctx.strokeStyle="#7c91a7";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-length/2,rise/2);ctx.lineTo(length/2,-rise/2);ctx.lineTo(length/2,rise/2);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle="#a9bbcc";ctx.lineWidth=1;for(let i=0;i<8;i++){const x=-length/2+i*length/8;ctx.beginPath();ctx.moveTo(x,rise/2);ctx.lineTo(Math.min(length/2,x+rise/2),Math.max(-rise/2,rise/2-(x+length/2)*rise/length));ctx.stroke();}
+    }else if(item.kind==="pendulum"){
+      const length=Math.max(30,item.length*radius),swing=item.angle+Math.sin(time*Math.sqrt(gravity/Math.max(item.length,.1)))*.18,bx=Math.sin(swing)*length,by=Math.cos(swing)*length;ctx.strokeStyle="#a0afbd";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(bx,by);ctx.stroke();const grad=ctx.createRadialGradient(bx-5,by-5,2,bx,by,Math.max(9,radius*.36));grad.addColorStop(0,"#eaf3fb");grad.addColorStop(1,"#4f7ea8");ctx.fillStyle=grad;ctx.beginPath();ctx.arc(bx,by,Math.max(9,radius*.36),0,Math.PI*2);ctx.fill();ctx.strokeStyle="#d3e3f1";ctx.stroke();
+    }else if(item.kind==="mass"){
+      const side=Math.max(14,radius*1.25),grad=ctx.createLinearGradient(-side,-side,side,side);grad.addColorStop(0,"#8bc5b2");grad.addColorStop(1,"#276e5a");ctx.fillStyle=grad;ctx.strokeStyle="#d2eee4";ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-side/2,-side/2,side,side,4);ctx.fill();ctx.stroke();ctx.fillStyle="#f4fffb";ctx.font="600 10px DM Sans";ctx.textAlign="center";ctx.fillText(item.mass+" kg",0,4);
     }
     ctx.restore();
     if(showLabels){ctx.fillStyle=theme==="dark"?"#d3dfeb":"#536b83";ctx.font="600 11px DM Sans";ctx.textAlign="center";ctx.fillText(item.kind+" · "+item.mass+" kg",px,py-radius-9);}
@@ -254,10 +264,10 @@ export default function PhysicsSandbox({language,theme,motionLevel}:{language:La
     {editorTab==="objects"&&<>
       <div className="sandbox-editor-heading"><strong>{w.tabObjects}</strong></div>
       <p className="sandbox-section-intro">{language==="ID"?"Tambahkan alat mekanika ke bidang koordinat. Setiap benda memiliki posisi dan properti sendiri.":"Add mechanics apparatus to the coordinate plane. Each item has its own position and properties."}</p>
-      <div className="sandbox-object-library">{(["box","circle","spring","rope","pulley"] as ObjectKind[]).map(kind=><button key={kind} onClick={()=>addSceneObject(kind)}><span className={"sandbox-object-icon "+kind}>{kind==="box"?"▰":kind==="circle"?"○":kind==="spring"?"∿":kind==="rope"?"⌁":"◉"}</span><strong>{w.objectNames[kind]}</strong><Plus size={14}/></button>)}</div>
+      <div className="sandbox-object-library">{(["box","circle","spring","rope","pulley","wheel","beam","ramp","pendulum","mass"] as ObjectKind[]).map(kind=><button key={kind} onClick={()=>addSceneObject(kind)}><span className={"sandbox-object-icon "+kind}>{kind==="box"?"▰":kind==="circle"?"○":kind==="spring"?"∿":kind==="rope"?"⌁":kind==="pulley"?"◉":kind==="wheel"?"⊙":kind==="beam"?"▬":kind==="ramp"?"◢":kind==="pendulum"?"●":"▣"}</span><strong>{w.objectNames[kind]}</strong><Plus size={14}/></button>)}</div>
       <div className="sandbox-panel-title"><strong>{language==="ID"?"Objek pada bidang":"Objects on canvas"}</strong><span>{sceneObjects.length}</span></div>
       {sceneObjects.length===0?<p className="sandbox-variable-empty">{language==="ID"?"Belum ada objek. Pilih alat di atas untuk menambahkan.":"No objects yet. Choose an item above to add it."}</p>:<>
-        <div className="sandbox-object-list">{sceneObjects.map(item=><div className={item.id===selectedObjectId?"sandbox-object-item selected":"sandbox-object-item"} key={item.id}><button className="sandbox-object-select" onClick={()=>setSelectedObjectId(item.id)}><span>{w.objectNames[item.kind]}</span><small>#{item.id}</small></button><button className="sandbox-object-visibility" title={w.enabled} onClick={()=>updateSceneObject(item.id,"enabled",!item.enabled)}>{item.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><button className="sandbox-object-remove" title={w.delete} onClick={()=>{setSceneObjects(old=>old.filter(v=>v.id!==item.id));if(selectedObjectId===item.id)setSelectedObjectId(null);}}><Trash2 size={14}/></button></div>)}</div>
+        <div className="sandbox-object-list">{sceneObjects.map(item=><div className={item.id===selectedObjectId?"sandbox-object-item selected":"sandbox-object-item"} key={item.id} onContextMenu={e=>{e.preventDefault();setSelectedObjectId(item.id);}}><button className="sandbox-object-select" onClick={()=>setSelectedObjectId(item.id)}><span>{w.objectNames[item.kind]}</span><small>#{item.id}</small></button><button className="sandbox-object-visibility" title={w.enabled} onClick={()=>updateSceneObject(item.id,"enabled",!item.enabled)}>{item.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><button className="sandbox-object-remove" title={w.delete} onClick={()=>{setSceneObjects(old=>old.filter(v=>v.id!==item.id));if(selectedObjectId===item.id)setSelectedObjectId(null);}}><Trash2 size={14}/></button></div>)}</div>
         {selectedSceneObject&&<div className="sandbox-object-properties"><strong>{w.objectNames[selectedSceneObject.kind]} #{selectedSceneObject.id}</strong>
           <div className="sandbox-property-grid">
             <label>{language==="ID"?"Posisi x (m)":"Position x (m)"}<input type="number" step=".1" value={selectedSceneObject.x} onChange={e=>updateSceneObject(selectedSceneObject.id,"x",Number(e.target.value))}/></label>
@@ -265,7 +275,7 @@ export default function PhysicsSandbox({language,theme,motionLevel}:{language:La
             <label>{w.objectMass} (kg)<input type="number" min=".01" step=".1" value={selectedSceneObject.mass} onChange={e=>updateSceneObject(selectedSceneObject.id,"mass",Math.max(.01,Number(e.target.value)||.01))}/></label>
             <label>{w.objectRadius} (m)<input type="number" min=".05" step=".1" value={selectedSceneObject.radius} onChange={e=>updateSceneObject(selectedSceneObject.id,"radius",Math.max(.05,Number(e.target.value)||.05))}/></label>
             <label>{w.objectSpring} (N/m)<input type="number" min="0" step="1" value={selectedSceneObject.stiffness} onChange={e=>updateSceneObject(selectedSceneObject.id,"stiffness",Math.max(0,Number(e.target.value)||0))}/></label>
-            <label>{w.objectAngle} (°)<input type="number" step="1" value={selectedSceneObject.angle*180/Math.PI} onChange={e=>updateSceneObject(selectedSceneObject.id,"angle",Number(e.target.value)*Math.PI/180)}/></label>
+            <label>{w.objectAngle} (°)<input type="number" step="1" value={selectedSceneObject.angle*180/Math.PI} onChange={e=>updateSceneObject(selectedSceneObject.id,"angle",Number(e.target.value)*Math.PI/180)}/></label><label>{language==="ID"?"Panjang":"Length"} (m)<input type="number" min=".1" step=".1" value={selectedSceneObject.length} onChange={e=>updateSceneObject(selectedSceneObject.id,"length",Math.max(.1,Number(e.target.value)||.1))}/></label><label>{language==="ID"?"Redaman":"Damping"}<input type="number" min="0" max="1" step=".01" value={selectedSceneObject.damping} onChange={e=>updateSceneObject(selectedSceneObject.id,"damping",Math.max(0,Math.min(1,Number(e.target.value)||0)))}/></label><label>{language==="ID"?"Gesekan":"Friction"} (μ)<input type="number" min="0" max="2" step=".01" value={selectedSceneObject.friction} onChange={e=>updateSceneObject(selectedSceneObject.id,"friction",Math.max(0,Math.min(2,Number(e.target.value)||0)))}/></label><label>{language==="ID"?"Restitusi":"Restitution"} (e)<input type="number" min="0" max="1" step=".01" value={selectedSceneObject.elasticity} onChange={e=>updateSceneObject(selectedSceneObject.id,"elasticity",Math.max(0,Math.min(1,Number(e.target.value)||0)))}/></label>
           </div>
           <p>{language==="ID"?"Pegas berosilasi menggunakan √(k/m), katrol berputar mengikuti waktu simulasi. Objek lain menjadi alat bantu geometri. Properti massa/konstanta dicatat sebagai parameter benda, bukan otomatis menjadi gaya pada objek partikel.":"Springs oscillate with √(k/m); pulleys rotate with simulation time. Other items are geometric apparatus. Mass and stiffness are stored properties, not automatically coupled forces on the moving particle."}</p>
         </div>}

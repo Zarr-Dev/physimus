@@ -26,7 +26,7 @@ function tokenize(source:string):string[] {
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
  const superscripts:Record<string,string>={"⁰":"^0","¹":"^1","²":"^2","³":"^3","⁴":"^4","⁵":"^5","⁶":"^6","⁷":"^7","⁸":"^8","⁹":"^9"};
  const subscripts:Record<string,string>={"₀":"_0","₁":"_1","₂":"_2","₃":"_3","₄":"_4","₅":"_5","₆":"_6","₇":"_7","₈":"_8","₉":"_9"};
- source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char).replace(/\b([a-zA-Z]+)_([0-9]+)\b/g,"$1$2");
+ source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char).replace(/\b([a-zA-Z]+)_([0-9]+)\b/g,"$1$2").replace(/\b([a-zA-Z]+)_([a-zA-Z])\b/g,"$1$2");
  const tokens:string[]=[];
  const re=/\s*([0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?|\.[0-9]+(?:e[+-]?[0-9]+)?|[a-zA-Z_][a-zA-Z0-9_]*|\*\*|[+\-*/^(),])/gy;
  let pos=0;
@@ -36,7 +36,7 @@ function tokenize(source:string):string[] {
   const raw=match[1],normal=raw.toLowerCase();
   // Adjacent two-letter identifiers are treated as implicit multiplication (F=ma),
   // while constants, Greek names, functions and longer custom identifiers stay intact.
-  if(normal==="mgh")tokens.push("m","g","h");else if(new Set(["ma","mv","mg","vt","at","ax","ay","vx","vy","dx","dt","ds","dp","kv","kx","v2","xv"]).has(normal))tokens.push(raw[0],raw[1]);
+  if(normal==="mgh")tokens.push("m","g","h");else if(new Set(["ma","mv","mg","vt","at","kx","xy"]).has(normal))tokens.push(raw[0],raw[1]);
   else tokens.push(raw);
   pos=re.lastIndex;
  }
@@ -131,7 +131,7 @@ function variableDefaults(name:string){
  return defaults[name]??1;
 }
 function variableDescription(name:string,language:Language){
- const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Percepatan",en:"Acceleration",unit:"m/s²"},A:{id:"Amplitudo",en:"Amplitude",unit:"m"},v:{id:"Kecepatan",en:"Velocity",unit:"m/s"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},f:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"},F:{id:"Gaya",en:"Force",unit:"N"},G:{id:"Konstanta gravitasi universal",en:"Universal gravitational constant",unit:"N·m²/kg²"},L:{id:"Panjang",en:"Length",unit:"m"},I:{id:"Momen inersia",en:"Moment of inertia",unit:"kg·m²"},c:{id:"Koefisien redaman",en:"Damping coefficient",unit:"kg/s"},beta:{id:"Koefisien redaman relatif",en:"Damping rate",unit:"s⁻¹"}};
+ const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Percepatan",en:"Acceleration",unit:"m/s²"},A:{id:"Amplitudo",en:"Amplitude",unit:"m"},v:{id:"Kecepatan",en:"Velocity",unit:"m/s"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},f:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"},F:{id:"Gaya",en:"Force",unit:"N"},G:{id:"Konstanta gravitasi universal",en:"Universal gravitational constant",unit:"N·m²/kg²"},L:{id:"Panjang",en:"Length",unit:"m"},I:{id:"Momen inersia",en:"Moment of inertia",unit:"kg·m²"},c:{id:"Koefisien redaman",en:"Damping coefficient",unit:"kg/s"},beta:{id:"Koefisien redaman relatif",en:"Damping rate",unit:"s⁻¹"},vx:{id:"Komponen kecepatan x",en:"x-velocity component",unit:"m/s"},vy:{id:"Komponen kecepatan y",en:"y-velocity component",unit:"m/s"},ax:{id:"Komponen percepatan x",en:"x-acceleration component",unit:"m/s²"},ay:{id:"Komponen percepatan y",en:"y-acceleration component",unit:"m/s²"},Fx:{id:"Komponen gaya x",en:"x-force component",unit:"N"},Fy:{id:"Komponen gaya y",en:"y-force component",unit:"N"}};
  const item=labels[name];
  return item?{label:language==="ID"?item.id:item.en,unit:item.unit}:{label:name,unit:language==="ID"?"nilai bebas":"custom"};
 }
@@ -141,6 +141,8 @@ function variableLatex(name:string){
  const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",delta:"\\delta",epsilon:"\\varepsilon",phi:"\\phi",psi:"\\psi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda",nu:"\\nu",xi:"\\xi",tau:"\\tau"};
  if(greek[name])return greek[name];
  if(name==="sum"||name==="sumsymbol")return "\\sum";
+ const component=name.match(/^(v|a|F|p|r|E|f)([xyz])$/);
+ if(component)return component[1]+"_{"+component[2]+"}";
  const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);
  if(namedSub)return namedSub[1]+"_{"+namedSub[2]+"}";
  const numericSub=name.match(/^([a-zA-Z]+)(\\d+)$/);
@@ -188,7 +190,7 @@ function equationToLatex(source:string){
  };
  return lhs+render(root);
 }
-const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",omega:"rad/s",omega_d:"rad/s",k:"N/m",theta:"rad",phi:"rad",r:"m",f:"N",F:"N",N:"N",h:"m",x:"m",x0:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s"};
+const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",ax:"m/s^2",ay:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",Fx:"N",Fy:"N",u:"m/s",omega:"rad/s",omega_d:"rad/s",k:"N/m",theta:"rad",phi:"rad",r:"m",f:"N",F:"N",N:"N",h:"m",x:"m",x0:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s"};
 function substitutedAstLatex(node:Node,vars:Vars):string{
  const num=(value:number)=>Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
  if(node.kind==="num")return num(node.n);

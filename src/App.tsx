@@ -1348,30 +1348,112 @@ function calculateLessonExperiment(id:LabId,value:number,language:Language){
  }
 }
 function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:number;language:Language}){
- const stageFocus=stage===0?0.92:stage===1?0.97:1;
- const angle=id==="incline"?value: id==="projectile"?value:30;
- const rad=angle*Math.PI/180;
+ const en=language==="EN";
+ const text=en?{initial:"Initial",apex:"Apex",range:"Range",position:"Position",velocity:"Velocity",acceleration:"Acceleration",normal:"Normal",weight:"Weight",friction:"Friction",static:"Static",kinetic:"Kinetic",potential:"Potential",energy:"Energy",before:"Before",after:"After",contact:"Contact",restoring:"Restoring force"}:{initial:"Awal",apex:"Puncak",range:"Jangkauan",position:"Posisi",velocity:"Kecepatan",acceleration:"Percepatan",normal:"Normal",weight:"Berat",friction:"Gesek",static:"Statis",kinetic:"Kinetik",potential:"Potensial",energy:"Energi",before:"Sebelum",after:"Sesudah",contact:"Kontak",restoring:"Gaya pemulih"};
  if(id==="projectile"){
-  const pts=Array.from({length:41},(_,i)=>{const t=i/40,x=40+t*300,y=150-70*Math.sin(Math.PI*t)*Math.sin(rad)/Math.sin(Math.PI/4);return x+","+y;}).join(" ");
-  return <svg className="lesson-diagram" style={{opacity:stageFocus}} data-stage={stage} viewBox="0 0 380 190" role="img" aria-label="Projectile trajectory"><path d="M24 154 H356" className="diagram-ground"/><polyline points={pts} className="diagram-trajectory"/><circle cx="40" cy="150" r="6" className="diagram-object"/><path d="M40 150 L73 126 M40 150 L75 150" className="diagram-vector"/>{stage===0&&<><path d="M40 150 L73 126 L73 150" className="diagram-guide"/><text x="78" y="145">v₀ₓ</text><text x="53" y="123">v₀ᵧ</text></>}{stage===1&&<><path d="M190 80 V150" className="diagram-guide"/><text x="196" y="75">vᵧ = 0</text></>}{stage===2&&<><path d="M190 80 V150 M40 160 H340" className="diagram-guide"/><text x="196" y="75">{language==="ID"?"H maks":"H max"}</text><text x="280" y="172">R</text></>}</svg>;
+  const theta=value*Math.PI/180,v0=20,g=9.81,range=v0*v0*Math.sin(2*theta)/g,hmax=v0*v0*Math.sin(theta)**2/(2*g);
+  const px=(tau:number)=>35+310*tau;
+  const py=(tau:number)=>150-105*(Math.max(0,v0*Math.sin(theta)*(2*v0*Math.sin(theta)/g*tau)-.5*g*(2*v0*Math.sin(theta)/g*tau)**2)/Math.max(hmax,.01));
+  const points=Array.from({length:61},(_,i)=>{const t=i/60;return px(t)+","+py(t);}).join(" ");
+  const apexX=px(.5),apexY=py(.5);
+  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Projectile motion with a parabolic trajectory":"Gerak parabola dengan lintasan kuadratik"}>
+   <path d="M22 151 H360" className="diagram-ground"/>
+   <polyline points={points} className="diagram-trajectory"/>
+   <circle cx="35" cy="150" r="6" className="diagram-object"/>
+   <path d="M35 150 L84 150 M35 150 L35 105" className="diagram-vector"/>
+   {stage===0&&<><path d="M35 150 L77 126" className="diagram-vector-alt"/><path d="M77 126 V150" className="diagram-guide"/><text x="82" y="147">v₀ₓ = v₀ cos θ</text><text x="42" y="105">v₀ᵧ</text><text x="42" y="91">v₀ sin θ</text></>}
+   {stage===1&&<><path d={"M"+apexX+" "+apexY+" V151"} className="diagram-guide"/><path d={"M"+(apexX-19)+" "+apexY+" H"+(apexX+19)} className="diagram-vector-alt"/><text x={apexX+8} y={Math.max(18,apexY-8)}>{text.apex}: vᵧ = 0</text></>}
+   {stage===2&&<><path d={"M"+apexX+" "+apexY+" V151 M35 163 H345"} className="diagram-guide"/><text x={apexX+8} y={Math.max(18,apexY-8)}>Hₘₐₓ = {hmax.toFixed(1)} m</text><text x="164" y="179">R = {range.toFixed(1)} m</text><text x="26" y="139">θ = {value}°</text></>}
+   <text x="22" y="18">{stage===0?"v₀ → (v₀ₓ, v₀ᵧ)":stage===1?"vᵧ(t)=v₀ sin θ − gt":"x(t), y(t) → R, Hₘₐₓ"}</text>
+  </svg>;
  }
  if(id==="mru"||id==="mrua"){
-  const displacement=id==="mru"?value*4:3*4+.5*value*16;
-  const x=Math.max(45,Math.min(315,40+displacement*5));
-  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label="Linear motion"><path d="M28 125 H350" className="diagram-ground"/>{Array.from({length:11},(_,i)=><path key={i} d={"M"+(35+i*30)+" 120 v10"} className="diagram-tick"/>)}<rect x={x-18} y="88" width="36" height="30" rx="5" className="diagram-block"/><path d={"M40 72 H"+x} className="diagram-vector"/>{stage===0&&<text x="38" y="55">{id==="mru"?(language==="ID"?"v konstan":"constant v"):(language==="ID"?"a konstan":"constant a")}</text>}{stage===1&&<><path d="M48 164 H180 V137" className="diagram-guide"/><text x="190" y="145">v(t)</text></>}{stage===2&&<><path d="M48 170 H180 M48 170 V136" className="diagram-guide"/><path d="M52 164 L174 139" className="diagram-vector-alt"/><text x="190" y="145">{id==="mru"?"a = 0":language==="ID"?"gradien = a":"slope = a"}</text></>}</svg>;
+  const v0= id==="mru"?value:3,a=id==="mru"?0:value,t=4,x=v0*t+.5*a*t*t,v=v0+a*t;
+  const px=Math.max(48,Math.min(328,45+x*4));
+  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Linear motion experiment":"Eksperimen gerak lurus"}>
+   <path d="M28 124 H350" className="diagram-ground"/>{Array.from({length:11},(_,i)=><path key={i} d={"M"+(35+i*30)+" 119 v10"} className="diagram-tick"/>}
+   <rect x={px-18} y="88" width="36" height="30" rx="5" className="diagram-block"/>
+   {stage===0&&<><path d={"M52 74 H"+px} className="diagram-vector"/><text x="35" y="52">{id==="mru"?"v = "+v0+" m/s":"a = "+a+" m/s²"}</text><text x="35" y="164">x(0) = 0</text></>}
+   {stage===1&&<><path d="M45 170 H165 V130" className="diagram-guide"/><path d={id==="mru"?"M49 165 L160 132":"M49 165 Q105 157 160 132"} className="diagram-trajectory"/><text x="182" y="137">x(t)</text><text x="182" y="153">{x.toFixed(1)} m at t = 4 s</text></>}
+   {stage===2&&<><path d="M45 170 H165 V130" className="diagram-guide"/><path d={"M49 165 L160 "+(stage===2?132:150)} className="diagram-vector-alt"/><text x="180" y="137">v(4 s) = {v.toFixed(1)} m/s</text><text x="180" y="155">a = {a.toFixed(1)} m/s²</text></>}
+   <text x="27" y="19">{id==="mru"?(en?"Constant velocity":"Kecepatan konstan"):(en?"Constant acceleration":"Percepatan konstan")}</text>
+  </svg>;
  }
  if(id==="circular"){
-  const r=65,cx=190,cy=96,a=value*11;return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label="Circular motion"><circle cx={cx} cy={cy} r={r} className="diagram-orbit"/><path d={"M"+cx+" "+cy+" L"+(cx+Math.cos(a)*r)+" "+(cy+Math.sin(a)*r)} className="diagram-vector"/><circle cx={cx+Math.cos(a)*r} cy={cy+Math.sin(a)*r} r="9" className="diagram-object"/><circle cx={cx} cy={cy} r="4" className="diagram-centre"/>{stage===0&&<text x="205" y="90">r</text>}{stage===1&&<path d={"M"+(cx+Math.cos(a)*r)+" "+(cy+Math.sin(a)*r)+" l"+(-Math.sin(a)*22)+" "+(Math.cos(a)*22)} className="diagram-vector-alt"/>}{stage===2&&<path d={"M"+(cx+Math.cos(a)*r)+" "+(cy+Math.sin(a)*r)+" l"+(-Math.cos(a)*25)+" "+(-Math.sin(a)*25)} className="diagram-vector"/>}<text x="24" y="24">{stage===0?"θ = s/r":stage===1?"v = ωr":"a꜀ = v²/r"}</text></svg>;
+  const r=24+value*5.2,cx=190,cy=100,angle=.62+stage*.5,px=cx+Math.cos(angle)*r,py=cy+Math.sin(angle)*r;
+  const tx=-Math.sin(angle),ty=Math.cos(angle),omega=2,v=omega*value,ac=omega*omega*value;
+  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Uniform circular motion with tangential and radial vectors":"Gerak melingkar dengan vektor tangensial dan radial"}>
+   <circle cx={cx} cy={cy} r={r} className="diagram-orbit"/>
+   <circle cx={cx} cy={cy} r="4" className="diagram-centre"/>
+   <path d={"M"+cx+" "+cy+" L"+px+" "+py} className="diagram-guide"/>
+   <circle cx={px} cy={py} r="9" className="diagram-object"/>
+   {stage===0&&<><text x={cx+10} y={cy-12}>r = {value.toFixed(1)} m</text><text x="24" y="22">θ(t) = ωt</text></>}
+   {stage===1&&<><path d={"M"+px+" "+py+" l"+(tx*38)+" "+(ty*38)} className="diagram-vector"/><text x="24" y="22">v = ωr = {v.toFixed(1)} m/s</text></>}
+   {stage===2&&<><path d={"M"+px+" "+py+" l"+(-Math.cos(angle)*38)+" "+(-Math.sin(angle)*38)} className="diagram-vector-alt"/><text x="24" y="22">a꜀ = ω²r = {ac.toFixed(1)} m/s²</text></>}
+   <text x="204" y="178">ω = 2 rad/s</text>
+  </svg>;
  }
- if(id==="energy"||id==="incline"){
-  const h=angle,base=152,top=36+(60-h)*.45;
-  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label="Inclined plane and energy"><path d={"M38 "+base+" L318 "+top+" L318 "+base+" Z"} className="diagram-plane"/><path d={"M38 "+base+" L318 "+top} className="diagram-edge"/><g transform={"translate(182 "+(base-(base-top)*.52-22)+") rotate("+(-angle)+")"}><rect x="-17" y="-18" width="34" height="30" rx="4" className="diagram-block"/><path d="M0 12 V42" className="diagram-vector"/></g><path d="M340 30 V150" className="diagram-guide"/><text x="328" y="24">h</text><text x="45" y="175">θ = {angle.toFixed(0)}°</text>{stage===0&&<><path d="M182 75 V130" className="diagram-vector"/><text x="190" y="92">mg</text></>}{stage===1&&<><path d="M182 75 L210 94 M182 75 L151 88" className="diagram-vector-alt"/><text x="216" y="98">mg sin θ</text><text x="90" y="86">N</text></>}{stage===2&&<><rect x="235" y="83" width="12" height="42" rx="2" className="diagram-block"/><rect x="253" y="99" width="12" height="26" rx="2" className="diagram-object"/><text x="275" y="105">Eₚ</text><text x="275" y="130">Eₖ</text></>}</svg>;
+ if(id==="energy"){
+  const h=value,fraction=stage===0?0:stage===1?.4:.75,heightNow=h*(1-fraction),m=2,g=9.81,total=m*g*h,ep=m*g*heightNow,ek=total-ep;
+  const y=140-heightNow/h*94;
+  const potentialHeight=ep/total*80,kineticHeight=ek/total*80;
+  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Gravitational energy conversion experiment":"Eksperimen perubahan energi gravitasi"}>
+   <path d="M30 151 H205 M54 151 V42" className="diagram-ground"/>
+   <path d="M54 42 V151" className="diagram-guide"/>
+   <rect x="43" y={y-10} width="22" height="20" rx="4" className="diagram-block"/>
+   <path d={"M76 "+y+" V151"} className="diagram-vector-alt"/>
+   <text x="84" y={y+5}>h = {heightNow.toFixed(1)} m</text>
+   <text x="30" y="24">m = 2 kg · h₀ = {h.toFixed(1)} m</text>
+   <text x="234" y="27">{text.energy} (J)</text>
+   <rect x="245" y={145-potentialHeight} width="35" height={potentialHeight} rx="3" className="diagram-object"/>
+   <rect x="300" y={145-kineticHeight} width="35" height={kineticHeight} rx="3" className="diagram-block"/>
+   <text x="245" y="160">Eₚ</text><text x="300" y="160">Eₖ</text>
+   <text x="232" y="179">Eₘ = {total.toFixed(1)} J</text>
+   <text x="24" y="178">{stage===0?text.initial:stage===1?text.position:text.energy+" "+(en?"conversion":"berubah bentuk")}</text>
+  </svg>;
+ }
+ if(id==="incline"){
+  const theta=value*Math.PI/180,m=5,g=9.81,muS=.4,muK=.2,holds=Math.tan(theta)<=muS;
+  const a=holds?0:g*(Math.sin(theta)-muK*Math.cos(theta));
+  const cx=178,cy=97;
+  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Free-body diagram on an inclined plane":"Diagram gaya bebas pada bidang miring"}>
+   <path d="M34 151 L326 151 L326 "+(151-210*Math.tan(theta))+" Z" className="diagram-plane"/>
+   <path d="M34 151 L326 "+(151-210*Math.tan(theta))} className="diagram-edge"/>
+   <g transform={"translate("+cx+" "+cy+") rotate("+(-value)+")"}><rect x="-18" y="-17" width="36" height="34" rx="4" className="diagram-block"/></g>
+   {stage===0&&<><path d={"M"+cx+" "+cy+" v49"} className="diagram-vector"/><text x={cx+8} y={cy+45}>mg</text><path d={"M"+cx+" "+cy+" l-30 -27"} className="diagram-vector-alt"/><text x="90" y="56">N</text><path d={"M"+cx+" "+cy+" h-38"} className="diagram-guide"/><text x="118" y="86">{text.friction}</text></>}
+   {stage===1&&<><path d={"M"+cx+" "+cy+" l-48 0"} className="diagram-vector"/><path d={"M"+cx+" "+cy+" l-30 35"} className="diagram-vector-alt"/><text x="66" y="79">mg sin θ</text><text x="66" y="132">mg cos θ</text></>}
+   {stage===2&&<><path d={"M"+cx+" "+cy+" l-46 0"} className="diagram-vector"/><text x="235" y="65">{holds?text.static:text.kinetic} friction</text><text x="235" y="84">a = {a.toFixed(2)} m/s²</text><text x="235" y="102">μₛ = 0.40</text><text x="235" y="120">μₖ = 0.20</text></>}
+   <text x="28" y="22">θ = {value}° · m = {m} kg</text>
+  </svg>;
  }
  if(id==="collision"){
-  const gap=30+value*80;return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label="Two-body collision"><path d="M24 144 H356" className="diagram-ground"/><circle cx={150-gap/2} cy="110" r="18" className="diagram-object"/><circle cx={230+gap/2} cy="110" r="18" className="diagram-block"/>{stage===0&&<><path d={"M"+(150-gap/2+24)+" 110 h48"} className="diagram-vector"/><path d={"M"+(230+gap/2-24)+" 110 h-25"} className="diagram-vector-alt"/></>}{stage===1&&<path d="M190 70 V142" className="diagram-guide"/>}{stage===2&&<><path d={"M"+(150-gap/2-24)+" 110 h-48"} className="diagram-vector-alt"/><path d={"M"+(230+gap/2+24)+" 110 h40"} className="diagram-vector"/></>}<text x="24" y="34">{stage===0?(language==="ID"?"u₁, u₂ sebelum":"u₁, u₂ before"):stage===1?(language==="ID"?"interaksi / impuls":"impact / impulse"):(language==="ID"?"v₁, v₂ sesudah":"v₁, v₂ after")}</text><text x="24" y="170">e = {value.toFixed(2)} · {language==="ID"?"p total tetap":"total momentum conserved"}</text></svg>;
+  const e=value,m1=2,m2=2,u1=6,u2=0,v1=3*(1-e),v2=3*(1+e);
+  const x1=stage===0?100:stage===1?165:stage===2?100:100;
+  const x2=stage===0?280:stage===1?205:stage===2?285:285;
+  const speed1=stage===2?Math.abs(v1)*12:stage===0?u1*10:0;
+  const speed2=stage===2?Math.abs(v2)*12:0;
+  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"One-dimensional collision stages":"Tahapan tumbukan satu dimensi"}>
+   <path d="M25 128 H355" className="diagram-ground"/>
+   <circle cx={x1} cy="105" r="18" className="diagram-object"/>
+   <rect x={x2-18} y="87" width="36" height="36" rx="6" className="diagram-block"/>
+   {stage===0&&<><path d={"M"+(x1+22)+" 105 h"+speed1} className="diagram-vector"/><text x="34" y="35">{text.before}: u₁ = 6 m/s · u₂ = 0</text></>}
+   {stage===1&&<><path d="M185 72 V133" className="diagram-guide"/><text x="146" y="35">{text.contact}</text><text x="34" y="166">e = {e.toFixed(2)}</text></>}
+   {stage===2&&<><path d={"M"+(x1+22)+" 105 h"+speed1} className="diagram-vector"/><path d={"M"+(x2+22)+" 105 h"+speed2} className="diagram-vector-alt"/><text x="34" y="35">{text.after}: v₁ = {v1.toFixed(2)} m/s</text><text x="34" y="166">v₂ = {v2.toFixed(2)} m/s · e = {e.toFixed(2)}</text></>}
+  </svg>;
  }
- const blockX=255+Math.sin(value*2)*12;
- return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label="Mass spring oscillator"><path d="M38 50 V146 M38 98 H85" className="diagram-wall"/><path d={"M85 98 l12 -17 l12 34 l12 -34 l12 34 l12 -34 l12 34 l12 -17 H"+(blockX-18)} className="diagram-spring"/><rect x={blockX-18} y="78" width="38" height="40" rx="5" className="diagram-block"/>{stage===0&&<path d={"M"+blockX+" 64 v-12"} className="diagram-vector"/>}{stage===1&&<path d={"M"+blockX+" 70 h"+(blockX>230?-34:34)} className="diagram-vector-alt"/>}{stage===2&&<><rect x="225" y="34" width="14" height="30" rx="2" className="diagram-object"/><rect x="246" y="46" width="14" height="18" rx="2" className="diagram-block"/><text x="270" y="54">Eₚ</text><text x="270" y="72">Eₖ</text></>}<text x="24" y="28">{stage===0?(language==="ID"?"x = simpangan":"x = displacement"):stage===1?"F = −kx":"E = Eₚ + Eₖ"}</text><text x="280" y="145">x(t)</text></svg>;
+ const m=value,k=25,omega=Math.sqrt(k/m),T=2*Math.PI/omega,A=1.5,phase=stage*Math.PI/2,x=A*Math.cos(phase),force=-k*x,blockX=210+x*32,ep=.5*k*x*x,ek=.5*k*(A*A-x*x);
+ const springPath=Array.from({length:13},(_,i)=>{const t=i/12,xx=55+(blockX-18-55)*t,yy=95+(i===0||i===12?0:(i%2===0?-1:1)*8);return (i===0?"M":"L")+xx+" "+yy;}).join(" ");
+ return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Mass spring oscillator at different phases":"Osilator massa pegas pada beberapa fase"}>
+  <path d="M38 48 V143 M38 95 H55" className="diagram-wall"/>
+  <path d={springPath} className="diagram-spring"/>
+  <rect x={blockX-18} y="78" width="36" height="34" rx="5" className="diagram-block"/>
+  <path d={"M"+blockX+" 61 v-15"} className="diagram-vector"/>
+  <text x="24" y="22">m = {m.toFixed(1)} kg · k = 25 N/m</text>
+  <text x="258" y="67">T = {T.toFixed(2)} s</text>
+  <text x="258" y="84">x = {x.toFixed(2)} m</text>
+  <text x="24" y="163">F = −kx = {force.toFixed(1)} N</text>
+  <text x="24" y="181">Eₚ = {ep.toFixed(1)} J · Eₖ = {ek.toFixed(1)} J</text>
+ </svg>;
 }
 function Learn({language}:{language:Language}) {
  const [selectedTopic,setSelectedTopic]=useState<LabId>("projectile");

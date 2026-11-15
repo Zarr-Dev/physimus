@@ -411,7 +411,7 @@ function MeasurementDerivation({formula,value,unit,language}:{formula:string;val
  return <div className="measurement-derivation">
   <div className="measurement-derivation-row"><span>{language==="ID"?"Persamaan":"Equation"}</span><div><Equation value={general}/></div></div>
   {substitution&&<div className="measurement-derivation-row"><span>{language==="ID"?"Substitusi":"Substitution"}</span><div><Equation value={substitution}/></div></div>}
-  <div className="measurement-derivation-result"><span>{language==="ID"?"Hasil":"Result"}</span><strong>{Number.isFinite(value)?value.toFixed(3):"—"} <small>{unit}</small></strong></div>
+  <div className="measurement-derivation-result"><span>{language==="ID"?"Hasil":"Result"}</span><strong>{Number.isFinite(value)?<><Equation value={value.toFixed(3)}/>{" "}<small>{unit}</small></>:"—"}</strong></div>
  </div>;
 }
 

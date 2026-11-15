@@ -1242,35 +1242,108 @@ function lessonExperimentControl(id:LabId):LessonExperimentControl{
  return map[id];
 }
 function calculateLessonExperiment(id:LabId,value:number,language:Language){
- const n=(x:number)=>Number.isFinite(x)?x.toFixed(2):"—";
+ const n=(x:number)=>Number.isFinite(x)?Number(x.toFixed(3)).toString():"—";
  const g=9.81;
  switch(id){
   case "projectile":{
-   const v=20,rad=value*Math.PI/180,range=v*v*Math.sin(2*rad)/g,height=v*v*Math.sin(rad)**2/(2*g),flight=2*v*Math.sin(rad)/g;
-   return {result:language==="ID"?"Jangkauan":"Range",value:range,unit:"m",formula:"R=\\frac{v_0^2\\sin(2\\theta)}{g}=\\frac{(20\\,\\mathrm{m/s})^2\\sin(2\\times"+n(value)+"^\\circ)}{9.81\\,\\mathrm{m/s^2}}="+n(range)+"\\,\\mathrm{m}",extra:language==="ID"?"Ketinggian maksimum: "+n(height)+" m · Waktu terbang: "+n(flight)+" s":"Maximum height: "+n(height)+" m · Flight time: "+n(flight)+" s"};
+   const v0=20,rad=value*Math.PI/180,vx=v0*Math.cos(rad),vy=v0*Math.sin(rad),tf=2*vy/g,range=vx*tf,height=vy*vy/(2*g);
+   return {result:language==="ID"?"Jangkauan horizontal":"Horizontal range",value:range,unit:"m",
+    formula:"R=v_{0x}t_f=(v_0\\cos\\theta)\\left(\\frac{2v_0\\sin\\theta}{g}\\right)="+n(range)+"\\,\\mathrm{m}",
+    steps:[
+     "v_{0x}=v_0\\cos\\theta=(20\\,\\mathrm{m/s})\\cos("+n(value)+"^\\circ)="+n(vx)+"\\,\\mathrm{m/s}",
+     "v_{0y}=v_0\\sin\\theta=(20\\,\\mathrm{m/s})\\sin("+n(value)+"^\\circ)="+n(vy)+"\\,\\mathrm{m/s}",
+     "t_f=\\frac{2v_{0y}}{g}=\\frac{2("+n(vy)+"\\,\\mathrm{m/s})}{9.81\\,\\mathrm{m/s^2}}="+n(tf)+"\\,\\mathrm{s}",
+     "R=v_{0x}t_f=("+n(vx)+"\\,\\mathrm{m/s})("+n(tf)+"\\,\\mathrm{s})="+n(range)+"\\,\\mathrm{m}"
+    ],
+    extra:language==="ID"?"Asumsi: titik luncur dan titik mendarat setinggi sama, tanpa hambatan udara. Tinggi maksimum "+n(height)+" m.":"Assumption: launch and landing heights are equal, with no air resistance. Maximum rise: "+n(height)+" m."};
   }
   case "mru":{
-   const t=5,distance=value*t;return {result:language==="ID"?"Perpindahan dalam 5 s":"Displacement after 5 s",value:distance,unit:"m",formula:"\\Delta x=vt=("+n(value)+"\\,\\mathrm{m/s})(5\\,\\mathrm{s})="+n(distance)+"\\,\\mathrm{m}",extra:language==="ID"?"Kecepatan tetap; grafik posisi–waktu berupa garis lurus.":"Velocity stays constant; the position–time graph is a straight line."};
+   const t=5,distance=value*t;
+   return {result:language==="ID"?"Perpindahan dalam 5 s":"Displacement after 5 s",value:distance,unit:"m",
+    formula:"\\Delta x=vt=("+n(value)+"\\,\\mathrm{m/s})(5\\,\\mathrm{s})="+n(distance)+"\\,\\mathrm{m}",
+    steps:[
+     "v=("+n(value)+"\\,\\mathrm{m/s})\\quad\\text{(konstan)}",
+     "\\Delta x=vt=("+n(value)+"\\,\\mathrm{m/s})(5\\,\\mathrm{s})",
+     "\\Delta x="+n(distance)+"\\,\\mathrm{m}"
+    ],
+    extra:language==="ID"?"Dalam GLB, percepatan nol dan posisi berubah linear terhadap waktu.":"In uniform motion, acceleration is zero and position changes linearly with time."};
   }
   case "mrua":{
-   const v0=3,t=4,d=v0*t+.5*value*t*t,v=v0+value*t;return {result:language==="ID"?"Perpindahan dalam 4 s":"Displacement after 4 s",value:d,unit:"m",formula:"\\Delta x=v_0t+\\frac12at^2=(3)(4)+\\frac12("+n(value)+")(4)^2="+n(d)+"\\,\\mathrm{m}",extra:(language==="ID"?"Kecepatan akhir: ":"Final velocity: ")+n(v)+" m/s"};
+   const v0=3,t=4,deltaX=v0*t+.5*value*t*t,v=v0+value*t;
+   return {result:language==="ID"?"Perpindahan dalam 4 s":"Displacement after 4 s",value:deltaX,unit:"m",
+    formula:"\\Delta x=v_0t+\\frac12at^2=(3)(4)+\\frac12("+n(value)+")(4)^2="+n(deltaX)+"\\,\\mathrm{m}",
+    steps:[
+     "v(t)=v_0+at=3+("+n(value)+")(4)="+n(v)+"\\,\\mathrm{m/s}",
+     "\\Delta x=v_0t+\\frac12at^2=(3\\,\\mathrm{m/s})(4\\,\\mathrm{s})+\\frac12("+n(value)+"\\,\\mathrm{m/s^2})(4\\,\\mathrm{s})^2",
+     "\\Delta x="+n(deltaX)+"\\,\\mathrm{m}"
+    ],
+    extra:(language==="ID"?"Kecepatan akhir: ":"Final velocity: ")+n(v)+" m/s. Percepatan konstan.";
   }
   case "circular":{
-   const omega=2,v=omega*value,a=omega*omega*value,T=2*Math.PI/omega;return {result:language==="ID"?"Kelajuan tangensial":"Tangential speed",value:v,unit:"m/s",formula:"v=\\omega r=(2\\,\\mathrm{rad/s})("+n(value)+"\\,\\mathrm{m})="+n(v)+"\\,\\mathrm{m/s}",extra:(language==="ID"?"Percepatan sentripetal: ":"Centripetal acceleration: ")+n(a)+" m/s² · T = "+n(T)+" s"};
+   const omega=2,r=value,v=omega*r,a=omega*omega*r,T=2*Math.PI/omega;
+   return {result:language==="ID"?"Kelajuan tangensial":"Tangential speed",value:v,unit:"m/s",
+    formula:"v=\\omega r=(2\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+n(v)+"\\,\\mathrm{m/s}",
+    steps:[
+     "\\omega=2\\,\\mathrm{rad/s}\\quad\\text{(tetap)}",
+     "v=\\omega r=(2\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+n(v)+"\\,\\mathrm{m/s}",
+     "a_c=\\omega^2r=(2\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+n(a)+"\\,\\mathrm{m/s^2}"
+    ],
+    extra:(language==="ID"?"Periode: ":"Period: ")+n(T)+" s. Nilai ω dijaga tetap agar pengaruh radius mudah dibandingkan."};
   }
   case "energy":{
-   const mass=2,ep=mass*g*value;return {result:language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy",value:ep,unit:"J",formula:"E_p=mgh=(2\\,\\mathrm{kg})(9.81\\,\\mathrm{m/s^2})("+n(value)+"\\,\\mathrm{m})="+n(ep)+"\\,\\mathrm{J}",extra:language==="ID"?"Massa dan gravitasi dijaga tetap; perubahan energi berbanding lurus dengan ketinggian.":"Mass and gravity are fixed; energy changes in direct proportion to height."};
+   const m=2,h=value,ep=m*g*h;
+   return {result:language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy",value:ep,unit:"J",
+    formula:"E_p=mgh=(2\\,\\mathrm{kg})(9.81\\,\\mathrm{m/s^2})("+n(h)+"\\,\\mathrm{m})="+n(ep)+"\\,\\mathrm{J}",
+    steps:[
+     "m=2\\,\\mathrm{kg},\\quad g=9.81\\,\\mathrm{m/s^2},\\quad h="+n(h)+"\\,\\mathrm{m}",
+     "E_p=mgh=(2)(9.81)("+n(h)+")",
+     "E_p="+n(ep)+"\\,\\mathrm{J}"
+    ],
+    extra:language==="ID"?"Acuan energi potensial dipilih di tanah (h = 0). Massa dan gravitasi tetap.":"The ground is chosen as the zero-potential reference (h = 0). Mass and gravity are held constant."};
   }
   case "incline":{
-    const angle=value*Math.PI/180,muK=.2,muS=.4,holds=Math.tan(angle)<=muS,a=holds?0:g*(Math.sin(angle)-muK*Math.cos(angle)),mass=5,normal=mass*g*Math.cos(angle),friction=holds?mass*g*Math.sin(angle):muK*normal;
-    const formula=holds?"a=0\\quad(\\tan\\theta\\leq\\mu_s)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=9.81[\\sin("+n(value)+"^\\circ)-0.20\\cos("+n(value)+"^\\circ)]="+n(a)+"\\,\\mathrm{m/s^2}";
-    return {result:language==="ID"?"Percepatan turun bidang":"Down-slope acceleration",value:a,unit:"m/s²",formula,extra:language==="ID"?"Gaya normal: "+n(normal)+" N · Gaya gesek: "+n(friction)+" N · "+(holds?"Benda tetap diam":"Benda meluncur"):"Normal force: "+n(normal)+" N · Friction: "+n(friction)+" N · "+(holds?"Block remains at rest":"Block is sliding")};
-   }
+   const theta=value*Math.PI/180,muK=.2,muS=.4,m=5,normal=m*g*Math.cos(theta),holds=Math.tan(theta)<=muS;
+   const a=holds?0:g*(Math.sin(theta)-muK*Math.cos(theta));
+   const friction=holds?m*g*Math.sin(theta):muK*normal;
+   const formula=holds?"a=0\\quad\\left(\\tan\\theta\\leq\\mu_s\\right)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=9.81[\\sin("+n(value)+"^\\circ)-0.20\\cos("+n(value)+"^\\circ)]="+n(a)+"\\,\\mathrm{m/s^2}";
+   const steps=holds?[
+    "\\theta="+n(value)+"^\\circ,\\quad\\mu_s=0.40",
+    "\\tan\\theta=\\tan("+n(value)+"^\\circ)="+n(Math.tan(theta))+"\\leq0.40",
+    "f_s=mg\\sin\\theta=(5)(9.81)\\sin("+n(value)+"^\\circ)="+n(friction)+"\\,\\mathrm{N}",
+    "a=0\\,\\mathrm{m/s^2}\\quad\\text{(balok tetap diam)}"
+   ]:[
+    "\\theta="+n(value)+"^\\circ,\\quad\\mu_k=0.20",
+    "N=mg\\cos\\theta=(5\\,\\mathrm{kg})(9.81\\,\\mathrm{m/s^2})\\cos("+n(value)+"^\\circ)="+n(normal)+"\\,\\mathrm{N}",
+    "f_k=\\mu_kN=(0.20)("+n(normal)+"\\,\\mathrm{N})="+n(friction)+"\\,\\mathrm{N}",
+    "a=g(\\sin\\theta-\\mu_k\\cos\\theta)=9.81[\\sin("+n(value)+"^\\circ)-0.20\\cos("+n(value)+"^\\circ)]="+n(a)+"\\,\\mathrm{m/s^2}"
+   ];
+   return {result:language==="ID"?"Percepatan sepanjang bidang":"Acceleration along the plane",value:a,unit:"m/s²",formula,steps,
+    extra:language==="ID"?"Massa balok 5 kg. μₛ = 0,40 dan μₖ = 0,20. Gesekan statis menyesuaikan hingga nilai maksimum; jangan gunakan μₛN sebagai nilai gesekan pada semua keadaan.":"Block mass is 5 kg. μₛ = 0.40 and μₖ = 0.20. Static friction adjusts up to its maximum; μₛN is not the friction value in every situation."};
+  }
   case "collision":{
-   const e=value,m1=2,m2=2,u1=6,u2=0,v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);return {result:language==="ID"?"Kecepatan akhir benda 1":"Final velocity of body 1",value:v1,unit:"m/s",formula:"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{(2-("+n(e)+")(2))(6)+(1+"+n(e)+")(2)(0)}{2+2}="+n(v1)+"\\,\\mathrm{m/s}",extra:(language==="ID"?"Kecepatan benda 2: ":"Body 2 velocity: ")+n(v2)+" m/s"};
+   const e=value,m1=2,m2=2,u1=6,u2=0;
+   const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
+   const pBefore=m1*u1+m2*u2,pAfter=m1*v1+m2*v2;
+   return {result:language==="ID"?"Kecepatan akhir benda 1":"Final velocity of body 1",value:v1,unit:"m/s",
+    formula:"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}="+n(v1)+"\\,\\mathrm{m/s}",
+    steps:[
+     "p_{awal}=m_1u_1+m_2u_2=(2)(6)+(2)(0)="+n(pBefore)+"\\,\\mathrm{kg\\,m/s}",
+     "v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}="+n(v1)+"\\,\\mathrm{m/s}",
+     "v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}="+n(v2)+"\\,\\mathrm{m/s}",
+     "p_{akhir}=m_1v_1+m_2v_2=(2)("+n(v1)+")+(2)("+n(v2)+")="+n(pAfter)+"\\,\\mathrm{kg\\,m/s}"
+    ],
+    extra:language==="ID"?"Sistem dua benda dianggap terisolasi selama tumbukan. Momentum tetap; energi kinetik hanya tetap jika e = 1.":"The two-body system is treated as isolated during impact. Momentum is conserved; kinetic energy is conserved only when e = 1."};
   }
   case "spring":{
-   const k=25,T=2*Math.PI*Math.sqrt(value/k),frequency=1/T;return {result:language==="ID"?"Periode osilasi":"Oscillation period",value:T,unit:"s",formula:"T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+n(value)+"\\,\\mathrm{kg}}{25\\,\\mathrm{N/m}}}="+n(T)+"\\,\\mathrm{s}",extra:(language==="ID"?"Frekuensi alami: ":"Natural frequency: ")+n(frequency)+" Hz"};
+   const m=value,k=25,omega=Math.sqrt(k/m),T=2*Math.PI/omega,frequency=1/T;
+   return {result:language==="ID"?"Periode osilasi":"Oscillation period",value:T,unit:"s",
+    formula:"T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+n(m)+"\\,\\mathrm{kg}}{25\\,\\mathrm{N/m}}}="+n(T)+"\\,\\mathrm{s}",
+    steps:[
+     "\\omega=\\sqrt{\\frac{k}{m}}=\\sqrt{\\frac{25\\,\\mathrm{N/m}}{"+n(m)+"\\,\\mathrm{kg}}}="+n(omega)+"\\,\\mathrm{rad/s}",
+     "T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+n(m)+"}{25}}",
+     "T="+n(T)+"\\,\\mathrm{s},\\quad f=\\frac1T="+n(frequency)+"\\,\\mathrm{Hz}"
+    ],
+    extra:language==="ID"?"Model ideal tanpa redaman. Konstanta pegas k = 25 N/m dijaga tetap.":"Ideal undamped model. The spring constant k = 25 N/m is held constant."};
   }
  }
 }

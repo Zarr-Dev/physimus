@@ -759,6 +759,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [speedFactor,setSpeedFactor]=useState(1);const [focusMode,setFocusMode]=useState(false);const [expandedMetric,setExpandedMetric]=useState<string|null>(null);const [graphPan,setGraphPan]=useState({x:0,y:0});const [graphZoom,setGraphZoom]=useState(1);
+  useEffect(()=>{if(!focusMode)return;const onKeyDown=(event:KeyboardEvent)=>{if(event.key==="Escape")setFocusMode(false);};window.addEventListener("keydown",onKeyDown);return()=>window.removeEventListener("keydown",onKeyDown);},[focusMode]);
   const [showGrid,setShowGrid]=useState(true);
   const [showVectors,setShowVectors]=useState(true);
   const [showTrail,setShowTrail]=useState(true);
@@ -1113,7 +1114,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         <div className="graph-footer"><span className="ready-dot"/>{w.status}<span className="footer-spacer"/><button onClick={exportCsv}><Download size={16}/>{w.export}</button><button onClick={()=>{reset();setGraphPan({x:0,y:0});setGraphZoom(1);}}><RotateCcw size={15}/>{w.resetView}</button>{notice&&<span className="notice"><Check size={15}/>{notice}</span>}</div>
       </section>
     </div>
-    <PracticePanel labId={lab.id} language={language}/>
+    {!focusMode&&<PracticePanel labId={lab.id} language={language}/>}
   </main>;
 }
 

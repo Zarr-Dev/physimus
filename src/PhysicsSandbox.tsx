@@ -9,7 +9,7 @@ type EditorTab = "equations" | "objects" | "examples" | "graph";
 type ObjectKind = "box" | "circle" | "spring" | "rope" | "pulley" | "wheel" | "beam" | "ramp" | "pendulum" | "mass";
 type MechanicalObject = {id:number;kind:ObjectKind;x:number;y:number;mass:number;radius:number;stiffness:number;angle:number;length:number;damping:number;friction:number;elasticity:number;enabled:boolean;gravityEnabled:boolean;frictionEnabled:boolean;springEnabled:boolean;rotationEnabled:boolean;pinned:boolean;showLabel:boolean};
 type Node = { kind:"num"; n:number } | { kind:"var"; name:string } | { kind:"unary"; op:string; child:Node } | { kind:"binary"; op:string; a:Node; b:Node } | { kind:"call"; name:string; args:Node[] };
-type Compiled = { id:number; text:string; target:"y(x)"|"x(t)"|"y(t)"; root:Node; error?:string };
+type Compiled = { id:number; text:string; target:"y(x)"|"x(t)"|"y(t)"|"scalar"; root:Node; error?:string };
 type Motion = { x:number;y:number;vx:number;vy:number;ax:number;ay:number;speed:number;acceleration:number;energy:number;potential:number;mechanical:number;momentum:number;force:number;weight:number };
 
 const allowedFunctions = new Set(["sin","cos","tan","asin","acos","atan","sec","csc","cot","sinh","cosh","tanh","sqrt","abs","exp","ln","log","log2","min","max","floor","ceil","sign","int","sum","diff"]);
@@ -56,10 +56,9 @@ function calc(n:Node,v:Vars):number {
  if(n.kind==="unary"){const q=calc(n.child,v);return n.op==="-"?-q:q;}
  if(n.kind==="binary"){const a=calc(n.a,v),b=calc(n.b,v);if(n.op==="+")return a+b;if(n.op==="-")return a-b;if(n.op==="*")return a*b;if(n.op==="/")return b===0?NaN:a/b;return Math.pow(a,b);}
  if(n.name==="int"){
-  if(n.args.length===2)return NaN;
   const [integrand,indexNode,lowerNode,upperNode]=n.args;
   if(indexNode.kind!=="var")return NaN;
-  const lower=calc(lowerNode,v),upper=calc(upperNode,v),steps=200;
+  const lower=n.args.length===2?0:calc(lowerNode,v),upper=n.args.length===2?(v[indexNode.name]??0):calc(upperNode,v),steps=200;
   if(!Number.isFinite(lower)||!Number.isFinite(upper)||Math.abs(upper-lower)>1e6)return NaN;
   if(lower===upper)return 0;
   const dx=(upper-lower)/steps;let total=calc(integrand,{...v,[indexNode.name]:lower})+calc(integrand,{...v,[indexNode.name]:upper});
@@ -71,9 +70,11 @@ function calc(n:Node,v:Vars):number {
   if(indexNode.kind!=="var")return NaN;
   const lower=calc(lowerNode,v),upper=calc(upperNode,v);
   if(!Number.isFinite(lower)||!Number.isFinite(upper)||Math.abs(upper-lower)>10000)return NaN;
-  const lo=Math.ceil(Math.min(lower,upper)),hi=Math.floor(Math.max(lower,upper)),direction=upper>=lower?1:-1;
+  const lo=Math.ceil(lower),hi=Math.floor(upper);
+  if(hi<lo)return 0;
+  if(hi-lo>10000)return NaN;
   let total=0;for(let i=lo;i<=hi;i++){const value=calc(expression,{...v,[indexNode.name]:i});if(!Number.isFinite(value))return NaN;total+=value;}
-  return direction*total;
+  return total;
  }
  if(n.name==="diff"){
   const [expression,indexNode]=n.args;if(indexNode.kind!=="var")return NaN;
@@ -85,8 +86,17 @@ function calc(n:Node,v:Vars):number {
 }
 function compile(rows:Row[]):Compiled[]{
  return rows.filter(r=>r.enabled&&r.text.trim()).map(row=>{
-  try{const m=row.text.trim().match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);if(!m)throw new Error("Gunakan y=..., x(t)=..., atau y(t)=...");const lhs=m[1].replace(/\s/g,"").toLowerCase();return {id:row.id,text:row.text,target:lhs==="x(t)="?"x(t)":lhs==="y(t)="?"y(t)":"y(x)",root:parse(m[2])};}
-  catch(e){return {id:row.id,text:row.text,target:"y(x)" as const,root:{kind:"num",n:0} as Node,error:e instanceof Error?e.message:"Syntax error"};}
+  try{
+   const source=row.text.trim();
+   const graph=source.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);
+   if(graph){
+    const lhs=graph[1].replace(/\s/g,"").toLowerCase();
+    return {id:row.id,text:row.text,target:lhs==="x(t)="?"x(t)":lhs==="y(t)="?"y(t)":"y(x)",root:parse(graph[2])};
+   }
+   const scalar=source.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
+   if(scalar)return {id:row.id,text:row.text,target:"scalar" as const,root:parse(scalar[2])};
+   throw new Error("Gunakan y=..., x(t)=..., y(t)=..., atau persamaan skalar seperti F=ma");
+  }catch(e){return {id:row.id,text:row.text,target:"scalar" as const,root:{kind:"num",n:0} as Node,error:e instanceof Error?e.message:"Syntax error"};}
  });
 }
 function collectVariables(node:Node,result:Set<string>){

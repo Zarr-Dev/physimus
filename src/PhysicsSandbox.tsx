@@ -119,10 +119,10 @@ function variableDescription(name:string,language:Language){
 function variableLatex(name:string){
  const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",phi:"\\phi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda"};
  if(greek[name])return greek[name];
- const sub=name.match(/^([a-zA-Z]+)(?:_|)([0-9]+)$/);
- if(sub)return sub[1]+"_{"+sub[2]+"}";
- const symbolSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);
- if(symbolSub)return symbolSub[1]+"_{"+symbolSub[2]+"}";
+ const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);
+ if(namedSub)return namedSub[1]+"_{"+namedSub[2]+"}";
+ const numericSub=name.match(/^([a-zA-Z]+)(\\d+)$/);
+ if(numericSub)return numericSub[1]+"_{"+numericSub[2]+"}";
  return name.length===1?name:"\\mathrm{"+name+"}";
 }
 function equationToLatex(source:string){
@@ -328,7 +328,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    energy:["x(t)=0.5*g*(sin(theta)-mu*cos(theta))*cos(theta)*t^2","y(t)=h-0.5*g*(sin(theta)-mu*cos(theta))*sin(theta)*t^2"],
    integral:["y=int(u^2,u,0,x)"],
    summation:["y=sum(i^2,i,1,floor(x))"],
-   derivative:["y=diff(sin(x),x)"]
+   derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["W=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"]
   };
   const list=data[kind]||[];if(!list.length)return;
   setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);setFocusedEquationId(1);setEditorTab("equations");setPlaying(false);setTime(0);timeRef.current=0;setCustomVariables({});

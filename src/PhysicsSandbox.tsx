@@ -575,7 +575,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   if(!current)return "";
   const n=(v:number)=>Number.isFinite(v)?Number(v.toFixed(2)).toString():"\\text{undefined}";
   const qty=(value:number,unit:string)=>"("+n(value)+"\\,\\mathrm{"+unit+"})";
-  const x=n(current.x),y=n(current.y),vx=n(current.vx),vy=n(current.vy),ax=n(current.ax),ay=n(current.ay),m=n(mass),g=n(gravity);
+  const y=n(current.y),vx=n(current.vx),vy=n(current.vy),ax=n(current.ax),ay=n(current.ay),m=n(mass),g=n(gravity);
   if(id==="position")return "\\vec r(t)=x(t)\\hat i+y(t)\\hat j="+qty(current.x,"m")+"\\hat i+"+qty(current.y,"m")+"\\hat j";
   if(id==="velocity")return "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+vx+"\\,\\mathrm{m/s})^2+("+vy+"\\,\\mathrm{m/s})^2}="+qty(current.speed,"m/s");
   if(id==="acceleration")return "a=\\sqrt{a_x^2+a_y^2}=\\sqrt{("+ax+"\\,\\mathrm{m/s^2})^2+("+ay+"\\,\\mathrm{m/s^2})^2}="+qty(current.acceleration,"m/s^2");

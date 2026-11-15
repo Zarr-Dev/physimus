@@ -726,7 +726,7 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
       ctx.setTransform(dpr,0,0,dpr,0,0);
       const width=rect.width,height=rect.height,left=76,right=34,top=36,bottom=65;
       const pw=width-left-right,ph=height-top-bottom;
-      const plotStyle=getComputedStyle(canvas),plotBg=plotStyle.getPropertyValue("--plot-bg").trim()||(document.documentElement.dataset.theme==="dark"?"#111d2b":"#fff");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
+      const plotStyle=getComputedStyle(canvas),plotBg=plotStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=plotStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf2f7"),axisColor=plotStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#748ba2");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
       const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
         const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan((values.angle??0)*Math.PI/180)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
         return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
@@ -770,25 +770,26 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
       const xStep=niceStep(sx,9),yStep=niceStep(sy,7);
       const xStart=Math.ceil(minX/xStep)*xStep,yStart=Math.ceil(minY/yStep)*yStep;
       if(showGrid){
-        ctx.lineWidth=1;
         for(let value=xStart;value<=maxX+1e-9;value+=xStep){
-          const gx=X(value);ctx.strokeStyle=Math.abs(value)<1e-9?"#aebdcd":"#edf2f7";
+          for(let sub=1;sub<5;sub++){const minor=value+xStep*sub/5;if(minor<maxX){ctx.strokeStyle=theme==="dark"?"#1c2c3e":"#f4f7fa";ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(X(minor),top);ctx.lineTo(X(minor),top+ph);ctx.stroke();}}
+          const gx=X(value);ctx.strokeStyle=Math.abs(value)<1e-9?axisColor:gridMajor;ctx.lineWidth=Math.abs(value)<1e-9?1.3:.9;
           ctx.beginPath();ctx.moveTo(gx,top);ctx.lineTo(gx,top+ph);ctx.stroke();
         }
         for(let value=yStart;value<=maxY+1e-9;value+=yStep){
-          const gy=Y(value);ctx.strokeStyle=Math.abs(value)<1e-9?"#aebdcd":"#edf2f7";
+          for(let sub=1;sub<5;sub++){const minor=value+yStep*sub/5;if(minor<maxY){ctx.strokeStyle=theme==="dark"?"#1c2c3e":"#f4f7fa";ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(left,Y(minor));ctx.lineTo(left+pw,Y(minor));ctx.stroke();}}
+          const gy=Y(value);ctx.strokeStyle=Math.abs(value)<1e-9?axisColor:gridMajor;ctx.lineWidth=Math.abs(value)<1e-9?1.3:.9;
           ctx.beginPath();ctx.moveTo(left,gy);ctx.lineTo(left+pw,gy);ctx.stroke();
         }
       }
-      ctx.strokeStyle="#748ba2";ctx.lineWidth=1.5;
+      ctx.strokeStyle=axisColor;ctx.lineWidth=1.5;
       ctx.beginPath();ctx.moveTo(left,Math.min(top+ph,Math.max(top,y0)));ctx.lineTo(left+pw,Math.min(top+ph,Math.max(top,y0)));ctx.stroke();
       ctx.beginPath();ctx.moveTo(Math.min(left+pw,Math.max(left,x0)),top);ctx.lineTo(Math.min(left+pw,Math.max(left,x0)),top+ph);ctx.stroke();
       const decimals=(step:number)=>Math.max(0,Math.min(4,-Math.floor(Math.log10(step))));
-      ctx.fillStyle="#71849a";ctx.font="11px DM Sans, sans-serif";ctx.textAlign="center";
+      ctx.fillStyle=theme==="dark"?"#91a4b7":"#71849a";ctx.font="12px DM Sans, sans-serif";ctx.textAlign="center";
       for(let value=xStart;value<=maxX+1e-9;value+=xStep){const gx=X(value);ctx.fillText(value.toFixed(decimals(xStep)),gx,top+ph+22);}
       ctx.textAlign="right";
       for(let value=yStart;value<=maxY+1e-9;value+=yStep){const gy=Y(value);ctx.fillText(value.toFixed(decimals(yStep)),left-10,gy+4);}
-      ctx.fillStyle="#60758c";ctx.font="600 12px Inter, sans-serif";ctx.textAlign="center";
+      ctx.fillStyle=theme==="dark"?"#d1dce8":"#60758c";ctx.font="600 13px Inter, sans-serif";ctx.textAlign="center";
       ctx.fillText(graphMode==="trajectory"?(lab.id==="circular"||lab.id==="spring"?"x (m)":lab.id==="energy"?(language==="ID"?"Jarak sepanjang bidang (m)":"Distance along slope (m)"):(language==="ID"?"Posisi / jarak (m)":"Position / distance (m)")):(language==="ID"?"Waktu (s)":"Time (s)"),left+pw/2,height-14);
       ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(graphMode==="trajectory"?(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)")):graphMode==="position-time"?(language==="ID"?"Posisi (m)":"Position (m)"):graphMode==="velocity-time"?(language==="ID"?"Kecepatan (m/s)":"Velocity (m/s)"):(language==="ID"?"Percepatan (m/s²)":"Acceleration (m/s²)"),0,0);ctx.restore();
 

@@ -443,6 +443,12 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><code>y=∫₀ˣ u² du</code></button>
         <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><code>y=Σᵢ₌₁ⁿ i²</code></button>
         <button onClick={()=>preset("derivative")}><strong>12 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><code>y=d(sin x)/dx</code></button>
+        <button onClick={()=>preset("newton")}><strong>13 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><code>F=ma</code></button>
+        <button onClick={()=>preset("weight")}><strong>14 · {language==="ID"?"Berat benda":"Weight"}</strong><code>W=mg</code></button>
+        <button onClick={()=>preset("momentum")}><strong>15 · {language==="ID"?"Momentum linear":"Linear momentum"}</strong><code>p=mv</code></button>
+        <button onClick={()=>preset("work")}><strong>16 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><code>W=F d cos(θ)</code></button>
+        <button onClick={()=>preset("kinetic")}><strong>17 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><code>Eₖ=½mv²</code></button>
+        <button onClick={()=>preset("springforce")}><strong>18 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><code>F=−kx</code></button>
       </div>
     </>}
     {editorTab==="graph"&&<>

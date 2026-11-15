@@ -7,7 +7,7 @@ type Row = { id:number; text:string; enabled:boolean };
 type Vars = Record<string,number>;
 type EditorTab = "equations" | "objects" | "examples" | "graph";
 type ObjectKind = "box" | "circle" | "spring" | "rope" | "pulley" | "wheel" | "beam" | "ramp" | "pendulum" | "mass";
-type MechanicalObject = {id:number;kind:ObjectKind;x:number;y:number;mass:number;radius:number;stiffness:number;angle:number;length:number;damping:number;friction:number;elasticity:number;enabled:boolean};
+type MechanicalObject = {id:number;kind:ObjectKind;x:number;y:number;mass:number;radius:number;stiffness:number;angle:number;length:number;damping:number;friction:number;elasticity:number;enabled:boolean;gravityEnabled:boolean;frictionEnabled:boolean;springEnabled:boolean;rotationEnabled:boolean;pinned:boolean;showLabel:boolean};
 type Node = { kind:"num"; n:number } | { kind:"var"; name:string } | { kind:"unary"; op:string; child:Node } | { kind:"binary"; op:string; a:Node; b:Node } | { kind:"call"; name:string; args:Node[] };
 type Compiled = { id:number; text:string; target:"y(x)"|"x(t)"|"y(t)"; root:Node; error?:string };
 type Motion = { x:number;y:number;vx:number;vy:number;ax:number;ay:number;speed:number;acceleration:number;energy:number;potential:number;mechanical:number;momentum:number;force:number;weight:number };
@@ -229,7 +229,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       ctx.fillStyle="#72a9d8";ctx.strokeStyle=theme==="dark"?"#b8d9f7":"#356e9e";ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(0,0,radius,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
     }else if(item.kind==="spring"){
-      const wPx=Math.max(45,item.length*radius),omega=Math.sqrt(item.stiffness/Math.max(item.mass,.01)),displacement=radius*.55*Math.exp(-item.damping*time)*Math.cos(omega*time);
+      const wPx=Math.max(45,item.length*radius),omega=Math.sqrt(item.stiffness/Math.max(item.mass,.01)),damping=item.frictionEnabled?item.damping:0,displacement=item.springEnabled?radius*.55*Math.exp(-damping*time)*Math.cos(omega*time):0;
       const anchor=-wPx,blockX=displacement+wPx*.42;
       ctx.strokeStyle="#91a5b8";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(anchor,0);ctx.lineTo(anchor,0);
       for(let i=0;i<=12;i++){const q=i/12;const xx=anchor+(blockX-12-anchor)*q;const yy=i===0||i===12?0:(i%2===0?-1:1)*Math.min(8,radius*.22);ctx.lineTo(xx,yy);}
@@ -238,7 +238,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       const length=Math.max(45,item.length*radius);ctx.strokeStyle="#4da786";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-length/2,0);ctx.quadraticCurveTo(0,Math.max(5,item.damping*radius*1.8),length/2,0);ctx.stroke();
       ctx.fillStyle="#4da786";ctx.beginPath();ctx.arc(length/2,0,4,0,Math.PI*2);ctx.fill();
     }else if(item.kind==="pulley"){
-      const r=Math.max(10,radius*.7),turn=time*Math.sqrt(gravity/Math.max(item.radius,.05))+item.angle;
+      const r=Math.max(10,radius*.7),turn=(item.rotationEnabled?time*Math.sqrt((item.gravityEnabled?gravity:0)/Math.max(item.radius,.05)):0)+item.angle;
       ctx.strokeStyle="#8b9caf";ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();
       ctx.strokeStyle="#d99a46";ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(turn)*r,Math.sin(turn)*r);ctx.moveTo(0,0);ctx.lineTo(-Math.cos(turn)*r,-Math.sin(turn)*r);ctx.stroke();
       ctx.fillStyle="#d99a46";ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
@@ -250,13 +250,14 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
     }else if(item.kind==="ramp"){
       const length=Math.max(42,item.length*radius),rise=Math.min(length*.8,Math.max(16,radius));ctx.fillStyle="#dbe5ef";ctx.strokeStyle="#7c91a7";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-length/2,rise/2);ctx.lineTo(length/2,-rise/2);ctx.lineTo(length/2,rise/2);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle="#a9bbcc";ctx.lineWidth=1;for(let i=0;i<8;i++){const x=-length/2+i*length/8;ctx.beginPath();ctx.moveTo(x,rise/2);ctx.lineTo(Math.min(length/2,x+rise/2),Math.max(-rise/2,rise/2-(x+length/2)*rise/length));ctx.stroke();}
     }else if(item.kind==="pendulum"){
-      const length=Math.max(30,item.length*radius),swing=item.angle+Math.sin(time*Math.sqrt(gravity/Math.max(item.length,.1)))*.18,bx=Math.sin(swing)*length,by=Math.cos(swing)*length;ctx.strokeStyle="#a0afbd";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(bx,by);ctx.stroke();const grad=ctx.createRadialGradient(bx-5,by-5,2,bx,by,Math.max(9,radius*.36));grad.addColorStop(0,"#eaf3fb");grad.addColorStop(1,"#4f7ea8");ctx.fillStyle=grad;ctx.beginPath();ctx.arc(bx,by,Math.max(9,radius*.36),0,Math.PI*2);ctx.fill();ctx.strokeStyle="#d3e3f1";ctx.stroke();
+      const length=Math.max(30,item.length*radius),swing=item.angle+(item.gravityEnabled?Math.sin(time*Math.sqrt(gravity/Math.max(item.length,.1)))*.18:0),bx=Math.sin(swing)*length,by=Math.cos(swing)*length;ctx.strokeStyle="#a0afbd";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(bx,by);ctx.stroke();const grad=ctx.createRadialGradient(bx-5,by-5,2,bx,by,Math.max(9,radius*.36));grad.addColorStop(0,"#eaf3fb");grad.addColorStop(1,"#4f7ea8");ctx.fillStyle=grad;ctx.beginPath();ctx.arc(bx,by,Math.max(9,radius*.36),0,Math.PI*2);ctx.fill();ctx.strokeStyle="#d3e3f1";ctx.stroke();
     }else if(item.kind==="mass"){
       const side=Math.max(14,radius*1.25),grad=ctx.createLinearGradient(-side,-side,side,side);grad.addColorStop(0,"#8bc5b2");grad.addColorStop(1,"#276e5a");ctx.fillStyle=grad;ctx.strokeStyle="#d2eee4";ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-side/2,-side/2,side,side,4);ctx.fill();ctx.stroke();ctx.fillStyle="#f4fffb";ctx.font="600 10px DM Sans";ctx.textAlign="center";ctx.fillText(item.mass+" kg",0,4);
     }
     ctx.restore();
     if(item.id===selectedObjectId){ctx.save();ctx.strokeStyle=theme==="dark"?"#9dccf5":"#347fc5";ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.arc(px,py,radius+7,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
-    if(showLabels){ctx.fillStyle=theme==="dark"?"#d3dfeb":"#536b83";ctx.font="600 11px DM Sans";ctx.textAlign="center";ctx.fillText(item.kind+" · "+item.mass+" kg",px,py-radius-9);}
+    if(showLabels&&item.showLabel){ctx.fillStyle=theme==="dark"?"#d3dfeb":"#536b83";ctx.font="600 11px DM Sans";ctx.textAlign="center";ctx.fillText(item.kind+" · "+item.mass+" kg",px,py-radius-9);}
+    if(item.pinned){ctx.fillStyle=theme==="dark"?"#d9e5f0":"#647a90";ctx.beginPath();ctx.arc(px,py-radius-22,4,0,Math.PI*2);ctx.fill();}
   });
 
   functionCurves.forEach(curve=>drawLine(curve.points,curve.color));
@@ -285,11 +286,14 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   reset();
  };
  const addSceneObject=(kind:ObjectKind)=>{
-  const slot=nextObjectId-1;const item:MechanicalObject={id:nextObjectId,kind,x:(slot%5)*2.2-4.4,y:-Math.floor(slot/5)*2.1,mass:1,radius:1,stiffness:20,angle:0,length:2,damping:.08,friction:.2,elasticity:.8,enabled:true};
+  const slot=nextObjectId-1;const item:MechanicalObject={id:nextObjectId,kind,x:(slot%5)*2.2-4.4,y:-Math.floor(slot/5)*2.1,mass:1,radius:1,stiffness:20,angle:0,length:2,damping:.08,friction:.2,elasticity:.8,enabled:true,gravityEnabled:true,frictionEnabled:false,springEnabled:true,rotationEnabled:true,pinned:false,showLabel:true};
   setSceneObjects(old=>[...old,item]);setSelectedObjectId(nextObjectId);setNextObjectId(value=>value+1);
  };
  const updateSceneObject=(id:number,key:keyof MechanicalObject,value:number|boolean)=>{
-  setSceneObjects(old=>old.map(item=>item.id===id?{...item,[key]:value}:item));
+  if(typeof value==="number"&&!Number.isFinite(value))return;
+  const limits:Partial<Record<keyof MechanicalObject,[number,number]>>={x:[-1e4,1e4],y:[-1e4,1e4],mass:[.01,1e4],radius:[.05,100],stiffness:[0,1e5],angle:[-Math.PI*8,Math.PI*8],length:[.1,100],damping:[0,1],friction:[0,2],elasticity:[0,1]};
+  const safe=typeof value==="number"&&limits[key]?[Math.max(limits[key]![0],Math.min(limits[key]![1],value))][0]:value;
+  setSceneObjects(old=>old.map(item=>item.id===id?{...item,[key]:safe}:item));
  };
  const selectedSceneObject=sceneObjects.find(item=>item.id===selectedObjectId)??null;
 

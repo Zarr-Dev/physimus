@@ -1555,3 +1555,55 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .sandbox-math-suggestions button:focus-visible{outline:2px solid #6da5d2;outline-offset:2px}
 .sandbox-equation-preview{min-width:0}
 .sandbox-equation-preview>div{overflow-x:auto}
+
+
+/* A lesson step is an interactive control for its matching experiment state. */
+.lesson-step{
+  width:100%;
+  grid-template-columns:25px minmax(0,1fr) auto;
+  border:1px solid transparent;
+  border-top:1px solid var(--line);
+  border-radius:8px;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.lesson-step p{margin:0}
+.lesson-step>small{
+  align-self:center;
+  color:#8ba1b5;
+  font-size:9px;
+  white-space:nowrap;
+}
+.lesson-step:hover{background:#f5f9fd;border-color:#dce8f2}
+.lesson-step.active{background:#eef6fd;border-color:#bfd6e9;box-shadow:inset 3px 0 #4689c1}
+.lesson-step.active>span{background:#397fb8;color:#fff}
+.lesson-step.active>small{color:#3c78a8;font-weight:800}
+.lesson-step:focus-visible{outline:3px solid #76b4e866;outline-offset:2px}
+.lesson-step-hint{margin:0 0 8px;color:var(--muted,#7b8ea0);font-size:10px;line-height:1.55}
+.lesson-diagram .diagram-object,
+.lesson-diagram .diagram-block,
+.lesson-diagram .diagram-trajectory,
+.lesson-diagram .diagram-vector,
+.lesson-diagram .diagram-vector-alt{transition:fill .18s ease,stroke .18s ease,opacity .18s ease}
+.app-root[data-motion="low"] .lesson-step,
+.app-root[data-motion="low"] .lesson-diagram{transition-duration:0ms}
+.app-root[data-motion="medium"] .lesson-step,
+.app-root[data-motion="medium"] .lesson-diagram{transition-duration:140ms}
+.app-root[data-motion="high"] .lesson-step,
+.app-root[data-motion="high"] .lesson-diagram{transition-duration:240ms}
+.app-root[data-theme="dark"] .lesson-step{background:#111b26;border-color:#293848}
+.app-root[data-theme="dark"] .lesson-step:hover{background:#172638;border-color:#3a5268}
+.app-root[data-theme="dark"] .lesson-step.active{background:#1b3449;border-color:#466d8e;box-shadow:inset 3px 0 #69a9db}
+.app-root[data-theme="dark"] .lesson-step.active>span{background:#3d7cad;color:#fff}
+.app-root[data-theme="dark"] .lesson-step.active>small{color:#badcf6}
+.app-root[data-theme="dark"] .lesson-step-hint{color:#9eafbf}
+@media(max-width:650px){
+ .lesson-step{grid-template-columns:24px minmax(0,1fr);gap:8px;padding:10px}
+ .lesson-step>small{grid-column:2}
+}
+@media(prefers-reduced-motion:reduce){
+ .lesson-step,.lesson-diagram .diagram-object,.lesson-diagram .diagram-block,
+ .lesson-diagram .diagram-trajectory,.lesson-diagram .diagram-vector,.lesson-diagram .diagram-vector-alt{transition:none!important}
+}

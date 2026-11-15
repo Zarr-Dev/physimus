@@ -843,8 +843,12 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const points=useMemo(()=>makePoints(lab,values),[lab,values]);
   const duration=points[points.length-1]?.t??1;
   const current=points[Math.min(points.length-1,Math.round(time/duration*(points.length-1)))]??points[0];
-  const metrics=metricsFor(lab,values,current,points,language);
-  const liveEquations=liveEquationsFor(lab,values,current,time);
+  const metrics=useMemo(()=>metricsFor(lab,values,current,points,language),[lab,values,current,points,language]);
+  const plottedPoints=useMemo(()=>graphMode==="trajectory"?points:points.map((p,i)=>{
+    const angle=(values.angle??0)*Math.PI/180;
+    const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan(angle)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin(angle)-(values.friction??0)*Math.cos(angle)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
+    return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
+  }),[graphMode,points,lab,values]);
   const objectOrientation=lab.id==="energy"?Math.PI/6:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
 
   useEffect(()=>{
@@ -878,10 +882,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
       const width=rect.width,height=rect.height,left=76,right=34,top=36,bottom=65;
       const pw=width-left-right,ph=height-top-bottom;
       const plotStyle=getComputedStyle(canvas),plotBg=plotStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=plotStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf2f7"),axisColor=plotStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#748ba2");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
-      const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
-        const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan((values.angle??0)*Math.PI/180)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
-        return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
-      });
+      const plotted=plottedPoints;
       const plottedIndex=Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)));
       const plottedCurrent=graphMode==="trajectory"?current:plotted[plottedIndex];
       const slopeBefore=plotted[Math.max(0,plottedIndex-1)];

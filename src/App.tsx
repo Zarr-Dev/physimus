@@ -127,29 +127,39 @@ const equationLibrary: Record<LabId, EquationEntry[]> = {
   {id:"flight",titleID:"Waktu hingga menyentuh tanah",titleEN:"Time to reach the ground",formula:String.raw`t_f=\frac{v_0\sin\theta+\sqrt{(v_0\sin\theta)^2+2gh_0}}{g}`,noteID:"Akar positif dipilih karena waktu fisik tidak negatif.",noteEN:"Choose the positive root because physical flight time cannot be negative."},
   {id:"peak",titleID:"Tinggi maksimum",titleEN:"Maximum height",formula:String.raw`H_{\max}=h_0+\frac{v_0^2\sin^2\theta}{2g}`,noteID:"Di titik tertinggi, kecepatan vertikal sesaat sama dengan nol.",noteEN:"At the apex, vertical velocity is momentarily zero."},
   {id:"range",titleID:"Jangkauan horizontal",titleEN:"Horizontal range",formula:String.raw`R=v_0\cos\theta\,t_f`,noteID:"Bentuk ini berlaku untuk ketinggian awal umum, termasuk h₀ bukan nol.",noteEN:"This form supports a nonzero launch height."}
+  ,{id:"flightTime",titleID:"Waktu terbang",titleEN:"Time of flight",formula:"t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}",noteID:"Waktu total sampai benda kembali ke permukaan acuan y = 0. Berlaku tanpa hambatan udara.",noteEN:"Total time until the projectile returns to reference level y = 0, neglecting air resistance.",fields:[{key:"v0",labelID:"Kecepatan awal",labelEN:"Initial speed",unit:"m/s",initial:24,min:0,step:.1},{key:"theta",labelID:"Sudut",labelEN:"Angle",unit:"°",initial:52,min:0,max:90,step:1},{key:"h0",labelID:"Ketinggian awal",labelEN:"Initial height",unit:"m",initial:0,min:0,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01}],evaluate:v=>{const vy=v.v0*Math.sin(v.theta*Math.PI/180),t=(vy+Math.sqrt(vy*vy+2*v.g*v.h0))/v.g;return{substitution:"t_f = ["+vy.toFixed(3)+" + √("+vy.toFixed(3)+"² + 2("+v.g.toFixed(2)+")("+v.h0.toFixed(2)+"))] / "+v.g.toFixed(2),value:t.toFixed(3),unit:"s"};}}
+
  ],
  mru:[
   {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw`x(t)=x_0+vt`,noteID:"Grafik x–t berupa garis lurus; gradiennya adalah kecepatan.",noteEN:"The x–t graph is a straight line whose slope is velocity."},
   {id:"velocity",titleID:"Kecepatan konstan",titleEN:"Constant velocity",formula:String.raw`v=\frac{\Delta x}{\Delta t}=\text{konstan}`,noteID:"Perpindahan per selang waktu selalu sama.",noteEN:"Displacement per time interval remains constant."},
   {id:"acceleration",titleID:"Percepatan",titleEN:"Acceleration",formula:String.raw`a=\frac{\Delta v}{\Delta t}=0`,noteID:"Karena kecepatan tidak berubah, percepatannya nol.",noteEN:"Since velocity does not change, acceleration is zero."}
+  ,{id:"time",titleID:"Waktu tempuh",titleEN:"Elapsed time",formula:"t=\\frac{\\Delta x}{v}",noteID:"Untuk gerak lurus beraturan dengan kecepatan konstan dan tidak nol. Tanda perpindahan menentukan arah.",noteEN:"For uniform motion with constant non-zero velocity. The displacement sign determines direction.",fields:[{key:"dx",labelID:"Perpindahan",labelEN:"Displacement",unit:"m",initial:40,step:.1},{key:"v",labelID:"Kecepatan",labelEN:"Velocity",unit:"m/s",initial:8,step:.1}],evaluate:v=>({substitution:"t = "+v.dx.toFixed(2)+" / "+v.v.toFixed(2),value:(v.dx/v.v).toFixed(3),unit:"s"})}
+
  ],
  mrua:[
   {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw`x=x_0+v_0t+\frac12at^2`,noteID:"Grafik posisi terhadap waktu berbentuk parabola jika percepatan tidak nol.",noteEN:"Position versus time is parabolic when acceleration is nonzero."},
   {id:"velocity",titleID:"Persamaan kecepatan",titleEN:"Velocity equation",formula:String.raw`v=v_0+at`,noteID:"Gradien grafik v–t sama dengan percepatan.",noteEN:"The slope of a velocity–time graph equals acceleration."},
   {id:"torricelli",titleID:"Persamaan tanpa waktu",titleEN:"Time-independent equation",formula:String.raw`v^2=v_0^2+2a(x-x_0)`,noteID:"Berguna ketika waktu tidak diketahui atau tidak diperlukan.",noteEN:"Useful when time is unknown or not needed."},
   {id:"displacement",titleID:"Kecepatan rata-rata",titleEN:"Average velocity",formula:String.raw`\Delta x=\frac{v_0+v}{2}\,t`,noteID:"Berlaku untuk percepatan konstan satu dimensi.",noteEN:"Valid for constant one-dimensional acceleration."}
+  ,{id:"acceleration",titleID:"Percepatan rata-rata",titleEN:"Average acceleration",formula:"a=\\frac{v-v_0}{t}",noteID:"Percepatan rata-rata adalah perubahan kecepatan per selang waktu. Waktu harus lebih besar dari nol.",noteEN:"Average acceleration is the change in velocity per time interval. Time must be greater than zero.",fields:[{key:"v0",labelID:"Kecepatan awal",labelEN:"Initial velocity",unit:"m/s",initial:4,step:.1},{key:"v",labelID:"Kecepatan akhir",labelEN:"Final velocity",unit:"m/s",initial:11.5,step:.1},{key:"t",labelID:"Waktu",labelEN:"Time",unit:"s",initial:5,min:.01,step:.1}],evaluate:v=>({substitution:"a = ("+v.v.toFixed(2)+" − "+v.v0.toFixed(2)+") / "+v.t.toFixed(2),value:((v.v-v.v0)/v.t).toFixed(3),unit:"m/s²"})}
+
  ],
  circular:[
   {id:"angular",titleID:"Posisi sudut",titleEN:"Angular position",formula:String.raw`\theta(t)=\theta_0+\omega t`,noteID:"Kecepatan sudut konstan menghasilkan perubahan sudut linear terhadap waktu.",noteEN:"Constant angular velocity gives a linear change in angle over time."},
   {id:"linear",titleID:"Hubungan linear dan sudut",titleEN:"Linear–angular relation",formula:String.raw`v=\omega r,\quad s=r\theta`,noteID:"Sudut θ harus dinyatakan dalam radian pada persamaan panjang busur.",noteEN:"Angle θ must be in radians in the arc-length relation."},
   {id:"period",titleID:"Periode dan frekuensi",titleEN:"Period and frequency",formula:String.raw`T=\frac{2\pi}{\omega},\quad f=\frac1T=\frac{\omega}{2\pi}`,noteID:"Periode adalah waktu untuk satu putaran penuh.",noteEN:"The period is the time required for one complete revolution."},
   {id:"centripetal",titleID:"Percepatan sentripetal",titleEN:"Centripetal acceleration",formula:String.raw`a_c=\frac{v^2}{r}=\omega^2r`,noteID:"Arah percepatan selalu menuju pusat lintasan.",noteEN:"Acceleration always points toward the center of the path."}
+  ,{id:"period",titleID:"Periode gerak melingkar",titleEN:"Circular period",formula:"T=\\frac{2\\pi}{\\omega}",noteID:"Periode adalah waktu untuk satu putaran penuh. Kecepatan sudut harus lebih besar dari nol.",noteEN:"The period is the time for one complete revolution. Angular speed must be greater than zero.",fields:[{key:"omega",labelID:"Kecepatan sudut",labelEN:"Angular speed",unit:"rad/s",initial:1.5,min:.01,step:.1}],evaluate:v=>({substitution:"T = 2π / "+v.omega.toFixed(2),value:(2*Math.PI/v.omega).toFixed(3),unit:"s"})}
+
  ],
  energy:[
   {id:"mechanical",titleID:"Energi mekanik",titleEN:"Mechanical energy",formula:String.raw`E_m=E_k+E_p=\frac12mv^2+mgh`,noteID:"Energi mekanik adalah jumlah energi kinetik dan potensial gravitasi.",noteEN:"Mechanical energy is the sum of kinetic and gravitational potential energy."},
   {id:"work",titleID:"Usaha oleh gesekan",titleEN:"Work done by friction",formula:String.raw`W_f=-f_ks=-\mu_kmg\cos\alpha\,s`,noteID:"Tanda negatif menunjukkan gaya gesek berlawanan arah dengan perpindahan.",noteEN:"The negative sign indicates friction acts opposite to displacement."},
   {id:"energybalance",titleID:"Teorema usaha–energi",titleEN:"Work–energy theorem",formula:String.raw`K_f-K_i=W_{\mathrm{net}}`,noteID:"Usaha total sama dengan perubahan energi kinetik.",noteEN:"Net work equals the change in kinetic energy."},
   {id:"conservation",titleID:"Energi dan gaya nonkonservatif",titleEN:"Energy and non-conservative work",formula:String.raw`E_{m,f}=E_{m,i}+W_{\mathrm{nc}}`,noteID:"Gesekan dapat mengurangi energi mekanik dan mentransfer energi menjadi energi termal.",noteEN:"Friction can reduce mechanical energy and transfer energy into thermal energy."}
+  ,{id:"mechanical",titleID:"Energi mekanik total",titleEN:"Total mechanical energy",formula:"E_m=E_k+E_p=\\frac12mv^2+mgh",noteID:"Jumlah energi kinetik dan potensial terhadap titik acuan ketinggian yang dipilih. Tidak otomatis konstan jika ada gaya nonkonservatif.",noteEN:"The sum of kinetic and potential energy relative to the chosen height reference. It is not automatically conserved when non-conservative forces act.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"v",labelID:"Kelajuan",labelEN:"Speed",unit:"m/s",initial:5,min:0,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"h",labelID:"Ketinggian",labelEN:"Height",unit:"m",initial:8,min:0,step:.1}],evaluate:v=>({substitution:"E_m = ½("+v.m.toFixed(2)+")("+v.v.toFixed(2)+")² + ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+")("+v.h.toFixed(2)+")",value:(.5*v.m*v.v*v.v+v.m*v.g*v.h).toFixed(3),unit:"J"})}
+
  ],
  incline:[
   {id:"weight",titleID:"Komponen gaya berat",titleEN:"Weight components",formula:String.raw`F_{\parallel}=mg\sin\theta,\quad F_{\perp}=mg\cos\theta`,noteID:"Gaya berat diuraikan sejajar dan tegak lurus bidang miring.",noteEN:"Resolve weight into components parallel and perpendicular to the incline."},
@@ -157,6 +167,8 @@ const equationLibrary: Record<LabId, EquationEntry[]> = {
   {id:"friction",titleID:"Gaya gesek kinetik",titleEN:"Kinetic friction",formula:String.raw`f_k=\mu_kN`,noteID:"Gesekan statis memerlukan analisis ambang gerak tersendiri.",noteEN:"Static friction requires a separate threshold analysis."},
   {id:"acceleration",titleID:"Percepatan sepanjang bidang",titleEN:"Acceleration along the incline",formula:String.raw`a=g(\sin\theta-\mu_k\cos\theta)`,noteID:"Berlaku saat balok meluncur turun dan arah positif dipilih menuruni bidang.",noteEN:"Valid for downhill sliding with downhill chosen as positive."},
   {id:"threshold",titleID:"Ambang mulai meluncur",titleEN:"Threshold for sliding",formula:String.raw`\tan\theta>\mu_s`,noteID:"Untuk mulai bergerak dari diam, gunakan koefisien gesek statis μs, bukan μk.",noteEN:"For motion to begin from rest, use static friction μs, not kinetic friction μk."}
+  ,{id:"threshold",titleID:"Sudut kritis mulai meluncur",titleEN:"Critical angle for sliding",formula:"\\theta_c=\\tan^{-1}(\\mu_s)",noteID:"Ambang ideal ketika komponen berat sejajar bidang menyamai gaya gesek statis maksimum. Tidak bergantung pada massa.",noteEN:"Ideal threshold where the downslope weight component equals maximum static friction. It is independent of mass.",fields:[{key:"mu",labelID:"Koefisien gesek statis",labelEN:"Static friction coefficient",unit:"—",initial:.5,min:0,max:1,step:.01}],evaluate:v=>({substitution:"θ_c = tan⁻¹("+v.mu.toFixed(2)+")",value:(Math.atan(v.mu)*180/Math.PI).toFixed(3),unit:"°"})}
+
  ],
  collision:[
   {id:"momentum",titleID:"Kekekalan momentum",titleEN:"Conservation of momentum",formula:String.raw`m_1u_1+m_2u_2=m_1v_1+m_2v_2`,noteID:"Momentum total sistem dua benda tetap jika resultan impuls eksternal dapat diabaikan.",noteEN:"Total system momentum is conserved when external impulse is negligible."},
@@ -164,6 +176,8 @@ const equationLibrary: Record<LabId, EquationEntry[]> = {
   {id:"impulse",titleID:"Impuls pada benda 1",titleEN:"Impulse on body 1",formula:String.raw`J_1=\Delta p_1=m_1(v_1-u_1)`,noteID:"Impuls adalah perubahan momentum dan sama dengan integral gaya terhadap waktu.",noteEN:"Impulse is the change in momentum and equals the time integral of force."},
   {id:"kinetic",titleID:"Energi kinetik total",titleEN:"Total kinetic energy",formula:String.raw`K=\frac12m_1v_1^2+\frac12m_2v_2^2`,noteID:"Momentum selalu kekal pada sistem terisolasi, tetapi energi kinetik hanya kekal pada tumbukan lenting sempurna.",noteEN:"Momentum is conserved in an isolated system, while kinetic energy is conserved only in an elastic collision."},
   {id:"final",titleID:"Kecepatan akhir",titleEN:"Final velocities",formula:String.raw`v_1=\frac{m_1u_1+m_2u_2-m_2e(u_1-u_2)}{m_1+m_2},\quad v_2=v_1+e(u_1-u_2)`,noteID:"Hasil diperoleh dari gabungan kekekalan momentum dan definisi koefisien restitusi.",noteEN:"These results combine momentum conservation with the coefficient-of-restitution definition."}
+  ,{id:"momentum",titleID:"Momentum total awal",titleEN:"Initial total momentum",formula:"p=m_1u_1+m_2u_2",noteID:"Momentum merupakan besaran vektor. Gunakan tanda positif dan negatif secara konsisten untuk menunjukkan arah.",noteEN:"Momentum is a vector. Use positive and negative signs consistently to represent direction.",fields:[{key:"m1",labelID:"Massa benda 1",labelEN:"Mass 1",unit:"kg",initial:2,min:.01,step:.1},{key:"u1",labelID:"Kecepatan awal 1",labelEN:"Initial velocity 1",unit:"m/s",initial:6,step:.1},{key:"m2",labelID:"Massa benda 2",labelEN:"Mass 2",unit:"kg",initial:2,min:.01,step:.1},{key:"u2",labelID:"Kecepatan awal 2",labelEN:"Initial velocity 2",unit:"m/s",initial:0,step:.1}],evaluate:v=>({substitution:"p = ("+v.m1.toFixed(2)+")("+v.u1.toFixed(2)+") + ("+v.m2.toFixed(2)+")("+v.u2.toFixed(2)+")",value:(v.m1*v.u1+v.m2*v.u2).toFixed(3),unit:"kg·m/s"})}
+
  ],
  spring:[
   {id:"hooke",titleID:"Hukum Hooke",titleEN:"Hooke's law",formula:String.raw`F=-kx`,noteID:"Tanda negatif menunjukkan gaya pegas mengarah menuju posisi setimbang.",noteEN:"The negative sign means spring force points toward equilibrium."},
@@ -211,71 +225,75 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
   {id:"period",titleID:"Periode osilasi",titleEN:"Oscillation period",formula:"T=2\\pi\\sqrt{\\frac{m}{k}}",noteID:"Model massa–pegas ideal tanpa redaman. Massa dalam kg dan konstanta pegas dalam N/m.",noteEN:"Ideal undamped mass–spring model. Mass is in kg and stiffness in N/m.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:1,min:.01,step:.1},{key:"k",labelID:"Konstanta pegas",labelEN:"Spring constant",unit:"N/m",initial:25,min:.01,step:.1}],evaluate:v=>({substitution:"T = 2π √("+v.m.toFixed(2)+" / "+v.k.toFixed(2)+")",value:(2*Math.PI*Math.sqrt(v.m/v.k)).toFixed(3),unit:"s"})},
   {id:"frequency",titleID:"Frekuensi sudut",titleEN:"Angular frequency",formula:"\\omega=\\sqrt{\\frac{k}{m}}",noteID:"Frekuensi sudut bertambah saat pegas lebih kaku dan berkurang saat massa diperbesar.",noteEN:"Angular frequency rises with stiffness and falls as mass increases.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:1,min:.01,step:.1},{key:"k",labelID:"Konstanta pegas",labelEN:"Spring constant",unit:"N/m",initial:25,min:.01,step:.1}],evaluate:v=>({substitution:"ω = √("+v.k.toFixed(2)+" / "+v.m.toFixed(2)+")",value:Math.sqrt(v.k/v.m).toFixed(3),unit:"rad/s"})}
  ]
+  ,{id:"restoringForce",titleID:"Gaya pemulih pegas",titleEN:"Spring restoring force",formula:"F=-kx",noteID:"Tanda negatif menunjukkan gaya selalu berlawanan arah dengan simpangan dari posisi setimbang.",noteEN:"The negative sign means the force always acts opposite to displacement from equilibrium.",fields:[{key:"k",labelID:"Konstanta pegas",labelEN:"Spring constant",unit:"N/m",initial:25,min:.01,step:.1},{key:"x",labelID:"Simpangan",labelEN:"Displacement",unit:"m",initial:.2,step:.01}],evaluate:v=>({substitution:"F = −("+v.k.toFixed(2)+")("+v.x.toFixed(3)+")",value:(-v.k*v.x).toFixed(3),unit:"N"})}
+
 };
 
 function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language}) {
  const definitions=calculatorDefinitions[labId];
+ const [selectedId,setSelectedId]=useState(definitions[0].id);
  const createInitialInputs=()=>Object.fromEntries(definitions.map(def=>[def.id,Object.fromEntries(def.fields.map(field=>[field.key,String(field.initial)]))]));
  const [inputs,setInputs]=useState<Record<string,Record<string,string>>>(createInitialInputs);
- useEffect(()=>{setInputs(createInitialInputs());},[labId]);
- const resetCard=(id:string,fields:CalcField[])=>setInputs(old=>({...old,[id]:Object.fromEntries(fields.map(field=>[field.key,String(field.initial)]))}));
+ useEffect(()=>{setSelectedId(definitions[0].id);setInputs(createInitialInputs());},[labId]);
+ const activeIndex=Math.max(0,definitions.findIndex(def=>def.id===selectedId));
+ const active=definitions[activeIndex]??definitions[0];
+ const raw=inputs[active.id]??{};
+ const values=Object.fromEntries(active.fields.map(field=>[field.key,raw[field.key]===undefined?field.initial:Number(raw[field.key])])) as Record<string,number>;
+ const invalidField=active.fields.find(field=>{
+  const rawValue=raw[field.key]??String(field.initial),value=values[field.key];
+  return rawValue.trim()===""||!Number.isFinite(value)||(field.min!==undefined&&value<field.min)||(field.max!==undefined&&value>field.max);
+ });
+ let result:CalcResult|null=null,calculationFailed=false;
+ if(!invalidField){try{const evaluated=active.evaluate(values);if(Number.isFinite(Number(evaluated.value)))result=evaluated;else calculationFailed=true;}catch{calculationFailed=true;}}
+ const errorText=invalidField
+  ? (raw[invalidField.key]??"").trim()===""
+   ? (language==="ID"?"Nilai belum diisi.":"Enter a value.")
+   : language==="ID"
+    ? `Periksa batas nilai untuk ${invalidField.labelID} (${invalidField.min!==undefined?"min. "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?", ":""}${invalidField.max!==undefined?"maks. "+invalidField.max:""}).`
+    : `Check the allowed range for ${invalidField.labelEN} (${invalidField.min!==undefined?"min. "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?", ":""}${invalidField.max!==undefined?"max. "+invalidField.max:""}).`
+  : calculationFailed?(language==="ID"?"Hasil tidak terdefinisi. Periksa kembali nilai variabel.":"Result is undefined. Check the variable values."):null;
+ const reset=()=>setInputs(old=>({...old,[active.id]:Object.fromEntries(active.fields.map(field=>[field.key,String(field.initial)]))}));
  return <section className="equation-calculator-panel" aria-label={language==="ID"?"Kalkulator persamaan mekanika":"Mechanics equation calculator"}>
   <div className="equation-calculator-heading">
    <div><span className="eyebrow">MECHANICS / FORMULA WORKBENCH</span><h2>{language==="ID"?"Kalkulator Persamaan":"Equation Calculator"}</h2></div>
-   <p>{language==="ID"?"Ubah variabel untuk melihat substitusi dan hasil secara langsung. Setiap kalkulator dilengkapi batas input dan penjelasan konsep.":"Change the variables to see the substitution and result instantly. Each calculator includes input limits and a concept note."}</p>
+   <p>{language==="ID"?"Pilih satu persamaan. Variabel, substitusi, dan hasil akan menyesuaikan secara otomatis.":"Choose one equation. Its variables, substitution, and result update automatically."}</p>
   </div>
-  <div className="equation-calculator-list">{definitions.map((def,index)=>{
-   const raw=inputs[def.id]??{};
-   const values=Object.fromEntries(def.fields.map(field=>[field.key,raw[field.key]===undefined?field.initial:Number(raw[field.key])])) as Record<string,number>;
-   const invalidField=def.fields.find(field=>{
-    const rawValue=raw[field.key]??String(field.initial);
-    const value=values[field.key];
-    return rawValue.trim()===""||!Number.isFinite(value)||(field.min!==undefined&&value<field.min)||(field.max!==undefined&&value>field.max);
-   });
-   let result:CalcResult|null=null;
-   let calculationFailed=false;
-   if(!invalidField){
-    try{const evaluated=def.evaluate(values);if(Number.isFinite(Number(evaluated.value)))result=evaluated;else calculationFailed=true;}
-    catch{calculationFailed=true;}
-   }
-   const errorText=invalidField
-    ? (raw[invalidField.key]??"").trim()===""
-      ? (language==="ID"?"Nilai belum diisi.":"Enter a value.")
-      : language==="ID"
-        ? `Masukkan nilai ${invalidField.min!==undefined?"≥ "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?" dan ":""}${invalidField.max!==undefined?"≤ "+invalidField.max:""}.`
-        : `Enter a value ${invalidField.min!==undefined?"≥ "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?" and ":""}${invalidField.max!==undefined?"≤ "+invalidField.max:""}.`
-    : calculationFailed?(language==="ID"?"Perhitungan tidak dapat dilakukan. Periksa kembali nilai variabel.":"Calculation failed. Check the variable values."):null;
-   return <article className="equation-calculator-card" key={def.id}>
-    <div className="equation-calculator-card-head">
-     <span className="equation-calculator-index">{String(index+1).padStart(2,"0")}</span>
-     <h3>{language==="ID"?def.titleID:def.titleEN}</h3>
-     <button type="button" className="equation-calc-reset" onClick={()=>resetCard(def.id,def.fields)} aria-label={language==="ID"?"Reset nilai kalkulator":"Reset calculator values"} title={language==="ID"?"Kembalikan nilai awal":"Restore default values"}><RotateCcw size={14}/></button>
+  <div className="equation-calculator-workspace">
+   <div className="equation-calc-selector">
+    <label htmlFor="mechanics-equation-select">{language==="ID"?"PILIH PERSAMAAN":"SELECT AN EQUATION"}</label>
+    <select id="mechanics-equation-select" value={active.id} onChange={event=>setSelectedId(event.target.value)}>
+     {definitions.map((def,index)=><option key={def.id} value={def.id}>{String(index+1).padStart(2,"0")} · {language==="ID"?def.titleID:def.titleEN}</option>)}
+    </select>
+    <span>{String(activeIndex+1).padStart(2,"0")} / {String(definitions.length).padStart(2,"0")} {language==="ID"?"PERSAMAAN":"EQUATIONS"}</span>
+   </div>
+   <article className="equation-calculator-card" key={active.id}>
+    <div className="equation-calculator-card-head"><div><span className="equation-calculator-index">{language==="ID"?"PERSAMAAN":"EQUATION"} {String(activeIndex+1).padStart(2,"0")}</span><h3>{language==="ID"?active.titleID:active.titleEN}</h3></div>
+     <button type="button" className="equation-calc-reset" onClick={reset} aria-label={language==="ID"?"Reset nilai":"Reset values"} title={language==="ID"?"Kembalikan nilai awal":"Restore defaults"}><RotateCcw size={15}/></button>
     </div>
-    <div className="equation-calc-formula"><span>{language==="ID"?"PERSAMAAN":"FORMULA"}</span><div className="equation-calc-math"><Equation value={def.formula}/></div></div>
-    <div className="equation-calc-fields">{def.fields.map(field=>{
+    <div className="equation-calc-formula"><span>{language==="ID"?"PERSAMAAN UMUM":"GENERAL EQUATION"}</span><div className="equation-calc-math"><Equation value={active.formula}/></div></div>
+    <div className="equation-calc-input-heading"><strong>{language==="ID"?"Variabel eksperimen":"Experiment variables"}</strong><span>{language==="ID"?"Hasil diperbarui otomatis":"Live calculation"}</span></div>
+    <div className="equation-calc-fields">{active.fields.map(field=>{
      const value=raw[field.key]??String(field.initial);
      const fieldInvalid=value.trim()===""||!Number.isFinite(Number(value))||(field.min!==undefined&&Number(value)<field.min)||(field.max!==undefined&&Number(value)>field.max);
      return <label key={field.key}>
       <span>{language==="ID"?field.labelID:field.labelEN}<small>{field.unit}</small></span>
-      <input type="number" inputMode="decimal" min={field.min} max={field.max} step={field.step??"any"} value={value} aria-invalid={fieldInvalid} onChange={event=>setInputs(old=>({...old,[def.id]:{...(old[def.id]??{}),[field.key]:event.target.value}}))}/>
+      <input type="number" inputMode="decimal" min={field.min} max={field.max} step={field.step??"any"} value={value} aria-invalid={fieldInvalid} onChange={event=>setInputs(old=>({...old,[active.id]:{...(old[active.id]??{}),[field.key]:event.target.value}}))}/>
       {(field.min!==undefined||field.max!==undefined)&&<small className="equation-calc-range">{field.min!==undefined&&field.max!==undefined?`${field.min} – ${field.max}`:field.min!==undefined?`≥ ${field.min}`:`≤ ${field.max}`}</small>}
      </label>;
     })}</div>
-    <div className="equation-calc-substitution">
-     <span>{language==="ID"?"SUBSTITUSI NILAI":"SUBSTITUTION"}</span>
-     <code>{result?result.substitution:(language==="ID"?"Lengkapi input untuk melihat substitusi.":"Complete the inputs to see the substitution.")}</code>
-    </div>
+    <div className="equation-calc-substitution"><span>{language==="ID"?"SUBSTITUSI ANGKA":"NUMERIC SUBSTITUTION"}</span><code>{result?result.substitution:(language==="ID"?"Lengkapi variabel untuk melihat substitusi.":"Complete the variables to see the substitution.")}</code></div>
     {errorText&&<p className="equation-calc-error" role="status">{errorText}</p>}
-    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}>
-     <span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span>
-     <strong>{result?result.value:"—"} <small>{result?.unit??""}</small></strong>
-    </div>
-    <p className="equation-calc-note">{language==="ID"?def.noteID:def.noteEN}</p>
-   </article>;
-  })}</div>
+    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span><strong>{result?result.value:"—"} <small>{result?.unit??""}</small></strong></div>
+    <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p>{language==="ID"?active.noteID:active.noteEN}</p></div>
+   </article>
+   <div className="equation-calc-navigation">
+    <button type="button" onClick={()=>setSelectedId(definitions[(activeIndex-1+definitions.length)%definitions.length].id)}><ArrowLeft size={15}/>{language==="ID"?"Sebelumnya":"Previous"}</button>
+    <span>{language==="ID"?"Ganti persamaan tanpa meninggalkan kalkulator":"Switch equations without leaving the calculator"}</span>
+    <button type="button" onClick={()=>setSelectedId(definitions[(activeIndex+1)%definitions.length].id)}>{language==="ID"?"Berikutnya":"Next"}<ArrowRight size={15}/></button>
+   </div>
+  </div>
  </section>;
 }
-
 
 const words = {
   ID: {

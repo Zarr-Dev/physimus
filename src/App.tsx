@@ -229,7 +229,7 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
 };
 
 function calcVariableSymbol(key:string) {
- const symbols:Record<string,string>={v0:"v_0",theta:"\\\\theta",h0:"h_0",g:"g",x0:"x_0",v:"v",t:"t",dx:"\\\\Delta x",dt:"\\\\Delta t",a:"a",omega:"\\\\omega",r:"r",m:"m",k:"k",mu:"\\\\mu_k",e:"e",m1:"m_1",m2:"m_2",u1:"u_1",u2:"u_2",x:"x"};
+ const symbols:Record<string,string>={v0:"v_0",theta:"\\theta",h0:"h_0",g:"g",x0:"x_0",v:"v",t:"t",dx:"\\Delta x",dt:"\\Delta t",a:"a",omega:"\\omega",r:"r",m:"m",k:"k",mu:"\\mu_k",e:"e",m1:"m_1",m2:"m_2",u1:"u_1",u2:"u_2",x:"x"};
  return symbols[key]??key;
 }
 
@@ -253,7 +253,7 @@ function calculatorMath(value:string) {
   if(close!==-1)out=out.slice(0,open)+out.slice(open,close+1)+"}"+out.slice(close+1);
   start=out.indexOf("\\sqrt{",start+6);
  }
- out=out.replace(/\b(sin|cos|tan)\(/g,(_,fn)=>"\\"+fn+"(");
+ out=out.replace(/tan\^{-1}\(/g,"\\tan^{-1}(").replace(/\b(sin|cos|tan)\(/g,(_,fn)=>"\\"+fn+"(");
  return out;
 }
 
@@ -311,7 +311,7 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
     })}</div>
     <div className="equation-calc-substitution"><span>{language==="ID"?"SUBSTITUSI ANGKA":"NUMERIC SUBSTITUTION"}</span><div className="equation-calc-substitution-math">{result?<Equation value={calculatorMath(result.substitution)}/>:<span>{language==="ID"?"Lengkapi variabel untuk melihat substitusi.":"Complete the variables to see the substitution."}</span>}</div></div>
     {errorText&&<p className="equation-calc-error" role="status">{errorText}</p>}
-    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span><strong>{result?result.value:"—"} <small>{result?.unit??""}</small></strong></div>
+    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span><strong>{result?<><Equation value={result.value}/>{" "}<small>{result.unit}</small></>:"—"}</strong></div>
     <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p>{language==="ID"?active.noteID:active.noteEN}</p></div>
    </article>
    <div className="equation-calc-navigation">

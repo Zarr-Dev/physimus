@@ -445,7 +445,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       for(let i=0;i<=12;i++){const q=i/12;const xx=anchor+(blockX-12-anchor)*q;const yy=i===0||i===12?0:(i%2===0?-1:1)*Math.min(8,radius*.22);ctx.lineTo(xx,yy);}
       ctx.stroke();ctx.fillStyle="#8b6bd6";ctx.fillRect(blockX-12,-11,24,22);ctx.strokeStyle="#fff";ctx.strokeRect(blockX-12,-11,24,22);
     }else if(item.kind==="rope"){
-      const length=Math.max(45,item.length*radius),sag=item.springEnabled?Math.max(5,item.damping*radius*1.8):0;ctx.strokeStyle="#4da786";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-length/2,0);ctx.quadraticCurveTo(0,sag,length/2,0);ctx.stroke();
+      const length=Math.max(45,item.length*radius),decay=item.frictionEnabled?Math.exp(-item.damping*time):1,wave=item.springEnabled?Math.sin(time*Math.sqrt(Math.max(item.stiffness,1)/Math.max(item.mass,.01)))*radius*.22*decay:0,sag=item.springEnabled?Math.max(5,item.damping*radius*1.8)+wave:0;ctx.strokeStyle="#4da786";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-length/2,0);ctx.quadraticCurveTo(0,sag,length/2,0);ctx.stroke();
       ctx.fillStyle="#4da786";ctx.beginPath();ctx.arc(length/2,0,4,0,Math.PI*2);ctx.fill();
     }else if(item.kind==="pulley"){
       const r=Math.max(10,radius*.7),turn=(item.rotationEnabled?time*Math.sqrt((item.gravityEnabled?gravity:0)/Math.max(item.radius,.05)):0)+item.angle;
@@ -466,7 +466,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
     }
     ctx.restore();
     if(item.id===selectedObjectId){ctx.save();ctx.strokeStyle=theme==="dark"?"#9dccf5":"#347fc5";ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.arc(px,py,radius+7,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
-    if(showLabels&&item.showLabel){ctx.fillStyle=theme==="dark"?"#d3dfeb":"#536b83";ctx.font="600 11px DM Sans";ctx.textAlign="center";ctx.fillText(item.kind+" · "+item.mass+" kg",px,py-radius-9);}
+    if(showLabels&&item.showLabel){ctx.fillStyle=theme==="dark"?"#d3dfeb":"#536b83";ctx.font="600 11px DM Sans";ctx.textAlign="center";ctx.fillText(w.objectNames[item.kind]+" · "+item.mass+" kg",px,py-radius-9);}
     if(item.pinned){ctx.fillStyle=theme==="dark"?"#d9e5f0":"#647a90";ctx.beginPath();ctx.arc(px,py-radius-22,4,0,Math.PI*2);ctx.fill();}
   });
 
@@ -478,7 +478,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    }
   }
   ctx.fillStyle="#8292a4";ctx.font="11px DM Sans";ctx.textAlign="right";ctx.fillText("x (m)",width-18,height-12);ctx.save();ctx.translate(15,top+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText("y (m)",0,0);ctx.restore();
- },[parsed,valid,view,scale,showGrid,showAxes,hasMotion,time,duration,mass,parameterSet,showTrail,showVelocity,showAcceleration,showForce,showWeight,showMomentum,gravity,showLabels,current,object,canvasSize,renderQuality.dpr,functionCurves,motionTrail,sceneObjects,selectedObjectId,theme]);
+ },[parsed,valid,view,scale,showGrid,showAxes,hasMotion,time,duration,mass,parameterSet,showTrail,showVelocity,showAcceleration,showForce,showWeight,showMomentum,gravity,showLabels,current,object,canvasSize,renderQuality.dpr,functionCurves,motionTrail,sceneObjects,selectedObjectId,theme,language]);
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const observer=new ResizeObserver(()=>setCanvasSize(v=>v+1));observer.observe(canvas);return()=>observer.disconnect();},[]);
  useEffect(()=>{timeRef.current=time;},[time]);
   useEffect(()=>{if(editorTab!=="objects"||!selectedSceneObject)return;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;objectPropertiesRef.current?.scrollIntoView({behavior:reduced||motionLevel==="low"?"auto":"smooth",block:"nearest"});},[editorTab,selectedObjectId,motionLevel]);

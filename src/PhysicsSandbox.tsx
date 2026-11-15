@@ -166,16 +166,62 @@ export default function PhysicsSandbox({language}:{language:Language}){
  const mathHtml=(value:string)=>({__html:katex.renderToString(value,{throwOnError:false})});
  return <main className="sandbox-workspace">
   <header className="sandbox-heading"><div><span className="eyebrow">PHYSIMUS / EQUATION SANDBOX</span><h1>{w.title}</h1><p>{w.hint}</p></div><div className="sandbox-heading-actions"><button className="secondary-button" onClick={exportCsv}><Download size={16}/>{w.export}</button><button className="secondary-button" onClick={()=>{setRows([{id:1,text:"",enabled:true}]);setNextId(2);reset();}}><RotateCcw size={16}/>{w.reset}</button></div></header>
+  <div className="sandbox-top-tabs" role="tablist" aria-label={w.title}>
+    {(["equations","objects","examples","graph"] as EditorTab[]).map(tab=><button key={tab} role="tab" aria-selected={editorTab===tab} className={editorTab===tab?"active":""} onClick={()=>setEditorTab(tab)}>{tab==="equations"?w.tabEquations:tab==="objects"?w.tabObjects:tab==="examples"?w.tabExamples:w.tabGraph}</button>)}
+  </div>
   <div className="sandbox-studio">
    <aside className="sandbox-editor">
-    <div className="sandbox-editor-heading"><strong>{w.math}</strong><button onClick={add}><Plus size={15}/>{w.add}</button></div>
-    <div className="sandbox-equations">{rows.map((row,index)=><div className="sandbox-equation-row" key={row.id}><span>{index+1}</span><button title={row.enabled?"Hide":"Show"} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><input value={row.text} onChange={e=>update(row.id,e.target.value)} placeholder="e.g. x(t)=A*cos(omega*t)"/><button title={w.delete} onClick={()=>setRows(old=>old.filter(q=>q.id!==row.id))}><Trash2 size={14}/></button></div>)}</div>
-    <div className="sandbox-presets"><span className="eyebrow">{w.examples}</span><div><button onClick={()=>preset("circle")}>GMB</button><button onClick={()=>preset("projectile")}>Projectile</button><button onClick={()=>preset("spring")}>Spring</button><button onClick={()=>preset("curve")}>Curve</button></div></div>
-    <details className="sandbox-syntax"><summary>{w.syntax}</summary><p>{w.syntaxText}</p><p>y=f(x), x(t)=..., y(t)=...</p></details>
+    {editorTab==="equations"&&<>
+      <div className="sandbox-editor-heading"><strong>{w.math}</strong><button onClick={add}><Plus size={15}/>{w.add}</button></div>
+      <div className="sandbox-equations">{rows.map((row,index)=><div className="sandbox-equation-row" key={row.id}><span>{index+1}</span><button title={row.enabled?w.hide:w.show} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><input aria-label={"Equation "+(index+1)} value={row.text} onChange={e=>update(row.id,e.target.value)} placeholder="x(t)=A*cos(omega*t)"/><button title={w.delete} onClick={()=>setRows(old=>old.filter(q=>q.id!==row.id))}><Trash2 size={14}/></button></div>)}</div>
+      <section className="sandbox-variable-panel">
+        <div className="sandbox-panel-title"><strong>{w.variables}</strong><span>{usedVariables.length}</span></div>
+        {usedVariables.length===0?<p className="sandbox-variable-empty">{w.noVariables}</p>:<div className="sandbox-variable-grid">{usedVariables.map(name=>{const meta=variableDescription(name,language);return <label key={name}><span>{meta.label} <code>{name}</code></span><div><input type="number" step="any" value={parameterSet[name]??variableDefaults(name)} onChange={e=>setVariable(name,Number(e.target.value))}/><small>{meta.unit}</small></div></label>;})}</div>}
+        <p className="sandbox-variable-help">{language==="ID"?"Nilai variabel langsung mengubah evaluasi persamaan dan lintasan saat ini. x dan t adalah variabel independen; pi dan e adalah konstanta.":"Changing a variable recalculates the expressions and trajectory. x and t are independent variables; pi and e are constants."}</p>
+      </section>
+    </>}
+    {editorTab==="objects"&&<>
+      <div className="sandbox-editor-heading"><strong>{w.tabObjects}</strong></div>
+      <p className="sandbox-section-intro">{language==="ID"?"Tambahkan alat mekanika ke bidang koordinat. Setiap benda memiliki posisi dan properti sendiri.":"Add mechanics apparatus to the coordinate plane. Each item has its own position and properties."}</p>
+      <div className="sandbox-object-library">{(["box","circle","spring","rope","pulley"] as ObjectKind[]).map(kind=><button key={kind} onClick={()=>addSceneObject(kind)}><span className={"sandbox-object-icon "+kind}>{kind==="box"?"▰":kind==="circle"?"○":kind==="spring"?"∿":kind==="rope"?"⌁":"◉"}</span><strong>{w.objectNames[kind]}</strong><Plus size={14}/></button>)}</div>
+      <div className="sandbox-panel-title"><strong>{language==="ID"?"Objek pada bidang":"Objects on canvas"}</strong><span>{sceneObjects.length}</span></div>
+      {sceneObjects.length===0?<p className="sandbox-variable-empty">{language==="ID"?"Belum ada objek. Pilih alat di atas untuk menambahkan.":"No objects yet. Choose an item above to add it."}</p>:<>
+        <div className="sandbox-object-list">{sceneObjects.map(item=><div className={item.id===selectedObjectId?"sandbox-object-item selected":"sandbox-object-item"} key={item.id}><button className="sandbox-object-select" onClick={()=>setSelectedObjectId(item.id)}><span>{w.objectNames[item.kind]}</span><small>#{item.id}</small></button><button className="sandbox-object-visibility" title={w.enabled} onClick={()=>updateSceneObject(item.id,"enabled",!item.enabled)}>{item.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><button className="sandbox-object-remove" title={w.delete} onClick={()=>{setSceneObjects(old=>old.filter(v=>v.id!==item.id));if(selectedObjectId===item.id)setSelectedObjectId(null);}}><Trash2 size={14}/></button></div>)}</div>
+        {selectedSceneObject&&<div className="sandbox-object-properties"><strong>{w.objectNames[selectedSceneObject.kind]} #{selectedSceneObject.id}</strong>
+          <div className="sandbox-property-grid">
+            <label>{language==="ID"?"Posisi x (m)":"Position x (m)"}<input type="number" step=".1" value={selectedSceneObject.x} onChange={e=>updateSceneObject(selectedSceneObject.id,"x",Number(e.target.value))}/></label>
+            <label>{language==="ID"?"Posisi y (m)":"Position y (m)"}<input type="number" step=".1" value={selectedSceneObject.y} onChange={e=>updateSceneObject(selectedSceneObject.id,"y",Number(e.target.value))}/></label>
+            <label>{w.objectMass} (kg)<input type="number" min=".01" step=".1" value={selectedSceneObject.mass} onChange={e=>updateSceneObject(selectedSceneObject.id,"mass",Math.max(.01,Number(e.target.value)||.01))}/></label>
+            <label>{w.objectRadius} (m)<input type="number" min=".05" step=".1" value={selectedSceneObject.radius} onChange={e=>updateSceneObject(selectedSceneObject.id,"radius",Math.max(.05,Number(e.target.value)||.05))}/></label>
+            <label>{w.objectSpring} (N/m)<input type="number" min="0" step="1" value={selectedSceneObject.stiffness} onChange={e=>updateSceneObject(selectedSceneObject.id,"stiffness",Math.max(0,Number(e.target.value)||0))}/></label>
+            <label>{w.objectAngle} (°)<input type="number" step="1" value={selectedSceneObject.angle*180/Math.PI} onChange={e=>updateSceneObject(selectedSceneObject.id,"angle",Number(e.target.value)*Math.PI/180)}/></label>
+          </div>
+          <p>{language==="ID"?"Pegas berosilasi menggunakan √(k/m), katrol berputar mengikuti waktu simulasi. Objek lain menjadi alat bantu geometri. Properti massa/konstanta dicatat sebagai parameter benda, bukan otomatis menjadi gaya pada objek partikel.":"Springs oscillate with √(k/m); pulleys rotate with simulation time. Other items are geometric apparatus. Mass and stiffness are stored properties, not automatically coupled forces on the moving particle."}</p>
+        </div>}
+      </>}
+    </>}
+    {editorTab==="examples"&&<>
+      <div className="sandbox-editor-heading"><strong>{w.examples}</strong></div>
+      <p className="sandbox-section-intro">{language==="ID"?"Pilih contoh untuk memuat persamaan, variabel, dan kondisi awal.":"Load a starter model with equations, variables and initial conditions."}</p>
+      <div className="sandbox-example-list">
+        <button onClick={()=>preset("circle")}><strong>01 · Gerak melingkar beraturan</strong><code>x(t)=A cos(ωt), y(t)=A sin(ωt)</code></button>
+        <button onClick={()=>preset("projectile")}><strong>02 · Gerak parabola</strong><code>x(t)=v₀ cos(θ)t, y(t)=v₀ sin(θ)t − ½gt²</code></button>
+        <button onClick={()=>preset("spring")}><strong>03 · Osilasi harmonik</strong><code>x(t)=A cos(ωt)</code></button>
+        <button onClick={()=>preset("curve")}><strong>04 · Kurva fungsi</strong><code>y = 0.2x² − 2</code></button>
+      </div>
+    </>}
+    {editorTab==="graph"&&<>
+      <div className="sandbox-editor-heading"><strong>{w.tabGraph}</strong></div>
+      <div className="sandbox-viewport"><span className="eyebrow">{w.view}</span>{([["xmin",w.xmin],["xmax",w.xmax],["ymin",w.ymin],["ymax",w.ymax]] as const).map(([key,label])=><label key={key}>{label}<input type="number" value={view[key]} step="1" onChange={e=>updateBound(key,Number(e.target.value))}/></label>)}</div>
+      <details className="sandbox-syntax" open><summary>{w.syntax}</summary><p>{w.syntaxText}</p><p>y=f(x), x(t)=..., y(t)=...</p></details>
+      <div className="sandbox-toolbar-options">
+        <Toggle label={w.grid} value={showGrid} onClick={()=>setShowGrid(v=>!v)}/>
+        <Toggle label={w.axes} value={showAxes} onClick={()=>setShowAxes(v=>!v)}/>
+        <Toggle label={w.trail} value={showTrail} onClick={()=>setShowTrail(v=>!v)}/>
+      </div>
+    </>}
     <div className="sandbox-validation"><span className="eyebrow">{w.status}</span><p className={warning?"bad":"good"}>{warning?<><AlertTriangle size={14}/>{w.bad}</>:<><Sparkles size={14}/>{w.ok}</>}</p>{errors.map(e=><small key={e.id}>{e.text}: {e.error}</small>)}{parsed.length===0&&<small>{w.empty}</small>}</div>
-    <div className="sandbox-viewport"><span className="eyebrow">{w.view}</span>{([["xmin",w.xmin],["xmax",w.xmax],["ymin",w.ymin],["ymax",w.ymax]] as const).map(([key,label])=><label key={key}>{label}<input type="number" value={view[key]} step="1" onChange={e=>updateBound(key,Number(e.target.value))}/></label>)}</div>
-   </aside>
-   <section className="sandbox-main">
+   </aside>   <section className="sandbox-main">
     <div className="sandbox-toolbar"><div className="sandbox-switches">
      <Toggle label={w.grid} value={showGrid} onClick={()=>setShowGrid(v=>!v)}/><Toggle label={w.axes} value={showAxes} onClick={()=>setShowAxes(v=>!v)}/><Toggle label={w.trail} value={showTrail} onClick={()=>setShowTrail(v=>!v)}/><Toggle label={w.velocity} value={showVelocity} onClick={()=>setShowVelocity(v=>!v)}/><Toggle label={w.acceleration} value={showAcceleration} onClick={()=>setShowAcceleration(v=>!v)}/><Toggle label={w.force} value={showForce} onClick={()=>setShowForce(v=>!v)}/><Toggle label={language==="ID"?"Berat":"Weight"} value={showWeight} onClick={()=>setShowWeight(v=>!v)}/><Toggle label={language==="ID"?"Momentum":"Momentum"} value={showMomentum} onClick={()=>setShowMomentum(v=>!v)}/><Toggle label={w.energy} value={showEnergy} onClick={()=>setShowEnergy(v=>!v)}/><Toggle label={w.labels} value={showLabels} onClick={()=>setShowLabels(v=>!v)}/>
     </div><div className="sandbox-zoom"><button title="Zoom in" onClick={()=>zoom(1.25)}><Plus size={15}/></button><button title="Zoom out" onClick={()=>zoom(.8)}><Minus size={15}/></button><button title="Reset zoom" onClick={()=>{setScale(1);setView({xmin:-10,xmax:10,ymin:-10,ymax:10});}}><RotateCcw size={15}/></button></div></div>

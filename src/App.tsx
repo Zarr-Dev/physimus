@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import katex from "katex";
-import PhysicsSandbox from "./PhysicsSandbox";
+const PhysicsSandbox = lazy(() => import("./PhysicsSandbox"));
 import {
   Activity, ArrowLeft, ArrowRight, Atom, BookOpen, Check, ChevronDown,
   CircleHelp, Copy, Download, FlaskConical, Globe2, Grid3X3, Home as HomeIcon,
@@ -1145,6 +1145,6 @@ export default function App() {
     {page==="discover"&&<Discover language={language} onOpen={openLab}/>}
     {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode} onBack={()=>setPage("discover")} onChoose={openLab}/>}
     {page==="learn"&&<Learn language={language} onOpen={openLab}/>}
-    {page==="sandbox"&&<PhysicsSandbox language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode}/>}
+    {page==="sandbox"&&<Suspense fallback={<main className="sandbox-workspace sandbox-loading"><span className="eyebrow">PHYSIMUS / SANDBOX</span><p>{language==="ID"?"Menyiapkan ruang eksperimen…":"Preparing the experiment workspace…"}</p></main>}><PhysicsSandbox language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode}/></Suspense>}
   </div>;
 }

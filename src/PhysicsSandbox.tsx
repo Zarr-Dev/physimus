@@ -247,11 +247,10 @@ function equationSuggestions(source:string,language:Language):EquationSuggestion
  return suggestions.slice(0,8);
 }
 function acceptSuggestion(source:string,suggestion:EquationSuggestion){
- const trimmed=source.trimEnd();const suffix=trimmed.endsWith("∫")?"∫":trimmed.endsWith("Σ")?"Σ":trimmed.endsWith("∑")?"∑":suggestion.trigger;
- const escaped=suffix.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\function acceptSuggestion(source:string,suggestion:EquationSuggestion){
- return source.replace(new RegExp(suggestion.trigger+"$","i"),suggestion.insert);
-}");
- return source.replace(new RegExp(escaped+"$","i"),suggestion.insert);
+ const trimmed=source.trimEnd();
+ const suffix=trimmed.endsWith("∫")?"∫":trimmed.endsWith("Σ")?"Σ":trimmed.endsWith("∑")?"∑":suggestion.trigger;
+ if(!trimmed.endsWith(suffix))return source+suggestion.insert;
+ return trimmed.slice(0,-suffix.length)+suggestion.insert+source.slice(trimmed.length);
 }
 
 function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {

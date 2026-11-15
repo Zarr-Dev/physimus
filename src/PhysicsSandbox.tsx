@@ -119,7 +119,7 @@ function variableDescription(name:string,language:Language){
 function variableLatex(name:string){
  const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",phi:"\\phi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda"};
  if(greek[name])return greek[name];
- if(name==="sum"||name==="sumSymbol")return "\\sum";
+ if(name==="sum"||name==="sumsymbol")return "\\sum";
  const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);
  if(namedSub)return namedSub[1]+"_{"+namedSub[2]+"}";
  const numericSub=name.match(/^([a-zA-Z]+)(\\d+)$/);

@@ -160,7 +160,10 @@ function equationToLatex(source:string){
   }
   const name=node.name;
   if(name==="sqrt")return "\\sqrt{"+render(node.args[0])+"}";
+  if(name==="cbrt")return "\\sqrt[3]{"+render(node.args[0])+"}";
   if(name==="abs")return "\\left|"+render(node.args[0])+"\\right|";
+  if(name==="floor")return "\\left\\lfloor "+render(node.args[0])+"\\right\\rfloor";
+  if(name==="ceil")return "\\left\\lceil "+render(node.args[0])+"\\right\\rceil";
   if(name==="int"){
    const variable=variableLatex((node.args[1] as Extract<Node,{kind:"var"}>).name);
    return node.args.length===2?"\\int_{0}^{"+variable+"} "+render(node.args[0])+"\\,d"+variable:"\\int_{"+render(node.args[2])+"}^{"+render(node.args[3])+"} "+render(node.args[0])+"\\,d"+variable;
@@ -196,6 +199,10 @@ function substitutedAstLatex(node:Node,vars:Vars):string{
   return "\\left("+a+node.op+b+"\\right)";
  }
  const a=node.args.map(value=>substitutedAstLatex(value,vars)),name=node.name;
+ if(name==="abs")return "\\left|"+a[0]+"\\right|";
+ if(name==="cbrt")return "\\sqrt[3]{"+a[0]+"}";
+ if(name==="floor")return "\\left\\lfloor "+a[0]+"\\right\\rfloor";
+ if(name==="ceil")return "\\left\\lceil "+a[0]+"\\right\\rceil";
  if(name==="int"){
   const variable=node.args[1].kind==="var"?variableLatex(node.args[1].name):"x";
   return node.args.length===2?"\\int_{0}^{"+variable+"} "+a[0]+"\\,d"+variable:"\\int_{"+a[2]+"}^{"+a[3]+"} "+a[0]+"\\,d"+variable;

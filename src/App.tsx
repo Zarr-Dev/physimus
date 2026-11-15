@@ -793,16 +793,21 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   useEffect(()=>{
     if(!playing)return;
     let frame=0,last=0,lastUi=0;
+    const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;
+    const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);
+    const fps=reduced?8:constrainedDevice&&motionLevel==="high"?28:motionLevel==="low"?14:motionLevel==="medium"?28:44;
+    const interval=1000/fps;
     const tick=(now:number)=>{
       if(!last)last=now;
       const next=timeRef.current+Math.min((now-last)/1000,.05)*speedFactor;
-      last=now;timeRef.current=Math.min(next,duration);if(now-lastUi>=1000/((renderMode==="performance"||motionLevel==="low")?14:renderMode==="detail"&&motionLevel==="high"?45:28)||next>=duration){lastUi=now;setTime(timeRef.current);}
+      last=now;timeRef.current=Math.min(next,duration);
+      if(now-lastUi>=interval||next>=duration){lastUi=now;setTime(timeRef.current);}
       if(next>=duration){setPlaying(false);return;}
       frame=requestAnimationFrame(tick);
     };
     frame=requestAnimationFrame(tick);
     return()=>cancelAnimationFrame(frame);
-  },[playing,duration,speedFactor,motionLevel,renderMode]);
+  },[playing,duration,speedFactor,motionLevel]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;

@@ -429,7 +429,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    energy:["x(t)=0.5*g*(sin(theta)-mu*cos(theta))*cos(theta)*t^2","y(t)=h-0.5*g*(sin(theta)-mu*cos(theta))*sin(theta)*t^2"],
    integral:["y=int(u^2,u,0,x)"],
    summation:["y=sum(i^2,i,1,floor(x))"],
-   derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["W=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"]
+   derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["W=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"],centripetal:["F_c=m*omega^2*r","a_c=omega^2*r"],potential:["U=m*g*h"],impulse:["J=F*delta_t"],torque:["tau=I*alpha"],rotation:["K_rot=0.5*I*omega^2"],springenergy:["U_s=0.5*k*x_s^2"],friction:["f_k=mu_k*N","N=m*g*cos(theta)"]
   };
   const list=data[kind]||[];if(!list.length)return;
   setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);setFocusedEquationId(1);setEditorTab("equations");setPlaying(false);setTime(0);timeRef.current=0;setCustomVariables({});
@@ -441,6 +441,13 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   if(kind==="pendulum"){setCustomVariables({l:2});setPhase(.22);setGravity(9.81);}
   if(kind==="incline"){setCustomVariables({mu:.18});setPhase(35*Math.PI/180);setGravity(9.81);}
   if(kind==="energy"){setCustomVariables({mu:.12,h:8});setPhase(Math.PI/6);setGravity(9.81);setMass(2);}
+  if(kind==="centripetal"){setCustomVariables({r:3});setMass(1);setAngularSpeed(2);}
+  if(kind==="potential"){setCustomVariables({h:5});setMass(2);setGravity(9.81);}
+  if(kind==="impulse"){setCustomVariables({F:10,delta_t:.25});}
+  if(kind==="torque"){setCustomVariables({I:2,alpha:3});}
+  if(kind==="rotation"){setCustomVariables({I:2});setAngularSpeed(2);}
+  if(kind==="springenergy"){setCustomVariables({x_s:.2});setStiffness(25);}
+  if(kind==="friction"){setCustomVariables({mu_k:.2});setPhase(Math.PI/6);setMass(2);setGravity(9.81);}
   if(kind==="integral"){setView({xmin:0,xmax:5,ymin:0,ymax:40});setScale(1);}
   if(kind==="summation"){setView({xmin:0,xmax:10,ymin:0,ymax:400});setScale(1);}
   if(kind==="derivative"){setView({xmin:-10,xmax:10,ymin:-1.5,ymax:1.5});setScale(1);}
@@ -550,6 +557,13 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <button onClick={()=>preset("work")}><strong>16 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><code>W=F d cos(θ)</code></button>
         <button onClick={()=>preset("kinetic")}><strong>17 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><code>Eₖ=½mv²</code></button>
         <button onClick={()=>preset("springforce")}><strong>18 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><code>F=−kx</code></button>
+        <button onClick={()=>preset("centripetal")}><strong>19 · {language==="ID"?"Gaya sentripetal":"Centripetal force"}</strong><code>F_c=mω²r</code></button>
+        <button onClick={()=>preset("potential")}><strong>20 · {language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy"}</strong><code>U=mgh</code></button>
+        <button onClick={()=>preset("impulse")}><strong>21 · {language==="ID"?"Impuls dan perubahan momentum":"Impulse and momentum change"}</strong><code>J=FΔt</code></button>
+        <button onClick={()=>preset("torque")}><strong>22 · {language==="ID"?"Momen gaya / torsi":"Torque"}</strong><code>τ=Iα</code></button>
+        <button onClick={()=>preset("rotation")}><strong>23 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><code>Kᵣₒₜ=½Iω²</code></button>
+        <button onClick={()=>preset("springenergy")}><strong>24 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><code>Uₛ=½kx²</code></button>
+        <button onClick={()=>preset("friction")}><strong>25 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><code>fₖ=μₖN, N=mg cos θ</code></button>
       </div>
     </>}
     {editorTab==="graph"&&<>

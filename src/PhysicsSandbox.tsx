@@ -208,7 +208,7 @@ function equationToLatex(source:string){
  };
  return lhs+render(root);
 }
-const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",ax:"m/s^2",ay:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",u1:"m/s",u2:"m/s",v1:"m/s",v2:"m/s",Fx:"N",Fy:"N",F:"N",N:"N",w:"N",f_k:"N",f_s:"N",f_s_max:"N",F_d:"N",F_g:"N",F_c:"N",omega:"rad/s",omega0:"rad/s",omega_d:"rad/s",alpha:"rad/s^2",k:"N/m",theta:"rad",phi:"rad",r:"m",h:"m",x:"m",x0:"m",x_s:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",T:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",beta:"1/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s",J:"N\\,s",H:"kg\\,m^2/s",tau:"N\\,m",P:"W",K_rot:"J",E_k:"J",E_p:"J",E_m:"J",U_s:"J",W_net:"J",mu:"1",mu_s:"1",mu_k:"1",e:"1"};
+const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",ax:"m/s^2",ay:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",u1:"m/s",u2:"m/s",v1:"m/s",v2:"m/s",Fx:"N",Fy:"N",F:"N",N:"N",w:"N",f_k:"N",f_s:"N",f_s_max:"N",F_d:"N",F_g:"N",F_c:"N",omega:"rad/s",omega0:"rad/s",omega_d:"rad/s",alpha:"rad/s^2",k:"N/m",theta:"rad",phi:"rad",r:"m",h:"m",x:"m",x0:"m",x_s:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",T:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",beta:"1/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s",J:"N\\,s",H:"kg\\,m^2/s",tau:"N\\,m",P:"W",K_rot:"J",E_k:"J",E_p:"J",E_m:"J",U_s:"J",W_net:"J"};
 function substitutedAstLatex(node:Node,vars:Vars):string{
  const num=(value:number)=>Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
  if(node.kind==="num")return num(node.n);

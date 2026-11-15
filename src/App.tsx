@@ -1414,16 +1414,33 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
  }
  if(id==="incline"){
   const theta=value*Math.PI/180,m=5,g=9.81,muS=.4,muK=.2,holds=Math.tan(theta)<=muS;
-  const a=holds?0:g*(Math.sin(theta)-muK*Math.cos(theta)),rise=Math.min(112,135*Math.tan(theta));
-  const cx=178,cy=151-(cx-34)/292*rise-16;
+  const a=holds?0:g*(Math.sin(theta)-muK*Math.cos(theta));
+  const startX=70,startY=151,L=150,endX=startX+L*Math.cos(theta),endY=startY-L*Math.sin(theta);
+  const cx=(startX+endX)/2,cy=(startY+endY)/2-15;
+  const downX=-Math.cos(theta),downY=Math.sin(theta),upX=Math.cos(theta),upY=-Math.sin(theta);
+  const normalInX=-Math.sin(theta),normalInY=-Math.cos(theta);
   return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Free-body diagram on an inclined plane":"Diagram gaya bebas pada bidang miring"}>
-   <path d={"M34 151 L326 "+(151-rise)+" L326 151 Z"} className="diagram-plane"/>
-   <path d={"M34 151 L326 "+(151-rise)} className="diagram-edge"/>
+   <path d={"M"+startX+" "+startY+" L"+endX+" "+endY+" L"+endX+" "+startY+" Z"} className="diagram-plane"/>
+   <path d={"M"+startX+" "+startY+" L"+endX+" "+endY} className="diagram-edge"/>
    <g transform={"translate("+cx+" "+cy+") rotate("+(-value)+")"}><rect x="-18" y="-17" width="36" height="34" rx="4" className="diagram-block"/></g>
-   {stage===0&&<><path d={"M"+cx+" "+cy+" v49"} className="diagram-vector"/><text x={cx+8} y={cy+45}>mg</text><path d={"M"+cx+" "+cy+" l-30 -27"} className="diagram-vector-alt"/><text x="90" y="56">N</text><path d={"M"+cx+" "+cy+" h-38"} className="diagram-guide"/><text x="118" y="86">{text.friction}</text></>}
-   {stage===1&&<><path d={"M"+cx+" "+cy+" l-48 0"} className="diagram-vector"/><path d={"M"+cx+" "+cy+" l-30 35"} className="diagram-vector-alt"/><text x="66" y="79">mg sin θ</text><text x="66" y="132">mg cos θ</text></>}
-   {stage===2&&<><path d={"M"+cx+" "+cy+" l-46 0"} className="diagram-vector"/><text x="235" y="65">{holds?text.static:text.kinetic} friction</text><text x="235" y="84">a = {a.toFixed(2)} m/s²</text><text x="235" y="102">μₛ = 0.40</text><text x="235" y="120">μₖ = 0.20</text></>}
+   {stage===0&&<>
+    <path d={"M"+cx+" "+cy+" v48"} className="diagram-vector"/><text x={cx+7} y={cy+44}>mg</text>
+    <path d={"M"+cx+" "+cy+" l"+(normalInX*43)+" "+(normalInY*43)} className="diagram-vector-alt"/><text x="20" y="57">N</text>
+    <path d={"M"+cx+" "+cy+" l"+(upX*42)+" "+(upY*42)} className="diagram-guide"/><text x="235" y="75">{holds?text.static:text.kinetic} friction</text>
+   </>}
+   {stage===1&&<>
+    <path d={"M"+cx+" "+cy+" l"+(downX*49)+" "+(downY*49)} className="diagram-vector"/>
+    <path d={"M"+cx+" "+cy+" l"+(normalInX*42)+" "+(normalInY*42)} className="diagram-vector-alt"/>
+    <text x="26" y="76">mg sin θ</text><text x="26" y="94">mg cos θ</text>
+   </>}
+   {stage===2&&<>
+    <path d={"M"+cx+" "+cy+" l"+(upX*43)+" "+(upY*43)} className="diagram-vector"/>
+    <text x="235" y="65">{holds?text.static:text.kinetic} friction</text>
+    <text x="235" y="84">a = {a.toFixed(2)} m/s²</text>
+    <text x="235" y="102">μₛ = 0.40</text><text x="235" y="120">μₖ = 0.20</text>
+   </>}
    <text x="28" y="22">θ = {value}° · m = {m} kg</text>
+   <text x="28" y="178">{holds?(en?"No sliding":"Tidak meluncur"):(en?"Sliding downhill":"Meluncur turun bidang")}</text>
   </svg>;
  }
  if(id==="collision"){

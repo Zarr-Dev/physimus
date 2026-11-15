@@ -164,7 +164,7 @@ function equationToLatex(source:string){
  return lhs+render(root);
 }
 function equationPreviewHtml(source:string){
- const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true};
+ const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true} as const;
  try{return katex.renderToString(equationToLatex(source),options);}
  catch{
   const token=source.trim().match(/(int|sum|diff|sqrt|sin|cos|tan|ln|log)$/i)?.[1]?.toLowerCase();

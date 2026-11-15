@@ -161,9 +161,9 @@ function variableLatex(name:string){
  const component=name.match(/^(v|a|F|p|r|E|f)([xyz])$/);
  if(component)return component[1]+"_{"+component[2]+"}";
  const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+(?:_[a-zA-Z0-9]+)*)$/);
- if(namedSub)return namedSub[1]+"_{"+namedSub[2]+"}";
+ if(namedSub)return (greek[namedSub[1]]??namedSub[1])+"_{"+namedSub[2]+"}";
  const numericSub=name.match(/^([a-zA-Z]+)(\\d+)$/);
- if(numericSub)return numericSub[1]+"_{"+numericSub[2]+"}";
+ if(numericSub)return (greek[numericSub[1]]??numericSub[1])+"_{"+numericSub[2]+"}";
  return name.length===1?name:"\\mathrm{"+name+"}";
 }
 function equationToLatex(source:string){

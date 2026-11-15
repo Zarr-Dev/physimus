@@ -20,7 +20,7 @@ const copy = {
 
 function tokenize(source:string):string[] {
  const aliases:[RegExp,string][]=[
-  [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\(?:sum|int)\b/gi,(token)=>token.toLowerCase()],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
+  [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\sum\b/gi,"sum"],[/\\int\b/gi,"int"],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
   [/[θϑ]/g,"theta"],[/[ωΩ]/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/[γΓ]/g,"gamma"],[/[δΔ]/g,"delta"],[/[εϵ]/g,"epsilon"],[/ζ/g,"zeta"],[/η/g,"eta"],[/κ/g,"kappa"],[/λ/g,"lambda"],[/μ/g,"mu"],[/ν/g,"nu"],[/ξ/g,"xi"],[/π/g,"pi"],[/ρ/g,"rho"],[/[σς]/g,"sigma"],[/τ/g,"tau"],[/[φϕ]/g,"phi"],[/χ/g,"chi"],[/ψ/g,"psi"],[/[Σ∑]/g,"sum"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]
  ];
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
@@ -250,34 +250,34 @@ type EquationSuggestion={title:string;description:string;insert:string;trigger:s
 function equationSuggestions(source:string,language:Language):EquationSuggestion[]{
  const trimmed=source.trimEnd();
  const symbol=trimmed.slice(-1);
- const match=trimmed.match(/([a-zA-Z]+)$/);
- const token=symbol==="∫"?"int":symbol==="Σ"||symbol==="∑"?"sum":match?.[1].toLowerCase()??"";
+ const match=trimmed.match(/(\\?[a-zA-Z]+)$/);
+ const rawToken=match?.[1]??"";
+ const token=symbol==="∫"?"int":symbol==="Σ"||symbol==="∑"?"sum":rawToken.replace(/^\\/,"").toLowerCase();
  if(!token)return [];
  const labels=language==="ID";
  const greek:Record<string,{latex:string;id:string;en:string}>={
   theta:{latex:"\\theta",id:"Theta",en:"Theta"},omega:{latex:"\\omega",id:"Omega",en:"Omega"},
   alpha:{latex:"\\alpha",id:"Alpha",en:"Alpha"},beta:{latex:"\\beta",id:"Beta",en:"Beta"},
   gamma:{latex:"\\gamma",id:"Gamma",en:"Gamma"},delta:{latex:"\\delta",id:"Delta",en:"Delta"},
-  epsilon:{latex:"\\varepsilon",id:"Epsilon",en:"Epsilon"},phi:{latex:"\\phi",id:"Phi",en:"Phi"},
-  psi:{latex:"\\psi",id:"Psi",en:"Psi"},mu:{latex:"\\mu",id:"Mu",en:"Mu"},
-  sigma:{latex:"\\sigma",id:"Sigma",en:"Sigma"},rho:{latex:"\\rho",id:"Rho",en:"Rho"},
-  lambda:{latex:"\\lambda",id:"Lambda",en:"Lambda"},tau:{latex:"\\tau",id:"Tau",en:"Tau"},
-  pi:{latex:"\\pi",id:"Pi",en:"Pi"},nu:{latex:"\\nu",id:"Nu",en:"Nu"},xi:{latex:"\\xi",id:"Xi",en:"Xi"}
+  epsilon:{latex:"\\varepsilon",id:"Epsilon",en:"Epsilon"},zeta:{latex:"\\zeta",id:"Zeta",en:"Zeta"},
+  eta:{latex:"\\eta",id:"Eta",en:"Eta"},kappa:{latex:"\\kappa",id:"Kappa",en:"Kappa"},
+  phi:{latex:"\\phi",id:"Phi",en:"Phi"},psi:{latex:"\\psi",id:"Psi",en:"Psi"},
+  mu:{latex:"\\mu",id:"Mu",en:"Mu"},sigma:{latex:"\\sigma",id:"Sigma",en:"Sigma"},
+  rho:{latex:"\\rho",id:"Rho",en:"Rho"},lambda:{latex:"\\lambda",id:"Lambda",en:"Lambda"},
+  tau:{latex:"\\tau",id:"Tau",en:"Tau"},pi:{latex:"\\pi",id:"Pi",en:"Pi"},
+  nu:{latex:"\\nu",id:"Nu",en:"Nu"},xi:{latex:"\\xi",id:"Xi",en:"Xi"},chi:{latex:"\\chi",id:"Chi",en:"Chi"}
  };
  const make=(title:string,description:string,insert:string,trigger:string):EquationSuggestion=>({title,description,insert,trigger});
  const suggestions:EquationSuggestion[]=[];
- const addGreek=(name:string,trigger:string)=>{
-  const item=greek[name];
-  if(item)suggestions.push(make((labels?"Simbol ":"Symbol ")+item[labels?"id":"en"],item.latex,name+" ",trigger));
- };
- const trigger=match?.[1]??token;
+ const trigger=rawToken||symbol;
+ const addGreek=(name:string)=>{const item=greek[name];if(item)suggestions.push(make((labels?"Simbol ":"Symbol ")+item[labels?"id":"en"],item.latex,name,trigger));};
  if(token==="int"||("integral".startsWith(token)&&token.length>=3)){
   suggestions.push(make(labels?"Integral akumulasi dari 0 ke x":"Accumulation integral from 0 to x","\\int_0^x f(u)\\,du","int(u^2, u, 0, x)",trigger));
   suggestions.push(make(labels?"Integral tentu":"Definite integral","\\int_a^b f(x)\\,dx","int(x^2, x, 0, 1)",trigger));
   return suggestions;
  }
  if(token==="sum"||token==="sigma"||token==="sig"||("summation".startsWith(token)&&token.length>=3)){
-  if(token==="sigma"||token==="sig")addGreek("sigma",trigger);
+  if(token==="sigma"||token==="sig")addGreek("sigma");
   suggestions.push(make(labels?"Operator sigma / penjumlahan":"Sigma summation operator","\\sum_{i=1}^{n}f(i)","sum(i^2, i, 1, 5)",trigger));
   return suggestions;
  }
@@ -285,22 +285,21 @@ function equationSuggestions(source:string,language:Language):EquationSuggestion
   suggestions.push(make(labels?"Turunan numerik":"Numerical derivative","\\frac{d}{dx}f(x)","diff(x^2, x)",trigger));
   return suggestions;
  }
- for(const name of Object.keys(greek)){
-  if(token.length>=2&&name.startsWith(token))addGreek(name,trigger);
- }
+ for(const name of Object.keys(greek))if(token.length>=2&&name.startsWith(token))addGreek(name);
  const functions:Record<string,{latex:string;insert:string}>={
   sin:{latex:"\\sin(x)",insert:"sin(x)"},cos:{latex:"\\cos(x)",insert:"cos(x)"},tan:{latex:"\\tan(x)",insert:"tan(x)"},
   asin:{latex:"\\arcsin(x)",insert:"asin(x)"},acos:{latex:"\\arccos(x)",insert:"acos(x)"},atan:{latex:"\\arctan(x)",insert:"atan(x)"},
+  sec:{latex:"\\sec(x)",insert:"sec(x)"},csc:{latex:"\\csc(x)",insert:"csc(x)"},cot:{latex:"\\cot(x)",insert:"cot(x)"},
+  sinh:{latex:"\\sinh(x)",insert:"sinh(x)"},cosh:{latex:"\\cosh(x)",insert:"cosh(x)"},tanh:{latex:"\\tanh(x)",insert:"tanh(x)"},
   sqrt:{latex:"\\sqrt{x}",insert:"sqrt(x)"},cbrt:{latex:"\\sqrt[3]{x}",insert:"cbrt(x)"},abs:{latex:"\\left|x\\right|",insert:"abs(x)"},
   exp:{latex:"e^x",insert:"exp(x)"},ln:{latex:"\\ln(x)",insert:"ln(x)"},log:{latex:"\\log_{10}(x)",insert:"log(x)"},log2:{latex:"\\log_2(x)",insert:"log2(x)"},
   floor:{latex:"\\lfloor x\\rfloor",insert:"floor(x)"},ceil:{latex:"\\lceil x\\rceil",insert:"ceil(x)"},round:{latex:"\\operatorname{round}(x)",insert:"round(x)"},
-  min:{latex:"\\min(a,b)",insert:"min(x, y)"},max:{latex:"\\max(a,b)",insert:"max(x, y)"},atan2:{latex:"\\operatorname{atan2}(y,x)",insert:"atan2(y, x)"},hypot:{latex:"\\operatorname{hypot}(x,y)",insert:"hypot(x, y)"}
+  min:{latex:"\\min(a,b)",insert:"min(x, y)"},max:{latex:"\\max(a,b)",insert:"max(x, y)"},atan2:{latex:"\\operatorname{atan2}(y,x)",insert:"atan2(y, x)"},
+  hypot:{latex:"\\operatorname{hypot}(x,y)",insert:"hypot(x, y)"},clamp:{latex:"\\operatorname{clamp}(x,a,b)",insert:"clamp(x, 0, 1)"},
+  mod:{latex:"x\\bmod y",insert:"mod(x, y)"},sign:{latex:"\\operatorname{sign}(x)",insert:"sign(x)"}
  };
- if(functions[token]){
-  const item=functions[token];suggestions.push(make((labels?"Fungsi ":"Function ")+token,item.latex,item.insert,trigger));
- }else if(token.length>=2){
-  for(const [name,item] of Object.entries(functions))if(name.startsWith(token))suggestions.push(make((labels?"Fungsi ":"Function ")+name,item.latex,item.insert,trigger));
- }
+ if(functions[token])suggestions.push(make((labels?"Fungsi ":"Function ")+token,functions[token].latex,functions[token].insert,trigger));
+ else if(token.length>=2)for(const [name,item] of Object.entries(functions))if(name.startsWith(token))suggestions.push(make((labels?"Fungsi ":"Function ")+name,item.latex,item.insert,trigger));
  return suggestions.slice(0,8);
 }
 function acceptSuggestion(source:string,suggestion:EquationSuggestion){
@@ -309,7 +308,6 @@ function acceptSuggestion(source:string,suggestion:EquationSuggestion){
  if(!trimmed.endsWith(suffix))return source+suggestion.insert;
  return trimmed.slice(0,-suffix.length)+suggestion.insert+source.slice(trimmed.length);
 }
-
 function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
  const m=vars.m;
  const fx=list.find(q=>q.target==="x(t)"&&!q.error),fy=list.find(q=>q.target==="y(t)"&&!q.error);if(!fx&&!fy)return null;

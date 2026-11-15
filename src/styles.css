@@ -1018,3 +1018,160 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   .graph-footer{padding:10px;gap:8px}
   .graph-footer button{font-size:10px}
 }
+
+
+/* Focus workspace, direct measurement formulas and responsive interaction surfaces. */
+.lab-studio .canvas-area{touch-action:none;cursor:grab;user-select:none}
+.lab-studio .canvas-area:active{cursor:grabbing}
+.lab-studio.focus-mode{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  min-height:0;
+  border-color:#c9d8e7;
+}
+.lab-studio.focus-mode>.lab-topic-sidebar,
+.lab-studio.focus-mode>.control-drawer{display:none!important}
+.lab-studio.focus-mode>.graph-panel{
+  grid-column:1;
+  grid-row:1;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 250px;
+  grid-template-rows:auto minmax(500px,calc(100vh - 285px)) auto auto;
+  min-height:0;
+  border:0;
+}
+.lab-studio.focus-mode .canvas-area{min-height:500px;height:auto}
+.lab-studio.focus-mode .graph-header{position:relative;z-index:2}
+.lab-studio .focus-toggle,
+.lab-studio .focus-reset-view{
+  min-height:36px;
+  padding:0 10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:#f8fbfe;
+  color:#54718c;
+  font-size:11px;
+  font-weight:700;
+}
+.lab-studio .focus-toggle:hover,
+.lab-studio .focus-reset-view:hover{border-color:#9dc2e5;background:#edf6ff;color:#347fc5}
+.lab-studio .focus-toggle[aria-pressed="true"]{background:#e9f3fd;border-color:#9dc2e5;color:#286da9}
+.lab-studio .focus-reset-view{width:36px;padding:0}
+.lab-studio .measurement-grid{align-content:start}
+.lab-studio .measurement{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:6px;
+  padding:12px 13px;
+  border:1px solid #e6edf3;
+  border-radius:9px;
+  background:#fff;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+  transition:border-color .15s ease,background .15s ease,transform .15s ease;
+}
+.lab-studio .measurement:hover{border-color:#b8d2e9;background:#f8fbff;transform:translateY(-1px)}
+.lab-studio .measurement:focus-visible{outline:3px solid #6eafea88;outline-offset:2px}
+.lab-studio .measurement.expanded{border-color:#91b9df;background:#f5faff}
+.lab-studio .measurement strong{display:block;white-space:normal;overflow-wrap:anywhere}
+.lab-studio .measurement-equation{
+  width:100%;
+  min-width:0;
+  overflow-x:auto;
+  margin-top:3px;
+  padding:10px 7px;
+  border-top:1px solid #e3ebf3;
+  color:#426d98;
+}
+.lab-studio .measurement-equation .katex-display{margin:.25em 0;text-align:left}
+.sandbox-equation-item{min-width:0;padding:8px 8px 6px;border:1px solid #e5ebf1;border-radius:9px;background:#fff}
+.sandbox-equation-item.disabled{opacity:.58}
+.sandbox-equation-preview{display:flex;align-items:flex-start;gap:8px;min-height:34px;margin-top:5px;padding:6px 7px;border-top:1px solid #edf1f5;background:#f8fbfe;overflow:hidden}
+.sandbox-equation-preview>span{flex:0 0 auto;padding:3px 5px;border-radius:4px;background:#eaf2fa;color:#7690a9;font-size:8px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.sandbox-equation-preview>div{min-width:0;overflow-x:auto;color:#3c6186;font-size:14px}
+.sandbox-equation-preview .katex-display{margin:0;text-align:left}
+.sandbox-analysis-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.sandbox-measurement{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:7px;
+  padding:13px;
+  border:1px solid #e2eaf2;
+  border-radius:9px;
+  background:#fff;
+  color:#435d77;
+  text-align:left;
+  cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,transform .15s ease;
+}
+.sandbox-measurement:hover{background:#f6faff;border-color:#b9d4ed;transform:translateY(-1px)}
+.sandbox-measurement.expanded{background:#f4f9ff;border-color:#8cb7df}
+.sandbox-measurement>span{color:#7f92a5;font-size:11px;font-weight:700}
+.sandbox-measurement>b{color:#304f70;font-size:16px;font-weight:700;overflow-wrap:anywhere}
+.sandbox-measurement>small{min-width:0;overflow-x:auto;padding-top:9px;border-top:1px solid #e2eaf2;color:#416990;font-size:14px}
+.sandbox-measurement>small .katex{white-space:nowrap}
+.sandbox-object-library{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sandbox-object-library button{min-width:0;min-height:62px;flex-direction:column;justify-content:center;gap:4px;padding:7px 5px;text-align:center}
+.sandbox-object-library button strong{width:100%;overflow-wrap:anywhere;text-align:center;font-size:10px}
+.sandbox-object-icon{width:27px;height:27px;flex:0 0 auto}
+.sandbox-context-hint{position:absolute;left:13px;bottom:12px;padding:6px 8px;border:1px solid #e9eef4;border-radius:6px;background:#ffffffdf;color:#8a99a8;font-size:10px;pointer-events:none}
+.sandbox-canvas-wrap{position:relative}
+.sandbox-equation-row input{min-width:0}
+.sandbox-equation-preview:empty{display:none}
+@media(max-width:1180px){
+ .lab-studio.focus-mode>.graph-panel{grid-template-columns:minmax(0,1fr) 245px}
+ .lab-studio.focus-mode .canvas-area{height:auto;min-height:460px}
+}
+@media(max-width:760px){
+ .lab-studio.focus-mode>.graph-panel{display:flex;flex-direction:column}
+ .lab-studio.focus-mode .canvas-area{height:58vh;min-height:400px}
+ .lab-studio.focus-mode .measurement-area{border-left:0;border-top:1px solid var(--line)}
+ .lab-studio .measurement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sandbox-object-library{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:540px){
+ .lab-studio.focus-mode .canvas-area{height:52vh;min-height:350px}
+ .lab-studio .focus-toggle{font-size:10px;padding:0 8px}
+ .lab-studio .focus-toggle span{display:inline}
+ .lab-studio .measurement{padding:9px}
+ .lab-studio .measurement strong{font-size:14px}
+ .lab-studio .measurement-equation{padding:8px 4px}
+ .sandbox-object-library{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sandbox-analysis-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sandbox-measurement{padding:10px}
+ .sandbox-measurement>b{font-size:13px}
+}
+
+/* Extra contrast and keyboard affordances for the dark laboratory theme. */
+.app-root[data-theme="dark"] .lab-studio.focus-mode{border-color:#2b3c50}
+.app-root[data-theme="dark"] .lab-studio .focus-toggle,
+.app-root[data-theme="dark"] .lab-studio .focus-reset-view{background:#17283a;border-color:#354b61;color:#b7cbe0}
+.app-root[data-theme="dark"] .lab-studio .focus-toggle:hover,
+.app-root[data-theme="dark"] .lab-studio .focus-reset-view:hover,
+.app-root[data-theme="dark"] .lab-studio .focus-toggle[aria-pressed="true"]{background:#203c56;border-color:#4a7193;color:#b7dcfb}
+.app-root[data-theme="dark"] .lab-studio .measurement{background:#172637;border-color:#34495e;color:#d5e3ef}
+.app-root[data-theme="dark"] .lab-studio .measurement:hover,
+.app-root[data-theme="dark"] .lab-studio .measurement.expanded{background:#20374d;border-color:#51779a}
+.app-root[data-theme="dark"] .lab-studio .measurement>span{color:#9eb1c3}
+.app-root[data-theme="dark"] .lab-studio .measurement strong{color:#e1edf7}
+.app-root[data-theme="dark"] .lab-studio .measurement-equation{border-color:#34495e;color:#b5d8f7}
+.app-root[data-theme="dark"] .sandbox-equation-item{background:#132131;border-color:#34495e}
+.app-root[data-theme="dark"] .sandbox-equation-preview{background:#0f1b29;border-color:#304357}
+.app-root[data-theme="dark"] .sandbox-equation-preview>span{background:#20364b;color:#9db8d0}
+.app-root[data-theme="dark"] .sandbox-equation-preview>div{color:#c1dcf6}
+.app-root[data-theme="dark"] .sandbox-measurement{background:#172637;border-color:#34495e;color:#d5e3ef}
+.app-root[data-theme="dark"] .sandbox-measurement:hover,
+.app-root[data-theme="dark"] .sandbox-measurement.expanded{background:#20374d;border-color:#51779a}
+.app-root[data-theme="dark"] .sandbox-measurement>span{color:#9eb1c3}
+.app-root[data-theme="dark"] .sandbox-measurement>b{color:#e1edf7}
+.app-root[data-theme="dark"] .sandbox-measurement>small{border-color:#34495e;color:#b7d8f7}
+.app-root[data-theme="dark"] .sandbox-context-hint{background:#152638e8;border-color:#34495e;color:#a8b9c8}

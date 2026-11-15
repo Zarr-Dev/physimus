@@ -1277,7 +1277,7 @@ function calculateLessonExperiment(id:LabId,value:number,language:Language){
      "\\Delta x=v_0t+\\frac12at^2=(3\\,\\mathrm{m/s})(4\\,\\mathrm{s})+\\frac12("+n(value)+"\\,\\mathrm{m/s^2})(4\\,\\mathrm{s})^2",
      "\\Delta x="+n(deltaX)+"\\,\\mathrm{m}"
     ],
-    extra:(language==="ID"?"Kecepatan akhir: ":"Final velocity: ")+n(v)+" m/s. Percepatan konstan.";
+    extra:(language==="ID"?"Kecepatan akhir: ":"Final velocity: ")+n(v)+" m/s. Percepatan konstan."};
   }
   case "circular":{
    const omega=2,r=value,v=omega*r,a=omega*omega*r,T=2*Math.PI/omega;

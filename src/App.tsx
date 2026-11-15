@@ -643,73 +643,6 @@ function drawLabObject(ctx:CanvasRenderingContext2D,x:number,y:number,style:stri
   }
   ctx.restore();
 }
-function liveEquationsFor(lab:Lab,v:Record<string,number>,p:Point,t:number):{title:string;formula:string}[] {
-  const n=(x:number)=>Number.isFinite(x)?x.toFixed(2):"0.00";
-  const g=v.gravity??9.81,m=v.mass??1;
-  if(lab.id==="projectile"){
-    const th=(v.angle??0),rad=th*Math.PI/180,v0=v.speed??0;
-    return [
-      {title:"Posisi horizontal",formula:"x(t)="+n(v0)+"\\cos("+n(th)+"^\\circ)\\cdot "+n(t)+" = "+n(p.x)+"\\;\\mathrm{m}"},
-      {title:"Posisi vertikal",formula:"y(t)="+n(v.height??0)+"+"+n(v0)+"\\sin("+n(th)+"^\\circ)\\cdot "+n(t)+"-\\frac12("+n(g)+")("+n(t)+")^2="+n(p.y)+"\\;\\mathrm{m}"},
-      {title:"Komponen kecepatan",formula:"v_x="+n(v0*Math.cos(rad))+"\\;\\mathrm{m/s},\\quad v_y="+n(p.vy)+"\\;\\mathrm{m/s}"},
-      {title:"Energi kinetik",formula:"E_k=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
-    ];
-  }
-  if(lab.id==="mru") return [
-    {title:"Posisi",formula:"x(t)="+n(v.x0??0)+"+"+n(v.speed??0)+"\\cdot "+n(t)+"="+n(p.x)+"\\;\\mathrm{m}"},
-    {title:"Kecepatan tetap",formula:"v(t)=v_0="+n(v.speed??0)+"\\;\\mathrm{m/s}"},
-    {title:"Percepatan",formula:"a(t)=\\frac{\\Delta v}{\\Delta t}=0\\;\\mathrm{m/s^2}"},
-    {title:"Energi kinetik",formula:"E_k=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
-  ];
-  if(lab.id==="mrua") return [
-    {title:"Posisi",formula:"x(t)="+n(v.x0??0)+"+"+n(v.speed??0)+"t+\\frac12("+n(v.acceleration??0)+")t^2="+n(p.x)+"\\;\\mathrm{m}"},
-    {title:"Kecepatan",formula:"v(t)="+n(v.speed??0)+"+("+n(v.acceleration??0)+")("+n(t)+")="+n(p.vx)+"\\;\\mathrm{m/s}"},
-    {title:"Hukum II Newton",formula:"\\sum F=ma=("+n(m)+")("+n(v.acceleration??0)+")="+n(m*(v.acceleration??0))+"\\;\\mathrm{N}"},
-    {title:"Energi kinetik",formula:"E_k=\\frac12mv^2="+n(p.kinetic)+"\\;\\mathrm{J}"}
-  ];
-  if(lab.id==="circular") return [
-    {title:"Posisi sudut",formula:"\\theta(t)=\\omega t=("+n(v.omega??0)+")("+n(t)+")="+n((v.omega??0)*t)+"\\;\\mathrm{rad}"},
-    {title:"Kelajuan tangensial",formula:"v=\\omega r=("+n(v.omega??0)+")("+n(v.radius??0)+")="+n(p.speed)+"\\;\\mathrm{m/s}"},
-    {title:"Percepatan sentripetal",formula:"a_c=\\omega^2r=("+n(v.omega??0)+")^2("+n(v.radius??0)+")="+n((v.omega??0)**2*(v.radius??0))+"\\;\\mathrm{m/s^2}"},
-    {title:"Periode",formula:"T=\\frac{2\\pi}{\\omega}= "+n(2*Math.PI/(v.omega??1))+"\\;\\mathrm{s}"}
-  ];
-  if(lab.id==="collision"){
-    const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
-    const currentKinetic=.5*c.m1*v1*v1+.5*c.m2*v2*v2;
-    return [
-      {title:"Momentum total",formula:"p_{tot}=m_1u_1+m_2u_2="+n(c.initialMomentum)+"\\;\\mathrm{kg\\,m/s}"},
-      {title:"Kecepatan akhir benda 1",formula:"v_1="+n(v1)+"\\;\\mathrm{m/s}"},
-      {title:"Kecepatan akhir benda 2",formula:"v_2="+n(v2)+"\\;\\mathrm{m/s}"},
-      {title:"Impuls benda 1",formula:"J_1=m_1(v_1-u_1)="+n(c.m1*(v1-c.u1))+"\\;\\mathrm{N\\,s}"},
-      {title:"Energi kinetik sistem",formula:"K=\\frac12m_1v_1^2+\\frac12m_2v_2^2="+n(currentKinetic)+"\\;\\mathrm{J}"}
-    ];
-  }
-  if(lab.id==="energy"){
-    const alpha=Math.PI/6,distanceTravelled=p.x/Math.cos(alpha),mu=v.friction??0;
-    return [
-      {title:"Energi potensial",formula:"E_p=mgh=("+n(m)+")("+n(g)+")("+n(p.y)+")="+n(p.potential)+"\\;\\mathrm{J}"},
-      {title:"Energi kinetik",formula:"E_k=\\frac12mv^2=\\frac12("+n(m)+")("+n(p.speed)+")^2="+n(p.kinetic)+"\\;\\mathrm{J}"},
-      {title:"Usaha gesekan",formula:"W_f=-\\mu_kmg\\cos 30^\\circ\\,s="+n(-mu*m*g*Math.cos(alpha)*Math.max(0,distanceTravelled))+"\\;\\mathrm{J}"},
-      {title:"Energi mekanik",formula:"E_m=E_k+E_p="+n(p.kinetic+p.potential)+"\\;\\mathrm{J}"}
-    ];
-  }
-  if(lab.id==="incline"){
-    const th=(v.angle??0)*Math.PI/180,holds=Math.tan(th)<=(v.staticFriction??0),acc=holds?0:Math.max(0,g*(Math.sin(th)-(v.friction??0)*Math.cos(th)));
-    return [
-      {title:"Komponen berat sejajar",formula:"F_{\\parallel}=mg\\sin\\theta="+n(m*g*Math.sin(th))+"\\;\\mathrm{N}"},
-      {title:"Gaya normal",formula:"N=mg\\cos\\theta="+n(m*g*Math.cos(th))+"\\;\\mathrm{N}"},
-      {title:"Percepatan sepanjang bidang",formula:"a="+(holds?"0":"g(\\sin\\theta-\\mu_k\\cos\\theta)")+"="+n(acc)+"\\;\\mathrm{m/s^2}"},
-      {title:"Resultan gaya",formula:"\\sum F_{\\parallel}=ma="+n(m*acc)+"\\;\\mathrm{N}"}
-    ];
-  }
-  const omega=Math.sqrt((v.spring??0)/m);
-  return [
-    {title:"Frekuensi sudut",formula:"\\omega=\\sqrt{\\frac{k}{m}}=\\sqrt{\\frac{"+n(v.spring??0)+"}{"+n(m)+"}}="+n(omega)+"\\;\\mathrm{rad/s}"},
-    {title:"Posisi massa",formula:"x(t)="+n(v.amplitude??0)+"\\cos("+n(omega)+"t)="+n(p.x)+"\\;\\mathrm{m}"},
-    {title:"Gaya pemulih",formula:"F=-kx=-("+n(v.spring??0)+")("+n(p.x)+")="+n(-(v.spring??0)*p.x)+"\\;\\mathrm{N}"},
-    {title:"Energi mekanik",formula:"E=\\frac12kA^2="+n(.5*(v.spring??0)*(v.amplitude??0)**2)+"\\;\\mathrm{J}"}
-  ];
-}
 
 type PracticeQuestion={prompt:string;given:string;formula:string;answer:number;unit:string;steps:string[];resultLabel:string};
 function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
@@ -1165,7 +1098,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
       <section className="graph-panel">
         <div className="graph-header"><div><span className="eyebrow">{w.graph}</span><strong>{language==="ID"?"Visualisasi sistem":"System visualization"}</strong></div><div className="graph-tools">
           <label className="object-picker"><span>{language==="ID"?"Objek 1":"Object 1"}</span><select value={selectedObject} onChange={e=>setSelectedObject(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>{lab.id==="collision"&&<label className="object-picker"><span>{language==="ID"?"Objek 2":"Object 2"}</span><select value={selectedObject2} onChange={e=>setSelectedObject2(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>}
-          <button className="focus-toggle" onClick={()=>setFocusMode(v=>!v)} aria-pressed={focusMode} title={focusMode?(language==="ID"?"Keluar dari tab fokus":"Exit focus view"):(language==="ID"?"Tab fokus":"Focus view")}>{focusMode?<Minimize2 size={18}/>:<Maximize2 size={18}/>}<span>{focusMode?(language==="ID"?"Keluar fokus":"Exit focus"):(language==="ID"?"Fokus":"Focus")}</span></button><button className="focus-reset-view" onClick={()=>{setGraphPan({x:0,y:0});setGraphZoom(1);}} title={language==="ID"?"Reset posisi grafik":"Reset graph view"}><RotateCcw size={16}/></button><button className={showGrid?"tool-active":""} onClick={()=>setShowGrid(v=>!v)} title={w.grid}><Grid3X3 size={18}/><span>{w.grid}</span></button>
+          <button className="focus-toggle" onClick={()=>setFocusMode(v=>!v)} aria-pressed={focusMode} title={focusMode?(language==="ID"?"Keluar dari tab fokus":"Exit focus view"):(language==="ID"?"Tab fokus":"Focus view")}>{focusMode?<Minimize2 size={18}/>:<Maximize2 size={18}/>}<span>{focusMode?(language==="ID"?"Keluar fokus":"Exit focus"):(language==="ID"?"Fokus":"Focus")}</span></button><button className="focus-reset-view" onClick={()=>setGraphZoom(v=>Math.min(8,v*1.2))} title={language==="ID"?"Perbesar grafik":"Zoom graph in"}><ZoomIn size={16}/></button><button className="focus-reset-view" onClick={()=>setGraphZoom(v=>Math.max(.25,v/1.2))} title={language==="ID"?"Perkecil grafik":"Zoom graph out"}><ZoomOut size={16}/></button><button className="focus-reset-view" onClick={()=>{setGraphPan({x:0,y:0});setGraphZoom(1);}} title={language==="ID"?"Reset posisi grafik":"Reset graph view"}><RotateCcw size={16}/></button><button className={showGrid?"tool-active":""} onClick={()=>setShowGrid(v=>!v)} title={w.grid}><Grid3X3 size={18}/><span>{w.grid}</span></button>
           <button className={showVectors?"tool-active":""} onClick={()=>setShowVectors(v=>!v)} title={w.vectors}><Activity size={18}/><span>{w.vectors}</span></button>
           <button className={showTrail?"tool-active":""} onClick={()=>setShowTrail(v=>!v)} title={w.trail}><Waves size={18}/><span>{w.trail}</span></button>
         </div></div>

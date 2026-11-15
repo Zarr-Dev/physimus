@@ -1607,3 +1607,123 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .lesson-step,.lesson-diagram .diagram-object,.lesson-diagram .diagram-block,
  .lesson-diagram .diagram-trajectory,.lesson-diagram .diagram-vector,.lesson-diagram .diagram-vector-alt{transition:none!important}
 }
+
+
+/* Physimus layout + dark-theme consistency pass (2026-11-15). */
+.app-root[data-theme="dark"]{
+  color-scheme:dark;
+  --ink:#e5edf5;
+  --muted:#a7b7c7;
+  --soft:#91a4b7;
+  --line:#2b3c50;
+  --blue-light:#1b3044;
+  background:#0c1420;
+  color:#e3ebf4;
+}
+.app-root[data-theme="dark"] .topbar,
+.app-root[data-theme="dark"] .language-switch,
+.app-root[data-theme="dark"] .settings-trigger,
+.app-root[data-theme="dark"] .settings-popover,
+.app-root[data-theme="dark"] .measurement,
+.app-root[data-theme="dark"] .play-speeds,
+.app-root[data-theme="dark"] .play-speeds button.selected,
+.app-root[data-theme="dark"] .reset-control,
+.app-root[data-theme="dark"] .sandbox-measurement,
+.app-root[data-theme="dark"] .sandbox-equation-item,
+.app-root[data-theme="dark"] .sandbox-playback label input,
+.app-root[data-theme="dark"] .sandbox-playback label select{
+  background:#142131;
+  border-color:#2d4054;
+  color:#dce7f1;
+}
+.app-root[data-theme="dark"] .measurement-grid,
+.app-root[data-theme="dark"] .sandbox-analysis-grid{
+  grid-template-columns:minmax(0,1fr);
+}
+.app-root[data-theme="dark"] .measurement>span,
+.app-root[data-theme="dark"] .sandbox-measurement>span{
+  color:#a9bac9;
+}
+.app-root[data-theme="dark"] .measurement strong,
+.app-root[data-theme="dark"] .sandbox-measurement>b{
+  color:#e4eef7;
+}
+.app-root[data-theme="dark"] .measurement-equation,
+.app-root[data-theme="dark"] .sandbox-measurement>small,
+.app-root[data-theme="dark"] .sandbox-scalar-result>small{
+  border-color:#34495e;
+  color:#c4def5;
+  background:#101b28;
+}
+.app-root[data-theme="dark"] .measurement.expanded,
+.app-root[data-theme="dark"] .sandbox-measurement.expanded{
+  background:#1a3044;
+  border-color:#52799a;
+}
+.app-root[data-theme="dark"] .measurement-equation .katex,
+.app-root[data-theme="dark"] .sandbox-measurement .katex{
+  color:#c9e2f8;
+}
+
+/* Measurement cards intentionally form a readable vertical sequence. */
+.lab-studio .measurement-grid,
+.sandbox-analysis .sandbox-analysis-grid{
+  grid-template-columns:minmax(0,1fr);
+  gap:10px;
+}
+.lab-studio .measurement{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:5px;
+  width:100%;
+  text-align:left;
+}
+.lab-studio .measurement-equation{
+  min-width:0;
+  max-width:100%;
+  overflow-x:hidden;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+.lab-studio .measurement-equation .katex-display,
+.sandbox-measurement>small .katex-display,
+.sandbox-scalar-result>small .katex-display{
+  max-width:100%;
+  overflow-x:hidden;
+  overflow-wrap:anywhere;
+  white-space:normal;
+  text-align:left;
+}
+.lab-studio .measurement-equation .katex-display>.katex,
+.sandbox-measurement>small .katex-display>.katex,
+.sandbox-scalar-result>small .katex-display>.katex{
+  max-width:100%;
+  white-space:normal;
+}
+.lab-studio .measurement-equation .katex-html,
+.sandbox-measurement>small .katex-html,
+.sandbox-scalar-result>small .katex-html{
+  white-space:normal;
+}
+.sandbox-measurement>small,
+.sandbox-scalar-result>small{
+  min-width:0;
+  max-width:100%;
+  overflow-x:hidden;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+.sandbox-analysis-grid>b,
+.sandbox-analysis-grid>small{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+@media(max-width:650px){
+  .lab-studio .measurement-grid,
+  .sandbox-analysis .sandbox-analysis-grid{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .lab-studio .measurement{padding:12px}
+  .lab-studio .measurement-equation{padding:9px 2px}
+}

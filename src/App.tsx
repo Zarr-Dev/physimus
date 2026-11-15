@@ -1252,8 +1252,10 @@ function calculateLessonExperiment(id:LabId,value:number,language:Language){
    const mass=2,ep=mass*g*value;return {result:language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy",value:ep,unit:"J",formula:"E_p=mgh=(2\\,\\mathrm{kg})(9.81\\,\\mathrm{m/s^2})("+n(value)+"\\,\\mathrm{m})="+n(ep)+"\\,\\mathrm{J}",extra:language==="ID"?"Massa dan gravitasi dijaga tetap; perubahan energi berbanding lurus dengan ketinggian.":"Mass and gravity are fixed; energy changes in direct proportion to height."};
   }
   case "incline":{
-   const angle=value*Math.PI/180,mu=.2,a=Math.max(0,g*(Math.sin(angle)-mu*Math.cos(angle))),normal=5*g*Math.cos(angle),friction=mu*normal;return {result:language==="ID"?"Percepatan turun bidang":"Down-slope acceleration",value:a,unit:"m/s²",formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=9.81[\\sin("+n(value)+"^\\circ)-0.20\\cos("+n(value)+"^\\circ)]="+n(a)+"\\,\\mathrm{m/s^2}",extra:(language==="ID"?"Gaya normal: ":"Normal force: ")+n(normal)+" N · Friction: "+n(friction)+" N"};
-  }
+    const angle=value*Math.PI/180,muK=.2,muS=.4,holds=Math.tan(angle)<=muS,a=holds?0:g*(Math.sin(angle)-muK*Math.cos(angle)),mass=5,normal=mass*g*Math.cos(angle),friction=holds?mass*g*Math.sin(angle):muK*normal;
+    const formula=holds?"a=0\\quad(\\tan\\theta\\leq\\mu_s)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=9.81[\\sin("+n(value)+"^\\circ)-0.20\\cos("+n(value)+"^\\circ)]="+n(a)+"\\,\\mathrm{m/s^2}";
+    return {result:language==="ID"?"Percepatan turun bidang":"Down-slope acceleration",value:a,unit:"m/s²",formula,extra:language==="ID"?"Gaya normal: "+n(normal)+" N · Gaya gesek: "+n(friction)+" N · "+(holds?"Benda tetap diam":"Benda meluncur"):"Normal force: "+n(normal)+" N · Friction: "+n(friction)+" N · "+(holds?"Block remains at rest":"Block is sliding")};
+   }
   case "collision":{
    const e=value,m1=2,m2=2,u1=6,u2=0,v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);return {result:language==="ID"?"Kecepatan akhir benda 1":"Final velocity of body 1",value:v1,unit:"m/s",formula:"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{(2-("+n(e)+")(2))(6)+(1+"+n(e)+")(2)(0)}{2+2}="+n(v1)+"\\,\\mathrm{m/s}",extra:(language==="ID"?"Kecepatan benda 2: ":"Body 2 velocity: ")+n(v2)+" m/s"};
   }

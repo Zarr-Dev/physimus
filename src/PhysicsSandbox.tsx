@@ -513,7 +513,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   const input=equationInputsRef.current[row.id],stored=equationSelectionsRef.current[row.id];
   const start=input?.selectionStart??stored?.start??row.text.length,end=input?.selectionEnd??stored?.end??start;
   const before=row.text.slice(0,start),after=row.text.slice(end),left=before.trimEnd();
-  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/[=+\-*/^(,]$/.test(left);
+  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/[=+\-*\/^(,]$/.test(left);
   const prefix=needsProduct?"*":"";
   const next=before+prefix+token+after;
   update(row.id,next);setFocusedEquationId(row.id);
@@ -577,8 +577,8 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   const qty=(value:number,unit:string)=>"("+n(value)+"\\,\\mathrm{"+unit+"})";
   const x=n(current.x),y=n(current.y),vx=n(current.vx),vy=n(current.vy),ax=n(current.ax),ay=n(current.ay),m=n(mass),g=n(gravity);
   if(id==="position")return "\\vec r(t)=x(t)\\hat i+y(t)\\hat j="+qty(current.x,"m")+"\\hat i+"+qty(current.y,"m")+"\\hat j";
-  if(id==="velocity")return "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+vx+"\\,\\mathrm{m/s})^2+("+vy+"\\,\\mathrm{m/s})^2) }="+qty(current.speed,"m/s");
-  if(id==="acceleration")return "a=\\sqrt{a_x^2+a_y^2}=\\sqrt{("+ax+"\\,\\mathrm{m/s^2})^2+("+ay+"\\,\\mathrm{m/s^2})^2) }="+qty(current.acceleration,"m/s^2");
+  if(id==="velocity")return "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+vx+"\\,\\mathrm{m/s})^2+("+vy+"\\,\\mathrm{m/s})^2}="+qty(current.speed,"m/s");
+  if(id==="acceleration")return "a=\\sqrt{a_x^2+a_y^2}=\\sqrt{("+ax+"\\,\\mathrm{m/s^2})^2+("+ay+"\\,\\mathrm{m/s^2})^2}="+qty(current.acceleration,"m/s^2");
   if(id==="kinetic")return "E_k=\\frac12m(v_x^2+v_y^2)=\\frac12("+m+"\\,\\mathrm{kg})[("+vx+"\\,\\mathrm{m/s})^2+("+vy+"\\,\\mathrm{m/s})^2]="+qty(current.energy,"J");
   if(id==="potential")return "E_p=mgy=("+m+"\\,\\mathrm{kg})("+g+"\\,\\mathrm{m/s^2})("+y+"\\,\\mathrm{m})="+qty(current.potential,"J");
   if(id==="mechanical")return "E_m=E_k+E_p="+qty(current.energy,"J")+"+"+qty(current.potential,"J")+"="+qty(current.mechanical,"J");

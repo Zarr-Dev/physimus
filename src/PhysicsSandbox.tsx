@@ -20,8 +20,8 @@ const copy = {
 
 function tokenize(source:string):string[] {
  const aliases:[RegExp,string][]=[
-  [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\sum\b/gi,"sum"],[/\\int\b/gi,"int"],[/\\frac\b/gi,"frac"],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
-  [/[θϑ]/g,"theta"],[/[ωΩ]/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/[γΓ]/g,"gamma"],[/[δΔ]/g,"delta"],[/[εϵ]/g,"epsilon"],[/ζ/g,"zeta"],[/η/g,"eta"],[/κ/g,"kappa"],[/λ/g,"lambda"],[/μ/g,"mu"],[/ν/g,"nu"],[/ξ/g,"xi"],[/π/g,"pi"],[/ρ/g,"rho"],[/[σς]/g,"sigma"],[/τ/g,"tau"],[/[φϕ]/g,"phi"],[/χ/g,"chi"],[/ψ/g,"psi"],[/[Σ∑]/g,"sum"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]
+  [/\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\Sigma\b/g,"sum"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\sum\b/gi,"sum"],[/\\prod\b/gi,"prod"],[/\\int\b/gi,"int"],[/\\frac\b/gi,"frac"],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
+  [/[θϑ]/g,"theta"],[/[ωΩ]/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/[γΓ]/g,"gamma"],[/[δΔ]/g,"delta"],[/[εϵ]/g,"epsilon"],[/ζ/g,"zeta"],[/η/g,"eta"],[/κ/g,"kappa"],[/λ/g,"lambda"],[/μ/g,"mu"],[/ν/g,"nu"],[/ξ/g,"xi"],[/π/g,"pi"],[/ρ/g,"rho"],[/[σς]/g,"sigma"],[/τ/g,"tau"],[/[φϕ]/g,"phi"],[/χ/g,"chi"],[/ψ/g,"psi"],[/[Σ∑]/g,"sum"],[/∏/g,"prod"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]
  ];
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
  const superscripts:Record<string,string>={"⁰":"^0","¹":"^1","²":"^2","³":"^3","⁴":"^4","⁵":"^5","⁶":"^6","⁷":"^7","⁸":"^8","⁹":"^9"};
@@ -259,7 +259,7 @@ const variableDimensions:Record<string,Dimension>={
  omega:[0,0,-1],theta:[0,0,0],phi:[0,0,0],mu:[0,0,0],e:[0,0,0],
  k:[1,0,-2],F:[1,1,-2],f:[1,1,-2],N:[1,1,-2],p:[1,1,-1],I:[1,2,0],
  alpha:[0,0,-2],tau:[1,2,-2],W:[1,2,-2],E:[1,2,-2],
- delta_t:[0,0,1],t:[0,0,1],m1:[1,0,0],m2:[1,0,0],dx:[0,1,0],G:[-1,3,-2],c:[1,0,-1],beta:[0,0,-1],omega_d:[0,0,-1],omega0:[0,0,-1],mu_s:[0,0,0],mu_k:[0,0,0]
+ delta_t:[0,0,1],t:[0,0,1],m1:[1,0,0],m2:[1,0,0],dx:[0,1,0],ax:[0,1,-2],ay:[0,1,-2],Fx:[1,1,-2],Fy:[1,1,-2],G:[-1,3,-2],c:[1,0,-1],beta:[0,0,-1],omega_d:[0,0,-1],omega0:[0,0,-1],mu_s:[0,0,0],mu_k:[0,0,0]
 };
 function addDimension(a:Dimension,b:Dimension):Dimension{return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
 function subtractDimension(a:Dimension,b:Dimension):Dimension{return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
@@ -563,6 +563,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    energy:["x(t)=0.5*g*(sin(theta)-mu*cos(theta))*cos(theta)*t^2","y(t)=h-0.5*g*(sin(theta)-mu*cos(theta))*sin(theta)*t^2"],
    integral:["y=int(u^2,u,0,x)"],
    summation:["y=sum(i^2,i,1,floor(x))"],
+    product:["y=prod(i,i,1,floor(x))"],
    derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["W=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"],centripetal:["F_c=m*omega^2*r","a_c=omega^2*r"],potential:["U=m*g*h"],impulse:["J=F*delta_t"],torque:["tau=I*alpha"],rotation:["K_rot=0.5*I*omega^2"],springenergy:["U_s=0.5*k*x_s^2"],friction:["f_k=mu_k*N","N=m*g*cos(theta)"],components:["F_x=F*cos(theta)","F_y=F*sin(theta)"],torricelli:["v=sqrt(v0^2+2*a*s)"],power:["P=F*v"],gravitation:["F_g=frac(G*m1*m2,r^2)"],angularmomentum:["H=I*omega"],damped:["x(t)=A*exp(-beta*t)*cos(omega_d*t)","v(t)=-A*exp(-beta*t)*(beta*cos(omega_d*t)+omega_d*sin(omega_d*t))"],workenergy:["W_net=0.5*m*(v^2-v0^2)"],dampedforce:["F_d=-c*v"],staticfriction:["f_s=mu_s*N","N=m*g*cos(theta)"],angularkinematics:["omega_f=omega0+alpha*t"]
   };
   const list=data[kind]||[];if(!list.length)return;
@@ -594,6 +595,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   if(kind==="angularkinematics"){setCustomVariables({omega0:2,alpha:1.5});}
   if(kind==="integral"){setView({xmin:0,xmax:5,ymin:0,ymax:40});setScale(1);}
   if(kind==="summation"){setView({xmin:0,xmax:10,ymin:0,ymax:400});setScale(1);}
+  if(kind==="product"){setView({xmin:0,xmax:8,ymin:0,ymax:5000});setScale(1);}
   if(kind==="derivative"){setView({xmin:-10,xmax:10,ymin:-1.5,ymax:1.5});setScale(1);}
  };
  const updateBound=(key:"xmin"|"xmax"|"ymin"|"ymax",value:number)=>{
@@ -695,6 +697,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <button onClick={()=>preset("curve")}><strong>09 · {language==="ID"?"Kurva fungsi kuadrat":"Quadratic function"}</strong><code>y=0.2x²−2</code></button>
         <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><code>y=∫₀ˣ u² du</code></button>
         <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><code>y=Σᵢ₌₁ⁿ i²</code></button>
+        <button onClick={()=>preset("product")}><strong>12 · {language==="ID"?"Perkalian berindeks pi":"Indexed product operator"}</strong><code>y=∏ᵢ₌₁ⁿ i</code></button>
         <button onClick={()=>preset("derivative")}><strong>12 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><code>y=d(sin x)/dx</code></button>
         <button onClick={()=>preset("newton")}><strong>13 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><code>F=ma</code></button>
         <button onClick={()=>preset("weight")}><strong>14 · {language==="ID"?"Berat benda":"Weight"}</strong><code>W=mg</code></button>

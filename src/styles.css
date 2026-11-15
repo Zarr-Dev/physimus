@@ -1948,3 +1948,68 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .equation-calc-substitution-math>span:not(.math-inline){color:var(--muted);font-size:12px}
 .equation-calc-result strong .math-inline{display:inline-flex;align-items:center;font-size:inherit}
 .equation-calc-result strong small{font-size:12px;font-weight:650}
+
+
+/* Learning tab: increase the default reading size across every lesson section. */
+.lesson-page{font-size:15px}
+.lesson-page .secondary-intro p{font-size:18px;line-height:1.8}
+.lesson-page .lesson-nav-heading{font-size:11px}
+.lesson-page .lesson-topic-nav button{min-height:58px;padding:12px 14px}
+.lesson-page .lesson-topic-nav button>span{font-size:12px}
+.lesson-page .lesson-topic-nav button strong{font-size:13px;line-height:1.45}
+.lesson-page .lesson-topic-heading h2{font-size:clamp(25px,2.5vw,35px)}
+.lesson-page .lesson-topic-heading p{font-size:15px;line-height:1.8}
+.lesson-page .lesson-goals strong{font-size:14px}
+.lesson-page .lesson-goals ul{font-size:14px;line-height:1.7;gap:8px}
+.lesson-page .lesson-chapter-tabs button{font-size:12px;line-height:1.4;padding:12px}
+.lesson-page .lesson-chapter-tabs button span{font-size:11px}
+.lesson-page .lesson-chapter-title>span{font-size:10px}
+.lesson-page .lesson-chapter-title h3{font-size:23px;line-height:1.4}
+.lesson-page .lesson-intro-text{font-size:15px;line-height:1.85}
+.lesson-page .lesson-steps>strong{font-size:15px}
+.lesson-page .lesson-step p{font-size:14px;line-height:1.8;margin:0}
+.lesson-page .lesson-step>span{width:25px;height:25px;font-size:12px}
+.lesson-page .lesson-formula-block>span{font-size:10px}
+.lesson-page .lesson-formula-block .math-display{font-size:19px}
+.lesson-page .lesson-takeaway strong{font-size:13px}
+.lesson-page .lesson-takeaway p{font-size:13px;line-height:1.75}
+.lesson-page .lesson-chapter-nav button{font-size:12px;min-height:42px}
+.lesson-page .lesson-practice-intro h3{font-size:21px}
+.lesson-page .lesson-practice-intro p{font-size:13px;line-height:1.75}
+.lesson-page .practice-top h2{font-size:25px}
+.lesson-page .practice-top p{font-size:14px;line-height:1.75}
+.lesson-page .practice-question>strong{font-size:16px;line-height:1.7}
+.lesson-page .practice-question>p{font-size:14px;line-height:1.7}
+.lesson-page .practice-answer label{font-size:13px}
+.lesson-page .practice-answer input{font-size:15px;min-height:42px}
+.lesson-page .lesson-experiment-head h3{font-size:18px}
+.lesson-page .lesson-experiment-head p{font-size:13px;line-height:1.7}
+.lesson-page .lesson-experiment-slider>span{font-size:12px;line-height:1.5}
+.lesson-page .lesson-experiment-slider strong{font-size:13px}
+.lesson-page .lesson-experiment-slider small{font-size:11px}
+.lesson-page .lesson-result>span{font-size:12px}
+.lesson-page .lesson-result>strong{font-size:24px}
+.lesson-page .lesson-result-formula .math-display{font-size:14px}
+.lesson-page .lesson-experiment-step{font-size:13px}
+.lesson-page .lesson-result>p{font-size:12px;line-height:1.7}
+.lesson-page .lesson-assumption{font-size:11px;line-height:1.7}
+.lesson-page .eyebrow{font-size:10px}
+
+/* Sandbox: keep animation smooth on mid-range devices and avoid oversized canvas buffers. */
+.sandbox-workspace .sandbox-heading p{font-size:14px;line-height:1.75}
+.sandbox-workspace .sandbox-editor-heading{font-size:14px}
+.sandbox-workspace .sandbox-equation-row input{font-size:13px}
+.sandbox-workspace .sandbox-presets button{font-size:11px;min-height:36px}
+.sandbox-workspace .sandbox-syntax{font-size:12px;line-height:1.65}
+.sandbox-workspace .sandbox-toolbar{contain:layout paint}
+.sandbox-workspace .sandbox-canvas-wrap{contain:layout paint;}
+.sandbox-workspace .sandbox-canvas-wrap canvas{display:block;max-width:100%;}
+.sandbox-workspace .sandbox-analysis-grid span{font-size:12px}
+.sandbox-workspace .sandbox-analysis-grid small{font-size:13px}
+.sandbox-workspace .sandbox-footnote{font-size:12px;line-height:1.65}
+@media(max-width:560px){
+ .lesson-page .lesson-topic-nav button strong{font-size:11px}
+ .lesson-page .lesson-chapter-tabs button{font-size:11px}
+ .lesson-page .lesson-chapter-card{padding:15px}
+ .lesson-page .lesson-step p{font-size:13px}
+}

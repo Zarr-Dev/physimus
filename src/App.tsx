@@ -1263,11 +1263,12 @@ function calculateLessonExperiment(id:LabId,value:number,language:Language){
  }
 }
 function LessonDiagram({id,value,stage}:{id:LabId;value:number;stage:number}){
+ const stageFocus=stage===0?0.92:stage===1?0.97:1;
  const angle=id==="incline"?value: id==="projectile"?value:30;
  const rad=angle*Math.PI/180;
  if(id==="projectile"){
   const pts=Array.from({length:41},(_,i)=>{const t=i/40,x=40+t*300,y=150-70*Math.sin(Math.PI*t)*Math.sin(rad)/Math.sin(Math.PI/4);return x+","+y;}).join(" ");
-  return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label="Projectile trajectory"><path d="M24 154 H356" className="diagram-ground"/><polyline points={pts} className="diagram-trajectory"/><circle cx="40" cy="150" r="6" className="diagram-object"/><path d="M40 150 L73 126 M40 150 L75 150" className="diagram-vector"/><path d="M190 80 V150" className="diagram-guide"/><text x="80" y="116">v₀</text><text x="196" y="75">H maks</text><text x="280" y="172">R</text></svg>;
+  return <svg className="lesson-diagram" style={{opacity:stageFocus}} data-stage={stage} viewBox="0 0 380 190" role="img" aria-label="Projectile trajectory"><path d="M24 154 H356" className="diagram-ground"/><polyline points={pts} className="diagram-trajectory"/><circle cx="40" cy="150" r="6" className="diagram-object"/><path d="M40 150 L73 126 M40 150 L75 150" className="diagram-vector"/><path d="M190 80 V150" className="diagram-guide"/><text x="80" y="116">v₀</text><text x="196" y="75">H maks</text><text x="280" y="172">R</text></svg>;
  }
  if(id==="mru"||id==="mrua"){
   const displacement=id==="mru"?value*4:3*4+.5*value*16;

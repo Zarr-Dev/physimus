@@ -208,7 +208,7 @@ function equationToLatex(source:string){
  };
  return lhs+render(root);
 }
-const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",ax:"m/s^2",ay:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",Fx:"N",Fy:"N",u:"m/s",omega:"rad/s",omega_d:"rad/s",k:"N/m",theta:"rad",phi:"rad",r:"m",f:"N",F:"N",N:"N",h:"m",x:"m",x0:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s"};
+const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",ax:"m/s^2",ay:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",u1:"m/s",u2:"m/s",v1:"m/s",v2:"m/s",Fx:"N",Fy:"N",F:"N",N:"N",w:"N",f_k:"N",f_s:"N",F_d:"N",F_g:"N",F_c:"N",omega:"rad/s",omega0:"rad/s",omega_d:"rad/s",alpha:"rad/s^2",k:"N/m",theta:"rad",phi:"rad",r:"m",h:"m",x:"m",x0:"m",x_s:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",T:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",beta:"1/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s",J:"N\\,s",H:"kg\\,m^2/s",tau:"N\\,m",P:"W",K_rot:"J",E_k:"J",E_p:"J",E_m:"J",U_s:"J",W_net:"J",mu:"1",mu_s:"1",mu_k:"1",e:"1"};
 function substitutedAstLatex(node:Node,vars:Vars):string{
  const num=(value:number)=>Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
  if(node.kind==="num")return num(node.n);
@@ -255,11 +255,11 @@ type Dimension=[number,number,number]; // [mass, length, time]
 const variableDimensions:Record<string,Dimension>={
  m:[1,0,0],mass:[1,0,0],g:[0,1,-2],a:[0,1,-2],accel:[0,1,-2],
  A:[0,1,0],x:[0,1,0],x0:[0,1,0],h:[0,1,0],r:[0,1,0],d:[0,1,0],s:[0,1,0],L:[0,1,0],
- v:[0,1,-1],v0:[0,1,-1],vx:[0,1,-1],vy:[0,1,-1],u:[0,1,-1],
+ v:[0,1,-1],v0:[0,1,-1],vx:[0,1,-1],vy:[0,1,-1],u:[0,1,-1],u1:[0,1,-1],u2:[0,1,-1],v1:[0,1,-1],v2:[0,1,-1],
  omega:[0,0,-1],theta:[0,0,0],phi:[0,0,0],mu:[0,0,0],e:[0,0,0],
- k:[1,0,-2],F:[1,1,-2],f:[1,1,-2],N:[1,1,-2],p:[1,1,-1],I:[1,2,0],
- alpha:[0,0,-2],tau:[1,2,-2],W:[1,2,-2],E:[1,2,-2],
- delta_t:[0,0,1],t:[0,0,1],m1:[1,0,0],m2:[1,0,0],dx:[0,1,0],ax:[0,1,-2],ay:[0,1,-2],Fx:[1,1,-2],Fy:[1,1,-2],G:[-1,3,-2],c:[1,0,-1],beta:[0,0,-1],omega_d:[0,0,-1],omega0:[0,0,-1],mu_s:[0,0,0],mu_k:[0,0,0]
+ k:[1,0,-2],F:[1,1,-2],f:[1,1,-2],N:[1,1,-2],w:[1,1,-2],Fx:[1,1,-2],Fy:[1,1,-2],f_k:[1,1,-2],f_s:[1,1,-2],F_d:[1,1,-2],F_g:[1,1,-2],F_c:[1,1,-2],p:[1,1,-1],J:[1,1,-1],I:[1,2,0],H:[1,2,-1],
+ alpha:[0,0,-2],tau:[1,2,-2],W:[1,2,-2],E:[1,2,-2],P:[1,2,-3],K_rot:[1,2,-2],E_k:[1,2,-2],E_p:[1,2,-2],E_m:[1,2,-2],U_s:[1,2,-2],W_net:[1,2,-2],
+ delta_t:[0,0,1],t:[0,0,1],m1:[1,0,0],m2:[1,0,0],dx:[0,1,0],x_s:[0,1,0],T:[0,0,1],ax:[0,1,-2],ay:[0,1,-2],Fx:[1,1,-2],Fy:[1,1,-2],G:[-1,3,-2],c:[1,0,-1],beta:[0,0,-1],omega_d:[0,0,-1],omega0:[0,0,-1],mu_s:[0,0,0],mu_k:[0,0,0]
 };
 function addDimension(a:Dimension,b:Dimension):Dimension{return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
 function subtractDimension(a:Dimension,b:Dimension):Dimension{return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}

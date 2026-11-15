@@ -235,21 +235,21 @@ function calculatorMath(value:string) {
   .replace(/v₀/g,"v_0").replace(/v₁/g,"v_1").replace(/v₂/g,"v_2")
   .replace(/μₖ/g,"\\\\mu_k").replace(/μₛ/g,"\\\\mu_s").replace(/μ/g,"\\\\mu")
   .replace(/Eₖ/g,"E_k").replace(/Eₚ/g,"E_p").replace(/Eₘ/g,"E_m")
-  .replace(/a_c/g,"a_c").replace(/²/g,"^2").replace(/⁻¹/g,"^{-1}")
+  .replace(/²/g,"^2").replace(/⁻¹/g,"^{-1}")
   .replace(/½/g,"\\\\frac{1}{2}").replace(/π/g,"\\\\pi").replace(/×/g,"\\\\times")
   .replace(/−/g,"-").replace(/√\\(/g,"\\\\sqrt{");
- // Close square-root groups using balanced parentheses, including nested numeric groups.
+ // Convert each square-root parenthesis group into a proper LaTeX braced group.
  let start=out.indexOf("\\\\sqrt{");
  while(start!==-1){
   const open=start+6; let depth=0, close=-1;
-  for(let i=open;i<out.length;i++){if(out[i]==="("||out[i]==="{")depth++;else if(out[i]===")"||out[i]==="}"){if(depth===0){close=i;break;}depth--;}}
-  if(close!==-1)out=out.slice(0,open)+out.slice(open,close)+"}"+out.slice(close+1);
+  for(let i=open;i<out.length;i++){
+   if(out[i]==="(")depth++;
+   else if(out[i]===")" ){depth--;if(depth===0){close=i;break;}}
+  }
+  if(close!==-1)out=out.slice(0,open)+out.slice(open,close+1)+"}"+out.slice(close+1);
   start=out.indexOf("\\\\sqrt{",start+6);
  }
- out=out.replace(/\\b(sin|cos|tan)\\(/g,(_,fn)=>"\\\\"+fn+"\\\\left(")
-        .replace(/\\btan\\^{-1}\\(/g,"\\\\tan^{-1}\\\\left(");
- // Close scalable delimiters introduced for trigonometric functions.
- out=out.replace(/\\\\left\\(/g,"\\\\left(");
+ out=out.replace(/\\b(sin|cos|tan)\\(/g,(_,fn)=>"\\\\\\\"+fn+"(");
  return out;
 }
 

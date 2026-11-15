@@ -26,7 +26,7 @@ function tokenize(source:string):string[] {
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
  const superscripts:Record<string,string>={"⁰":"^0","¹":"^1","²":"^2","³":"^3","⁴":"^4","⁵":"^5","⁶":"^6","⁷":"^7","⁸":"^8","⁹":"^9"};
  const subscripts:Record<string,string>={"₀":"_0","₁":"_1","₂":"_2","₃":"_3","₄":"_4","₅":"_5","₆":"_6","₇":"_7","₈":"_8","₉":"_9"};
- source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char).replace(/\\b([a-zA-Z]+)_([0-9]+)\\b/g,"$1$2");
+ source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char).replace(/\b([a-zA-Z]+)_([0-9]+)\b/g,"$1$2");
  const tokens:string[]=[];
  const re=/\s*([0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?|\.[0-9]+(?:e[+-]?[0-9]+)?|[a-zA-Z_][a-zA-Z0-9_]*|\*\*|[+\-*/^(),])/gy;
  let pos=0;
@@ -238,7 +238,7 @@ const variableDimensions:Record<string,Dimension>={
  omega:[0,0,-1],theta:[0,0,0],phi:[0,0,0],mu:[0,0,0],e:[0,0,0],
  k:[1,0,-2],F:[1,1,-2],f:[1,1,-2],N:[1,1,-2],p:[1,1,-1],I:[1,2,0],
  alpha:[0,0,-2],tau:[1,2,-2],W:[1,2,-2],E:[1,2,-2],
- delta_t:[0,0,1],t:[0,0,1]
+ delta_t:[0,0,1],t:[0,0,1],m1:[1,0,0],m2:[1,0,0],dx:[0,1,0],G:[-1,3,-2],c:[1,0,-1],beta:[0,0,-1],omega_d:[0,0,-1],omega0:[0,0,-1],mu_s:[0,0,0],mu_k:[0,0,0]
 };
 function addDimension(a:Dimension,b:Dimension):Dimension{return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
 function subtractDimension(a:Dimension,b:Dimension):Dimension{return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
@@ -537,10 +537,10 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    energy:["x(t)=0.5*g*(sin(theta)-mu*cos(theta))*cos(theta)*t^2","y(t)=h-0.5*g*(sin(theta)-mu*cos(theta))*sin(theta)*t^2"],
    integral:["y=int(u^2,u,0,x)"],
    summation:["y=sum(i^2,i,1,floor(x))"],
-   derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["W=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"],centripetal:["F_c=m*omega^2*r","a_c=omega^2*r"],potential:["U=m*g*h"],impulse:["J=F*delta_t"],torque:["tau=I*alpha"],rotation:["K_rot=0.5*I*omega^2"],springenergy:["U_s=0.5*k*x_s^2"],friction:["f_k=mu_k*N","N=m*g*cos(theta)"]
+   derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["W=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"],centripetal:["F_c=m*omega^2*r","a_c=omega^2*r"],potential:["U=m*g*h"],impulse:["J=F*delta_t"],torque:["tau=I*alpha"],rotation:["K_rot=0.5*I*omega^2"],springenergy:["U_s=0.5*k*x_s^2"],friction:["f_k=mu_k*N","N=m*g*cos(theta)"],components:["F_x=F*cos(theta)","F_y=F*sin(theta)"],torricelli:["v=sqrt(v0^2+2*a*s)"],power:["P=F*v"],gravitation:["F_g=frac(G*m1*m2,r^2)"],angularmomentum:["H=I*omega"],damped:["x(t)=A*exp(-beta*t)*cos(omega_d*t)","v(t)=-A*exp(-beta*t)*(beta*cos(omega_d*t)+omega_d*sin(omega_d*t))"],workenergy:["W_net=0.5*m*(v^2-v0^2)"],dampedforce:["F_d=-c*v"],staticfriction:["f_s=mu_s*N","N=m*g*cos(theta)"],angularkinematics:["omega_f=omega0+alpha*t"]
   };
   const list=data[kind]||[];if(!list.length)return;
-  setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);setFocusedEquationId(1);setEditorTab("equations");setPlaying(false);setTime(0);timeRef.current=0;setCustomVariables({});
+  setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);setFocusedEquationId(1);setEditorTab("equations");setPlaying(false);setTime(0);timeRef.current=0;setCustomVariables({});setMass(1);setGravity(9.81);setAmplitude(2);setInitialSpeed(5);setAngularSpeed(1);setStiffness(10);setPhase(Math.PI/4);setDuration(12);setScale(1);setView({xmin:-10,xmax:10,ymin:-10,ymax:10});
   if(kind==="circle"){setAmplitude(4);setAngularSpeed(1);}
   if(kind==="projectile"){setInitialSpeed(12);setPhase(Math.PI/4);setGravity(9.81);}
   if(kind==="spring"){setAmplitude(2);setStiffness(25);setMass(1);}
@@ -556,6 +556,16 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   if(kind==="rotation"){setCustomVariables({I:2});setAngularSpeed(2);}
   if(kind==="springenergy"){setCustomVariables({x_s:.2});setStiffness(25);}
   if(kind==="friction"){setCustomVariables({mu_k:.2});setPhase(Math.PI/6);setMass(2);setGravity(9.81);}
+  if(kind==="components"){setCustomVariables({F:20});setPhase(Math.PI/6);}
+  if(kind==="torricelli"){setInitialSpeed(4);setCustomVariables({accel:2,s:12});}
+  if(kind==="power"){setCustomVariables({F:15,v:3});}
+  if(kind==="gravitation"){setCustomVariables({G:6.6743e-11,m1:5.972e24,m2:7.348e22,r:3.844e8});}
+  if(kind==="angularmomentum"){setCustomVariables({I:2,omega:3});}
+  if(kind==="damped"){setAmplitude(2);setCustomVariables({beta:.15,omega_d:3});}
+  if(kind==="workenergy"){setMass(2);setCustomVariables({v:8,v0:3});}
+  if(kind==="dampedforce"){setCustomVariables({c:2,v:4});}
+  if(kind==="staticfriction"){setCustomVariables({mu_s:.4});setMass(3);setGravity(9.81);setPhase(Math.PI/6);}
+  if(kind==="angularkinematics"){setCustomVariables({omega0:2,alpha:1.5});}
   if(kind==="integral"){setView({xmin:0,xmax:5,ymin:0,ymax:40});setScale(1);}
   if(kind==="summation"){setView({xmin:0,xmax:10,ymin:0,ymax:400});setScale(1);}
   if(kind==="derivative"){setView({xmin:-10,xmax:10,ymin:-1.5,ymax:1.5});setScale(1);}
@@ -673,6 +683,16 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <button onClick={()=>preset("rotation")}><strong>23 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><code>Kᵣₒₜ=½Iω²</code></button>
         <button onClick={()=>preset("springenergy")}><strong>24 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><code>Uₛ=½kx²</code></button>
         <button onClick={()=>preset("friction")}><strong>25 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><code>fₖ=μₖN, N=mg cos θ</code></button>
+        <button onClick={()=>preset("components")}><strong>26 · {language==="ID"?"Komponen gaya":"Force components"}</strong><code>Fₓ=F cos θ, Fᵧ=F sin θ</code></button>
+        <button onClick={()=>preset("torricelli")}><strong>27 · {language==="ID"?"Persamaan Torricelli":"Torricelli equation"}</strong><code>v=√(v₀²+2as)</code></button>
+        <button onClick={()=>preset("power")}><strong>28 · {language==="ID"?"Daya mekanik":"Mechanical power"}</strong><code>P=Fv</code></button>
+        <button onClick={()=>preset("gravitation")}><strong>29 · {language==="ID"?"Hukum gravitasi Newton":"Newtonian gravitation"}</strong><code>F=Gm₁m₂/r²</code></button>
+        <button onClick={()=>preset("angularmomentum")}><strong>30 · {language==="ID"?"Momentum sudut":"Angular momentum"}</strong><code>H=Iω</code></button>
+        <button onClick={()=>preset("damped")}><strong>31 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><code>x=Ae^(−βt) cos(ωᵈt)</code></button>
+        <button onClick={()=>preset("workenergy")}><strong>32 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><code>Wₙₑₜ=½m(v²−v₀²)</code></button>
+        <button onClick={()=>preset("dampedforce")}><strong>33 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><code>Fᵈ=−cv</code></button>
+        <button onClick={()=>preset("staticfriction")}><strong>34 · {language==="ID"?"Gesekan statis":"Static friction"}</strong><code>0≤fₛ≤μₛN</code></button>
+        <button onClick={()=>preset("angularkinematics")}><strong>35 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><code>ω=ω₀+αt</code></button>
       </div>
     </>}
     {editorTab==="graph"&&<>

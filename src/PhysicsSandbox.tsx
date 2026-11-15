@@ -4,15 +4,18 @@ import { AlertTriangle, Download, Eye, EyeOff, Minus, Pause, Play, Plus, RotateC
 
 type Language = "ID" | "EN";
 type Row = { id:number; text:string; enabled:boolean };
-type Vars = { x:number; t:number; m:number; g:number; a:number; v0:number; omega:number; k:number; theta:number };
+type Vars = Record<string,number>;
+type EditorTab = "equations" | "objects" | "examples" | "graph";
+type ObjectKind = "box" | "circle" | "spring" | "rope" | "pulley";
+type MechanicalObject = {id:number;kind:ObjectKind;x:number;y:number;mass:number;radius:number;stiffness:number;angle:number;enabled:boolean};
 type Node = { kind:"num"; n:number } | { kind:"var"; name:string } | { kind:"unary"; op:string; child:Node } | { kind:"binary"; op:string; a:Node; b:Node } | { kind:"call"; name:string; args:Node[] };
 type Compiled = { id:number; text:string; target:"y(x)"|"x(t)"|"y(t)"; root:Node; error?:string };
 type Motion = { x:number;y:number;vx:number;vy:number;ax:number;ay:number;speed:number;acceleration:number;energy:number;potential:number;mechanical:number;momentum:number;force:number;weight:number };
 
 const allowedFunctions = new Set(["sin","cos","tan","asin","acos","atan","sqrt","abs","exp","ln","log","min","max","floor","ceil","sign"]);
 const copy = {
- ID:{title:"Physimus Sandbox",subtitle:"Ruang eksperimen persamaan mekanika",hint:"Buat persamaan sendiri. Bentuk kurva atau lintasan benda, jalankan waktu, dan amati besaran fisik yang muncul.",math:"Ekspresi matematika",delete:"Hapus",gravity:"Gravitasi",amplitude:"Amplitudo A",initialSpeed:"Kecepatan awal v₀",angularSpeed:"Kecepatan sudut ω",stiffness:"Konstanta pegas k",phase:"Sudut/fase θ (rad)",add:"Tambah persamaan",play:"Jalankan",pause:"Jeda",reset:"Reset",time:"Waktu",duration:"Durasi (s)",mass:"Massa (kg)",object:"Objek",grid:"Grid",axes:"Sumbu",trail:"Jejak",velocity:"Vektor kecepatan",acceleration:"Vektor percepatan",force:"Vektor gaya",energy:"Besaran energi",labels:"Label",view:"Rentang grafik",xmin:"x minimum",xmax:"x maksimum",ymin:"y minimum",ymax:"y maksimum",examples:"Contoh cepat",syntax:"Sintaks",syntaxText:"+, -, *, /, pangkat, tanda kurung, sin, cos, tan, sqrt, abs, exp, ln, log, min, max, pi, e. Sudut dalam radian.",status:"Validasi model",ok:"Persamaan lolos uji sintaks dan kestabilan pada titik sampel. Ini belum membuktikan kesesuaian dimensi atau semua hukum fisika; pastikan model dan satuan SI konsisten.",bad:"Persamaan salah sintaks atau menghasilkan nilai tidak hingga/tidak stabil. Grafik dapat terputus.",empty:"Tambahkan persamaan di panel kiri untuk mulai menggambar.",inspector:"Arahkan kursor ke grafik untuk membaca koordinat.",motion:"Analisis gerak langsung",notMotion:"Tambahkan x(t) dan/atau y(t) untuk membentuk objek bergerak.",parametric:"Lintasan parametrik",function:"Kurva y = f(x)",particle:"Partikel",ball:"Bola",cart:"Kereta",satellite:"Satelit",rocket:"Roket",export:"Ekspor CSV",zoom:"Zoom",noBackend:"Berjalan lokal di browser; tidak ada data yang dikirim ke backend.",warning:"Turunan dihitung dengan beda hingga pusat. Pemeriksaan dimensi dan penegakan semua hukum fisika belum otomatis; periksa konsistensi satuan dan model."},
- EN:{title:"Physimus Sandbox",subtitle:"A mechanics equation playground",hint:"Create your own equations. Shape a curve or an object's trajectory, run time, and inspect the physical quantities that emerge.",math:"Mathematical expressions",delete:"Delete",gravity:"Gravity g",amplitude:"Amplitude A",initialSpeed:"Initial speed v₀",angularSpeed:"Angular speed ω",stiffness:"Spring constant k",phase:"Angle/phase θ (rad)",add:"Add equation",play:"Run",pause:"Pause",reset:"Reset",time:"Time",duration:"Duration (s)",mass:"Mass (kg)",object:"Object",grid:"Grid",axes:"Axes",trail:"Trail",velocity:"Velocity vector",acceleration:"Acceleration vector",force:"Force vector",energy:"Energy quantities",labels:"Labels",view:"Graph range",xmin:"x minimum",xmax:"x maximum",ymin:"y minimum",ymax:"y maximum",examples:"Quick examples",syntax:"Syntax",syntaxText:"+, -, *, /, powers, parentheses, sin, cos, tan, sqrt, abs, exp, ln, log, min, max, pi, e. Angles are radians.",status:"Model validation",ok:"Expressions pass syntax and numerical-stability checks at sampled points. This does not prove dimensional consistency or compliance with every physics law; check the model and SI units.",bad:"Invalid syntax or non-finite/unstable values were found. Curves may break.",empty:"Add an equation in the left panel to start plotting.",inspector:"Move the pointer over the graph to inspect coordinates.",motion:"Live motion analysis",notMotion:"Add x(t) and/or y(t) to create a moving object.",parametric:"Parametric trajectory",function:"Curve y = f(x)",particle:"Particle",ball:"Ball",cart:"Cart",satellite:"Satellite",rocket:"Rocket",export:"Export CSV",zoom:"Zoom",noBackend:"Runs locally in your browser; no data is sent to a backend.",warning:"Derivatives use central finite differences. Dimensional analysis and enforcement of all physics laws are not automatic; check model and unit consistency."}
+ ID:{title:"Physimus Sandbox",subtitle:"Ruang eksperimen persamaan mekanika",hint:"Buat persamaan sendiri. Bentuk kurva atau lintasan benda, jalankan waktu, dan amati besaran fisik yang muncul.",math:"Ekspresi matematika",delete:"Hapus",gravity:"Gravitasi",amplitude:"Amplitudo A",initialSpeed:"Kecepatan awal v₀",angularSpeed:"Kecepatan sudut ω",stiffness:"Konstanta pegas k",phase:"Sudut/fase θ (rad)",add:"Tambah persamaan",play:"Jalankan",pause:"Jeda",reset:"Reset",time:"Waktu",duration:"Durasi (s)",mass:"Massa (kg)",object:"Objek",grid:"Grid",axes:"Sumbu",trail:"Jejak",velocity:"Vektor kecepatan",acceleration:"Vektor percepatan",force:"Vektor gaya",energy:"Besaran energi",labels:"Label",view:"Rentang grafik",xmin:"x minimum",xmax:"x maksimum",ymin:"y minimum",ymax:"y maksimum",examples:"Contoh cepat",syntax:"Sintaks",syntaxText:"+, -, *, /, pangkat, tanda kurung, sin, cos, tan, sqrt, abs, exp, ln, log, min, max, pi, e. Sudut dalam radian.",status:"Validasi model",ok:"Persamaan lolos uji sintaks dan kestabilan pada titik sampel. Ini belum membuktikan kesesuaian dimensi atau semua hukum fisika; pastikan model dan satuan SI konsisten.",bad:"Persamaan salah sintaks atau menghasilkan nilai tidak hingga/tidak stabil. Grafik dapat terputus.",empty:"Tambahkan persamaan di panel kiri untuk mulai menggambar.",inspector:"Arahkan kursor ke grafik untuk membaca koordinat.",motion:"Analisis gerak langsung",notMotion:"Tambahkan x(t) dan/atau y(t) untuk membentuk objek bergerak.",parametric:"Lintasan parametrik",function:"Kurva y = f(x)",particle:"Partikel",ball:"Bola",cart:"Kereta",satellite:"Satelit",rocket:"Roket",export:"Ekspor CSV",zoom:"Zoom",noBackend:"Berjalan lokal di browser; tidak ada data yang dikirim ke backend.",warning:"Turunan dihitung dengan beda hingga pusat. Pemeriksaan dimensi dan penegakan semua hukum fisika belum otomatis; periksa konsistensi satuan dan model.",tabEquations:"Persamaan",tabObjects:"Objek mekanika",tabExamples:"Contoh",tabGraph:"Grafik",variables:"Variabel persamaan",noVariables:"Variabel yang digunakan persamaan akan muncul di sini.",addObject:"Tambah objek",objectPosition:"Posisi objek",objectMass:"Massa",objectRadius:"Jari-jari / ukuran",objectSpring:"Konstanta pegas",objectAngle:"Sudut",enabled:"Tampil",objectNames:{box:"Kotak / balok",circle:"Lingkaran",spring:"Pegas",rope:"Tali",pulley:"Katrol"},panHint:"Seret grafik untuk menggeser. Gunakan roda mouse untuk zoom."},
+ EN:{title:"Physimus Sandbox",subtitle:"A mechanics equation playground",hint:"Create your own equations. Shape a curve or an object's trajectory, run time, and inspect the physical quantities that emerge.",math:"Mathematical expressions",delete:"Delete",gravity:"Gravity g",amplitude:"Amplitude A",initialSpeed:"Initial speed v₀",angularSpeed:"Angular speed ω",stiffness:"Spring constant k",phase:"Angle/phase θ (rad)",add:"Add equation",play:"Run",pause:"Pause",reset:"Reset",time:"Time",duration:"Duration (s)",mass:"Mass (kg)",object:"Object",grid:"Grid",axes:"Axes",trail:"Trail",velocity:"Velocity vector",acceleration:"Acceleration vector",force:"Force vector",energy:"Energy quantities",labels:"Labels",view:"Graph range",xmin:"x minimum",xmax:"x maximum",ymin:"y minimum",ymax:"y maximum",examples:"Quick examples",syntax:"Syntax",syntaxText:"+, -, *, /, powers, parentheses, sin, cos, tan, sqrt, abs, exp, ln, log, min, max, pi, e. Angles are radians.",status:"Model validation",ok:"Expressions pass syntax and numerical-stability checks at sampled points. This does not prove dimensional consistency or compliance with every physics law; check the model and SI units.",bad:"Invalid syntax or non-finite/unstable values were found. Curves may break.",empty:"Add an equation in the left panel to start plotting.",inspector:"Move the pointer over the graph to inspect coordinates.",motion:"Live motion analysis",notMotion:"Add x(t) and/or y(t) to create a moving object.",parametric:"Parametric trajectory",function:"Curve y = f(x)",particle:"Particle",ball:"Ball",cart:"Cart",satellite:"Satellite",rocket:"Rocket",export:"Export CSV",zoom:"Zoom",noBackend:"Runs locally in your browser; no data is sent to a backend.",warning:"Derivatives use central finite differences. Dimensional analysis and enforcement of all physics laws are not automatic; check model and unit consistency.",tabEquations:"Equations",tabObjects:"Mechanics objects",tabExamples:"Examples",tabGraph:"Graph",variables:"Equation variables",noVariables:"Variables used in the equations will appear here.",addObject:"Add object",objectPosition:"Object position",objectMass:"Mass",objectRadius:"Radius / size",objectSpring:"Spring constant",objectAngle:"Angle",enabled:"Visible",objectNames:{box:"Box / block",circle:"Circle",spring:"Spring",rope:"Rope",pulley:"Pulley"},panHint:"Drag the graph to pan. Use the mouse wheel to zoom."}
 };
 
 function tokenize(source:string):string[] {
@@ -35,8 +38,7 @@ function parse(source:string):Node {
   if(/^([0-9]|\.)/.test(token))return {kind:"num",n:Number(token)};
   if(/^[a-z_]/.test(token)){
    if(allowedFunctions.has(token)){need("(");const args:Node[]=[];if(peek()!==")"){args.push(add());while(peek()===","){take();args.push(add());}}need(")");if((token==="min"||token==="max")?args.length<2:args.length!==1)throw new Error("Jumlah argumen "+token+" tidak sesuai");return {kind:"call",name:token,args};}
-   if(["x","t","m","g","a","v0","omega","k","theta","pi","e"].includes(token))return {kind:"var",name:token};
-   throw new Error("Variabel tidak dikenal: "+token);
+   return {kind:"var",name:token};
   }
   throw new Error("Token tidak valid: "+token);
  };
@@ -48,7 +50,7 @@ function parse(source:string):Node {
 }
 function calc(n:Node,v:Vars):number {
  if(n.kind==="num")return n.n;
- if(n.kind==="var")return n.name==="pi"?Math.PI:n.name==="e"?Math.E:v[n.name as keyof Vars];
+ if(n.kind==="var")return n.name==="pi"?Math.PI:n.name==="e"?Math.E:(v[n.name]??Number.NaN);
  if(n.kind==="unary"){const q=calc(n.child,v);return n.op==="-"?-q:q;}
  if(n.kind==="binary"){const a=calc(n.a,v),b=calc(n.b,v);if(n.op==="+")return a+b;if(n.op==="-")return a-b;if(n.op==="*")return a*b;if(n.op==="/")return b===0?NaN:a/b;return Math.pow(a,b);}
  const a=n.args.map(x=>calc(x,v)),q=a[0];
@@ -60,6 +62,22 @@ function compile(rows:Row[]):Compiled[]{
   catch(e){return {id:row.id,text:row.text,target:"y(x)" as const,root:{kind:"num",n:0} as Node,error:e instanceof Error?e.message:"Syntax error"};}
  });
 }
+function collectVariables(node:Node,result:Set<string>){
+ if(node.kind==="var"){result.add(node.name);return;}
+ if(node.kind==="unary"){collectVariables(node.child,result);return;}
+ if(node.kind==="binary"){collectVariables(node.a,result);collectVariables(node.b,result);return;}
+ if(node.kind==="call")node.args.forEach(child=>collectVariables(child,result));
+}
+function variableDefaults(name:string){
+ const defaults:Record<string,number>={m:1,g:9.81,a:2,v0:5,omega:1,k:10,theta:Math.PI/4,r:3,e:1,mu:.2,F:10,h:2};
+ return defaults[name]??1;
+}
+function variableDescription(name:string,language:Language){
+ const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Amplitudo / percepatan",en:"Amplitude / acceleration",unit:"m atau m/s²"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},F:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"}};
+ const item=labels[name];
+ return item?{label:language==="ID"?item.id:item.en,unit:item.unit}:{label:name,unit:language==="ID"?"nilai bebas":"custom"};
+}
+
 function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
  const m=vars.m;
  const fx=list.find(q=>q.target==="x(t)"&&!q.error),fy=list.find(q=>q.target==="y(t)"&&!q.error);if(!fx&&!fy)return null;
@@ -74,12 +92,17 @@ function arrow(ctx:CanvasRenderingContext2D,x1:number,y1:number,x2:number,y2:num
 export default function PhysicsSandbox({language}:{language:Language}){
  const w=copy[language];
  const [rows,setRows]=useState<Row[]>([{id:1,text:"",enabled:true}]);const [nextId,setNextId]=useState(2);
- const [time,setTime]=useState(0);const [duration,setDuration]=useState(12);const [mass,setMass]=useState(1);const [gravity,setGravity]=useState(9.81);const [amplitude,setAmplitude]=useState(2);const [initialSpeed,setInitialSpeed]=useState(5);const [angularSpeed,setAngularSpeed]=useState(1);const [stiffness,setStiffness]=useState(10);const [phase,setPhase]=useState(Math.PI/4);const [playing,setPlaying]=useState(false);
+ const [time,setTime]=useState(0);const [duration,setDuration]=useState(12);const [mass,setMass]=useState(1);const [customVariables,setCustomVariables]=useState<Record<string,number>>({});const [gravity,setGravity]=useState(9.81);const [amplitude,setAmplitude]=useState(2);const [initialSpeed,setInitialSpeed]=useState(5);const [angularSpeed,setAngularSpeed]=useState(1);const [stiffness,setStiffness]=useState(10);const [phase,setPhase]=useState(Math.PI/4);const [playing,setPlaying]=useState(false);
  const [showGrid,setShowGrid]=useState(true);const [showAxes,setShowAxes]=useState(true);const [showTrail,setShowTrail]=useState(true);const [showVelocity,setShowVelocity]=useState(true);const [showAcceleration,setShowAcceleration]=useState(true);const [showForce,setShowForce]=useState(false);const [showWeight,setShowWeight]=useState(true);const [showMomentum,setShowMomentum]=useState(true);const [showEnergy,setShowEnergy]=useState(true);const [showLabels,setShowLabels]=useState(true);
  const [object,setObject]=useState("particle");const [scale,setScale]=useState(1);const [cursor,setCursor]=useState<{x:number;y:number}|null>(null);const [view,setView]=useState({xmin:-10,xmax:10,ymin:-10,ymax:10});const [canvasSize,setCanvasSize]=useState(0);
- const canvasRef=useRef<HTMLCanvasElement>(null);const timeRef=useRef(0);
+ const [editorTab,setEditorTab]=useState<EditorTab>("equations");const [sceneObjects,setSceneObjects]=useState<MechanicalObject[]>([]);const [nextObjectId,setNextObjectId]=useState(1);const [selectedObjectId,setSelectedObjectId]=useState<number|null>(null);
+ const canvasRef=useRef<HTMLCanvasElement>(null);const timeRef=useRef(0);const dragRef=useRef<{x:number;y:number;view:{xmin:number;xmax:number;ymin:number;ymax:number}}|null>(null);
  const parsed=useMemo(()=>compile(rows),[rows]);const valid=parsed.filter(x=>!x.error);const errors=parsed.filter(x=>x.error);
- const hasMotion=valid.some(x=>x.target==="x(t)"||x.target==="y(t)");const parameterSet=useMemo<Vars>(()=>({x:0,t:0,m:mass,g:gravity,a:amplitude,v0:initialSpeed,omega:angularSpeed,k:stiffness,theta:phase}),[time,mass,gravity,amplitude,initialSpeed,angularSpeed,stiffness,phase]);const current=motionAt(valid,time,parameterSet);
+ const hasMotion=valid.some(x=>x.target==="x(t)"||x.target==="y(t)");
+ const usedVariables=useMemo(()=>{const result=new Set<string>();valid.forEach(item=>collectVariables(item.root,result));return Array.from(result).filter(name=>!["x","t","pi","e"].includes(name)).sort();},[valid]);
+ const knownVariables=useMemo(()=>({m:mass,g:gravity,a:amplitude,v0:initialSpeed,omega:angularSpeed,k:stiffness,theta:phase}),[mass,gravity,amplitude,initialSpeed,angularSpeed,stiffness,phase]);
+ const parameterSet=useMemo<Vars>(()=>({x:0,t:0,...Object.fromEntries(usedVariables.map(name=>[name,customVariables[name]??knownVariables[name as keyof typeof knownVariables]??variableDefaults(name)])),...knownVariables}),[usedVariables,customVariables,knownVariables]);
+ const current=motionAt(valid,time,parameterSet);
  const badSample=useMemo(()=>{for(const item of valid){for(let i=0;i<=100;i++){const q=item.target==="y(x)"?calc(item.root,{...parameterSet,x:view.xmin+(view.xmax-view.xmin)*i/100,t:0}):calc(item.root,{...parameterSet,x:0,t:duration*i/100});if(!Number.isFinite(q)||Math.abs(q)>1e6)return true;}}return false;},[valid,view,duration,parameterSet]);
  const warning=errors.length>0||badSample||(hasMotion&&!current);
  useEffect(()=>{if(!playing)return;let frame=0,last=0;const tick=(now:number)=>{if(!last)last=now;const next=timeRef.current+Math.min((now-last)/1000,.05);last=now;timeRef.current=Math.min(duration,next);setTime(timeRef.current);if(next>=duration){setPlaying(false);return;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,duration]);
@@ -102,6 +125,27 @@ export default function PhysicsSandbox({language}:{language:Language}){
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const observer=new ResizeObserver(()=>setCanvasSize(v=>v+1));observer.observe(canvas);return()=>observer.disconnect();},[]);
  useEffect(()=>{timeRef.current=time;},[time]);
  const add=()=>{setRows(old=>[...old,{id:nextId,text:"",enabled:true}]);setNextId(v=>v+1);};
+ const setVariable=(name:string,value:number)=>{
+  if(!Number.isFinite(value))return;
+  if(name==="m")setMass(Math.max(.01,Math.min(10000,value)));
+  else if(name==="g")setGravity(Math.max(0,Math.min(1000,value)));
+  else if(name==="a")setAmplitude(Math.max(-1000,Math.min(1000,value)));
+  else if(name==="v0")setInitialSpeed(Math.max(-1000,Math.min(1000,value)));
+  else if(name==="omega")setAngularSpeed(Math.max(-1000,Math.min(1000,value)));
+  else if(name==="k")setStiffness(Math.max(0,Math.min(100000,value)));
+  else if(name==="theta")setPhase(Math.max(-1000,Math.min(1000,value)));
+  else setCustomVariables(old=>({...old,[name]:Math.max(-1e6,Math.min(1e6,value))}));
+  reset();
+ };
+ const addSceneObject=(kind:ObjectKind)=>{
+  const item:MechanicalObject={id:nextObjectId,kind,x:0,y:0,mass:1,radius:1,stiffness:20,angle:0,enabled:true};
+  setSceneObjects(old=>[...old,item]);setSelectedObjectId(nextObjectId);setNextObjectId(value=>value+1);
+ };
+ const updateSceneObject=(id:number,key:keyof MechanicalObject,value:number|boolean)=>{
+  setSceneObjects(old=>old.map(item=>item.id===id?{...item,[key]:value}:item));
+ };
+ const selectedSceneObject=sceneObjects.find(item=>item.id===selectedObjectId)??null;
+
  const update=(id:number,text:string)=>setRows(old=>old.map(r=>r.id===id?{...r,text}:r));
  const reset=()=>{setTime(0);timeRef.current=0;setPlaying(false);};
  const preset=(kind:string)=>{const data:Record<string,string[]>={circle:["x(t)=A*cos(omega*t)","y(t)=A*sin(omega*t)"],projectile:["x(t)=v0*cos(theta)*t","y(t)=v0*sin(theta)*t-0.5*g*t^2"],spring:["x(t)=A*cos(omega*t)","y(t)=0"],curve:["y=0.2x^2-2"]};const list=data[kind]||[];setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);if(kind==="circle"){setAmplitude(4);setAngularSpeed(1);}if(kind==="projectile"){setInitialSpeed(12);setPhase(Math.PI/4);setGravity(9.81);}if(kind==="spring"){setAmplitude(2);setAngularSpeed(2);}reset();};

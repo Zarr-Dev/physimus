@@ -344,7 +344,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    }
   }
   ctx.fillStyle="#8292a4";ctx.font="11px DM Sans";ctx.textAlign="right";ctx.fillText("x (m)",width-18,height-12);ctx.save();ctx.translate(15,top+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText("y (m)",0,0);ctx.restore();
- },[parsed,valid,view,scale,showGrid,showAxes,hasMotion,time,duration,mass,parameterSet,showTrail,showVelocity,showAcceleration,showForce,showWeight,showMomentum,gravity,showLabels,current,object,canvasSize,renderQuality.dpr,functionCurves,motionTrail,sceneObjects,selectedObjectId]);
+ },[parsed,valid,view,scale,showGrid,showAxes,hasMotion,time,duration,mass,parameterSet,showTrail,showVelocity,showAcceleration,showForce,showWeight,showMomentum,gravity,showLabels,current,object,canvasSize,renderQuality.dpr,functionCurves,motionTrail,sceneObjects,selectedObjectId,theme]);
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const observer=new ResizeObserver(()=>setCanvasSize(v=>v+1));observer.observe(canvas);return()=>observer.disconnect();},[]);
  useEffect(()=>{timeRef.current=time;},[time]);
   useEffect(()=>{if(editorTab!=="objects"||!selectedSceneObject)return;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;objectPropertiesRef.current?.scrollIntoView({behavior:reduced||motionLevel==="low"?"auto":"smooth",block:"nearest"});},[editorTab,selectedObjectId,motionLevel]);

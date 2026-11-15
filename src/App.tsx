@@ -228,6 +228,31 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
 
 };
 
+function calculatorMath(value:string) {
+ let out=value
+  .replace(/θ_c/g,"\\\\theta_c").replace(/θ/g,"\\\\theta").replace(/ω/g,"\\\\omega")
+  .replace(/Δx/g,"\\\\Delta x").replace(/Δt/g,"\\\\Delta t")
+  .replace(/v₀/g,"v_0").replace(/v₁/g,"v_1").replace(/v₂/g,"v_2")
+  .replace(/μₖ/g,"\\\\mu_k").replace(/μₛ/g,"\\\\mu_s").replace(/μ/g,"\\\\mu")
+  .replace(/Eₖ/g,"E_k").replace(/Eₚ/g,"E_p").replace(/Eₘ/g,"E_m")
+  .replace(/a_c/g,"a_c").replace(/²/g,"^2").replace(/⁻¹/g,"^{-1}")
+  .replace(/½/g,"\\\\frac{1}{2}").replace(/π/g,"\\\\pi").replace(/×/g,"\\\\times")
+  .replace(/−/g,"-").replace(/√\\(/g,"\\\\sqrt{");
+ // Close square-root groups using balanced parentheses, including nested numeric groups.
+ let start=out.indexOf("\\\\sqrt{");
+ while(start!==-1){
+  const open=start+6; let depth=0, close=-1;
+  for(let i=open;i<out.length;i++){if(out[i]==="("||out[i]==="{")depth++;else if(out[i]===")"||out[i]==="}"){if(depth===0){close=i;break;}depth--;}}
+  if(close!==-1)out=out.slice(0,open)+out.slice(open,close)+"}"+out.slice(close+1);
+  start=out.indexOf("\\\\sqrt{",start+6);
+ }
+ out=out.replace(/\\b(sin|cos|tan)\\(/g,(_,fn)=>"\\\\"+fn+"\\\\left(")
+        .replace(/\\btan\\^{-1}\\(/g,"\\\\tan^{-1}\\\\left(");
+ // Close scalable delimiters introduced for trigonometric functions.
+ out=out.replace(/\\\\left\\(/g,"\\\\left(");
+ return out;
+}
+
 function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language}) {
  const definitions=calculatorDefinitions[labId];
  const [selectedId,setSelectedId]=useState(definitions[0].id);
@@ -280,7 +305,7 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
       {(field.min!==undefined||field.max!==undefined)&&<small className="equation-calc-range">{field.min!==undefined&&field.max!==undefined?`${field.min} – ${field.max}`:field.min!==undefined?`≥ ${field.min}`:`≤ ${field.max}`}</small>}
      </label>;
     })}</div>
-    <div className="equation-calc-substitution"><span>{language==="ID"?"SUBSTITUSI ANGKA":"NUMERIC SUBSTITUTION"}</span><code>{result?result.substitution:(language==="ID"?"Lengkapi variabel untuk melihat substitusi.":"Complete the variables to see the substitution.")}</code></div>
+    <div className="equation-calc-substitution"><span>{language==="ID"?"SUBSTITUSI ANGKA":"NUMERIC SUBSTITUTION"}</span><div className="equation-calc-substitution-math">{result?<Equation value={calculatorMath(result.substitution)}/>:<span>{language==="ID"?"Lengkapi variabel untuk melihat substitusi.":"Complete the variables to see the substitution."}</span>}</div></div>
     {errorText&&<p className="equation-calc-error" role="status">{errorText}</p>}
     <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span><strong>{result?result.value:"—"} <small>{result?.unit??""}</small></strong></div>
     <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p>{language==="ID"?active.noteID:active.noteEN}</p></div>

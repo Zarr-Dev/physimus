@@ -750,13 +750,13 @@ function downloadFile(name:string,data:string,mime:string) {
   window.setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
-function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language:Language;onBack:()=>void;onChoose:(id:LabId)=>void;theme:Theme}) {
+function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode}:{labId:LabId;language:Language;onBack:()=>void;onChoose:(id:LabId)=>void;theme:Theme;motionLevel:MotionLevel;renderMode:RenderMode}) {
   const lab=labs.find(item=>item.id===labId)??labs[0];
   const w=words[language];
   const [values,setValues]=useState<Record<string,number>>(()=>Object.fromEntries(lab.params.map(p=>[p.key,p.initial])));
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
-  const [speedFactor,setSpeedFactor]=useState(1);
+  const [speedFactor,setSpeedFactor]=useState(1);const [focusMode,setFocusMode]=useState(false);const [expandedMetric,setExpandedMetric]=useState<string|null>(null);const [graphPan,setGraphPan]=useState({x:0,y:0});const [graphZoom,setGraphZoom]=useState(1);
   const [showGrid,setShowGrid]=useState(true);
   const [showVectors,setShowVectors]=useState(true);
   const [showTrail,setShowTrail]=useState(true);
@@ -769,7 +769,7 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
   const [selectedObject2,setSelectedObject2]=useState(()=>objectOptionsFor(lab.id,language)[1]?.value??objectOptionsFor(lab.id,language)[0].value);
   const canvasRef=useRef<HTMLCanvasElement>(null);
   const drawRef=useRef<()=>void>(()=>{});
-  const timeRef=useRef(0);
+  const timeRef=useRef(0);const labDragRef=useRef<{x:number;y:number;panX:number;panY:number}|null>(null);const panFrameRef=useRef<number|null>(null);const pendingPanRef=useRef<{x:number;y:number}|null>(null);
   const fileRef=useRef<HTMLInputElement>(null);
   const points=useMemo(()=>makePoints(lab,values),[lab,values]);
   const duration=points[points.length-1]?.t??1;
@@ -785,24 +785,24 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
 
   useEffect(()=>{
     if(!playing)return;
-    let frame=0,last=0;
+    let frame=0,last=0,lastUi=0;
     const tick=(now:number)=>{
       if(!last)last=now;
       const next=timeRef.current+Math.min((now-last)/1000,.05)*speedFactor;
-      last=now;timeRef.current=Math.min(next,duration);setTime(timeRef.current);
+      last=now;timeRef.current=Math.min(next,duration);if(now-lastUi>=1000/((renderMode==="performance"||motionLevel==="low")?14:renderMode==="detail"&&motionLevel==="high"?45:28)||next>=duration){lastUi=now;setTime(timeRef.current);}
       if(next>=duration){setPlaying(false);return;}
       frame=requestAnimationFrame(tick);
     };
     frame=requestAnimationFrame(tick);
     return()=>cancelAnimationFrame(frame);
-  },[playing,duration,speedFactor]);
+  },[playing,duration,speedFactor,motionLevel,renderMode]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
     const ctx=canvas.getContext("2d");if(!ctx)return;
     const render=()=>{
       const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;
-      const dpr=Math.min(window.devicePixelRatio||1,2);
+      const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);const qualityCap=renderMode==="performance"?1:renderMode==="detail"?(constrainedDevice?1.5:2):(motionLevel==="low"||constrainedDevice?1:motionLevel==="medium"?1.5:2);const dpr=Math.min(window.devicePixelRatio||1,qualityCap);
       const cw=Math.round(rect.width*dpr),ch=Math.round(rect.height*dpr);
       if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch;}
       ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -840,7 +840,7 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
         minX=centerX-unitsPerPixel*pw/2;maxX=centerX+unitsPerPixel*pw/2;
         minY=centerY-unitsPerPixel*ph/2;maxY=centerY+unitsPerPixel*ph/2;
       }
-      const sx=(maxX-minX)||1,sy=(maxY-minY)||1;
+      const centerX=(minX+maxX)/2,centerY=(minY+maxY)/2,spanX=(maxX-minX)/graphZoom,spanY=(maxY-minY)/graphZoom;minX=centerX-spanX/2+graphPan.x*spanX;maxX=centerX+spanX/2+graphPan.x*spanX;minY=centerY-spanY/2+graphPan.y*spanY;maxY=centerY+spanY/2+graphPan.y*spanY;const sx=(maxX-minX)||1,sy=(maxY-minY)||1;
       const X=(x:number)=>left+(x-minX)/sx*pw;
       const Y=(y:number)=>top+ph-(y-minY)/sy*ph;
       const x0=X(Math.max(minX,Math.min(maxX,0))),y0=Y(Math.max(minY,Math.min(maxY,0)));
@@ -999,7 +999,7 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2,objectOrientation,theme]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2,objectOrientation,theme,graphPan,graphZoom]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
@@ -1008,7 +1008,7 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
   },[]);
 
   const changeParam=(key:string,value:number)=>{
-    setValues(prev=>({...prev,[key]:value}));timeRef.current=0;setTime(0);setPlaying(false);
+    setValues(prev=>({...prev,[key]:value}));timeRef.current=0;setTime(0);setPlaying(false);setGraphPan({x:0,y:0});setGraphZoom(1);setExpandedMetric(null);
   };
   const reset=()=>{timeRef.current=0;setTime(0);setPlaying(false);};
   const togglePlay=()=>{
@@ -1067,7 +1067,7 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
         <input ref={fileRef} className="hidden-file" type="file" accept=".json,.physimus.json,application/json" onChange={loadProject}/>
       </div>
     </div>
-    <div className="lab-studio">
+    <div className={focusMode?"lab-studio focus-mode":"lab-studio"}>
       <aside className="lab-topic-sidebar">
         <div className="lab-topic-heading"><span className="eyebrow">{language==="ID"?"MEKANIKA":"MECHANICS"}</span><strong>{language==="ID"?"Laboratorium":"Laboratories"}</strong></div>
         <nav aria-label={language==="ID"?"Daftar laboratorium":"Laboratory list"}>
@@ -1095,7 +1095,7 @@ function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language
       <section className="graph-panel">
         <div className="graph-header"><div><span className="eyebrow">{w.graph}</span><strong>{language==="ID"?"Visualisasi sistem":"System visualization"}</strong></div><div className="graph-tools">
           <label className="object-picker"><span>{language==="ID"?"Objek 1":"Object 1"}</span><select value={selectedObject} onChange={e=>setSelectedObject(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>{lab.id==="collision"&&<label className="object-picker"><span>{language==="ID"?"Objek 2":"Object 2"}</span><select value={selectedObject2} onChange={e=>setSelectedObject2(e.target.value)}>{objectOptionsFor(lab.id,language).map(item=><option key={item.value} value={item.value}>{item.label}</option>)}</select></label>}
-          <button className={showGrid?"tool-active":""} onClick={()=>setShowGrid(v=>!v)} title={w.grid}><Grid3X3 size={18}/><span>{w.grid}</span></button>
+          <button className="focus-toggle" onClick={()=>setFocusMode(v=>!v)} aria-pressed={focusMode} title={focusMode?(language==="ID"?"Keluar dari tab fokus":"Exit focus view"):(language==="ID"?"Tab fokus":"Focus view")}>{focusMode?<Minimize2 size={18}/>:<Maximize2 size={18}/>}<span>{focusMode?(language==="ID"?"Keluar fokus":"Exit focus"):(language==="ID"?"Fokus":"Focus")}</span></button><button className="focus-reset-view" onClick={()=>{setGraphPan({x:0,y:0});setGraphZoom(1);}} title={language==="ID"?"Reset posisi grafik":"Reset graph view"}><RotateCcw size={16}/></button><button className={showGrid?"tool-active":""} onClick={()=>setShowGrid(v=>!v)} title={w.grid}><Grid3X3 size={18}/><span>{w.grid}</span></button>
           <button className={showVectors?"tool-active":""} onClick={()=>setShowVectors(v=>!v)} title={w.vectors}><Activity size={18}/><span>{w.vectors}</span></button>
           <button className={showTrail?"tool-active":""} onClick={()=>setShowTrail(v=>!v)} title={w.trail}><Waves size={18}/><span>{w.trail}</span></button>
         </div></div>

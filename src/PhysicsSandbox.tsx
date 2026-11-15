@@ -19,8 +19,14 @@ const copy = {
 };
 
 function tokenize(source:string):string[] {
- const aliases:[RegExp,string][]=[[/[θϑ]/g,"theta"],[/ω/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/γ/g,"gamma"],[/δ/g,"delta"],[/εϵ]/g,"epsilon"],[/[φϕ]/g,"phi"],[/ψ/g,"psi"],[/μ/g,"mu"],[/π/g,"pi"],[/ρ/g,"rho"],[/λ/g,"lambda"],[/σ/g,"sigma"],[/τ/g,"tau"],[/[Σ∑]/g,"sum"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]];
+ const aliases:[RegExp,string][]=[
+  [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\(?:sum|int)\b/gi,(token)=>token.toLowerCase()],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
+  [/[θϑ]/g,"theta"],[/[ωΩ]/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/[γΓ]/g,"gamma"],[/[δΔ]/g,"delta"],[/[εϵ]/g,"epsilon"],[/ζ/g,"zeta"],[/η/g,"eta"],[/κ/g,"kappa"],[/λ/g,"lambda"],[/μ/g,"mu"],[/ν/g,"nu"],[/ξ/g,"xi"],[/π/g,"pi"],[/ρ/g,"rho"],[/[σς]/g,"sigma"],[/τ/g,"tau"],[/[φϕ]/g,"phi"],[/χ/g,"chi"],[/ψ/g,"psi"],[/[Σ∑]/g,"sum"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]
+ ];
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
+ const superscripts:Record<string,string>={"⁰":"^0","¹":"^1","²":"^2","³":"^3","⁴":"^4","⁵":"^5","⁶":"^6","⁷":"^7","⁸":"^8","⁹":"^9"};
+ const subscripts:Record<string,string>={"₀":"_0","₁":"_1","₂":"_2","₃":"_3","₄":"_4","₅":"_5","₆":"_6","₇":"_7","₈":"_8","₉":"_9"};
+ source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char);
  const tokens:string[]=[];
  const re=/\s*([0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?|\.[0-9]+(?:e[+-]?[0-9]+)?|[a-zA-Z_][a-zA-Z0-9_]*|\*\*|[+\-*/^(),])/gy;
  let pos=0;
@@ -30,7 +36,7 @@ function tokenize(source:string):string[] {
   const raw=match[1],normal=raw.toLowerCase();
   // Adjacent two-letter identifiers are treated as implicit multiplication (F=ma),
   // while constants, Greek names, functions and longer custom identifiers stay intact.
-  if(/^[a-z]{2}$/.test(normal)&&!allowedFunctions.has(normal)&&!["pi","mu","nu","xi"].includes(normal))tokens.push(raw[0],raw[1]);
+  if(new Set(["ma","mv","mg","vt","at","ax","ay","vx","vy","dx","dt","ds","dp","kv","kx","v2","xv"]).has(normal))tokens.push(raw[0],raw[1]);
   else tokens.push(raw);
   pos=re.lastIndex;
  }

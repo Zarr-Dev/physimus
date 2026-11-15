@@ -1371,7 +1371,7 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
   const v0= id==="mru"?value:3,a=id==="mru"?0:value,t=4,x=v0*t+.5*a*t*t,v=v0+a*t;
   const px=Math.max(48,Math.min(328,45+x*4));
   return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Linear motion experiment":"Eksperimen gerak lurus"}>
-   <path d="M28 124 H350" className="diagram-ground"/>{Array.from({length:11},(_,i)=><path key={i} d={"M"+(35+i*30)+" 119 v10"} className="diagram-tick"/>}
+   <path d="M28 124 H350" className="diagram-ground"/>{Array.from({length:11},(_,i)=><path key={i} d={"M"+(35+i*30)+" 119 v10"} className="diagram-tick"/>)}
    <rect x={px-18} y="88" width="36" height="30" rx="5" className="diagram-block"/>
    {stage===0&&<><path d={"M52 74 H"+px} className="diagram-vector"/><text x="35" y="52">{id==="mru"?"v = "+v0+" m/s":"a = "+a+" m/s²"}</text><text x="35" y="164">x(0) = 0</text></>}
    {stage===1&&<><path d="M45 170 H165 V130" className="diagram-guide"/><path d={id==="mru"?"M49 165 L160 132":"M49 165 Q105 157 160 132"} className="diagram-trajectory"/><text x="182" y="137">x(t)</text><text x="182" y="153">{x.toFixed(1)} m at t = 4 s</text></>}
@@ -1414,11 +1414,11 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
  }
  if(id==="incline"){
   const theta=value*Math.PI/180,m=5,g=9.81,muS=.4,muK=.2,holds=Math.tan(theta)<=muS;
-  const a=holds?0:g*(Math.sin(theta)-muK*Math.cos(theta));
-  const cx=178,cy=97;
+  const a=holds?0:g*(Math.sin(theta)-muK*Math.cos(theta)),rise=Math.min(112,135*Math.tan(theta));
+  const cx=178,cy=151-(cx-34)/292*rise-16;
   return <svg className="lesson-diagram" viewBox="0 0 380 190" role="img" aria-label={en?"Free-body diagram on an inclined plane":"Diagram gaya bebas pada bidang miring"}>
-   <path d="M34 151 L326 151 L326 "+(151-210*Math.tan(theta))+" Z" className="diagram-plane"/>
-   <path d="M34 151 L326 "+(151-210*Math.tan(theta))} className="diagram-edge"/>
+   <path d={"M34 151 L326 "+(151-rise)+" L326 151 Z"} className="diagram-plane"/>
+   <path d={"M34 151 L326 "+(151-rise)} className="diagram-edge"/>
    <g transform={"translate("+cx+" "+cy+") rotate("+(-value)+")"}><rect x="-18" y="-17" width="36" height="34" rx="4" className="diagram-block"/></g>
    {stage===0&&<><path d={"M"+cx+" "+cy+" v49"} className="diagram-vector"/><text x={cx+8} y={cy+45}>mg</text><path d={"M"+cx+" "+cy+" l-30 -27"} className="diagram-vector-alt"/><text x="90" y="56">N</text><path d={"M"+cx+" "+cy+" h-38"} className="diagram-guide"/><text x="118" y="86">{text.friction}</text></>}
    {stage===1&&<><path d={"M"+cx+" "+cy+" l-48 0"} className="diagram-vector"/><path d={"M"+cx+" "+cy+" l-30 35"} className="diagram-vector-alt"/><text x="66" y="79">mg sin θ</text><text x="66" y="132">mg cos θ</text></>}
@@ -1487,7 +1487,7 @@ function Learn({language}:{language:Language}) {
     <div className="lesson-experiment-head"><span className="eyebrow">{en?"INTERACTIVE EXPERIMENT":"EKSPERIMEN INTERAKTIF"}</span><h3>{en?"Change one parameter":"Ubah satu parameter"}</h3><p>{en?"Move the slider and observe how the measured result changes.":"Geser parameter dan amati perubahan hasil pengukuran."}</p></div>
     <LessonDiagram id={selectedTopic} value={experimentValue} stage={selectedChapter} language={language}/>
     <label className="lesson-experiment-slider"><span>{lessonText(control.label,language)} <strong>{experimentValue.toFixed(control.step<1?1:0)} {control.unit}</strong></span><input type="range" min={control.min} max={control.max} step={control.step} value={experimentValue} onChange={e=>setExperimentValue(Number(e.target.value))}/><small>{control.min} {control.unit}<span>{control.max} {control.unit}</span></small></label>
-    <div className="lesson-result"><span>{experiment.result}</span><strong>{experiment.value.toFixed(2)} {experiment.unit}</strong><div className="lesson-result-formula"><Equation value={experiment.formula} display/></div><p>{experiment.extra}</p></div>
+     <div className="lesson-result"><span>{experiment.result}</span><strong>{experiment.value.toFixed(2)} {experiment.unit}</strong><div className="lesson-result-formula"><Equation value={experiment.formula} display/></div><div className="lesson-experiment-steps"><strong>{en?"Calculation steps":"Langkah perhitungan"}</strong>{experiment.steps.map((step,index)=><div className="lesson-experiment-step" key={index}><span>{index+1}</span><div><Equation value={step} display/></div></div>)}</div><p>{experiment.extra}</p></div>
     <p className="lesson-assumption">{en?"Illustrative model: idealised conditions are stated in the lesson. Air resistance is omitted unless specified.":"Model ilustratif: asumsi ideal dijelaskan dalam materi. Hambatan udara diabaikan kecuali dinyatakan lain."}</p>
    </aside>
   </div>

@@ -19,7 +19,7 @@ const copy = {
 };
 
 function tokenize(source:string):string[] {
- const aliases:[RegExp,string][]=[[/[θϑ]/g,"theta"],[/ω/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/γ/g,"gamma"],[/[φϕ]/g,"phi"],[/μ/g,"mu"],[/π/g,"pi"],[/ρ/g,"rho"],[/λ/g,"lambda"],[/σ/g,"sigma"],[/[Σ∑]/g,"sum"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]];
+ const aliases:[RegExp,string][]=[[/[θϑ]/g,"theta"],[/ω/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/γ/g,"gamma"],[/[φϕ]/g,"phi"],[/μ/g,"mu"],[/π/g,"pi"],[/ρ/g,"rho"],[/λ/g,"lambda"],[/σ/g,"sigma"],[/[Σ∑]/g,"sumSymbol"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]];
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
  const tokens:string[]=[];
  const re=/\s*([0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?|\.[0-9]+(?:e[+-]?[0-9]+)?|[a-zA-Z_][a-zA-Z0-9_]*|\*\*|[+\-*/^(),])/gy;
@@ -119,7 +119,7 @@ function variableDescription(name:string,language:Language){
 function variableLatex(name:string){
  const greek:Record<string,string>={theta:"\\theta",omega:"\\omega",alpha:"\\alpha",beta:"\\beta",gamma:"\\gamma",phi:"\\phi",mu:"\\mu",pi:"\\pi",sigma:"\\sigma",rho:"\\rho",lambda:"\\lambda"};
  if(greek[name])return greek[name];
- if(name==="sum")return "\\sum";
+ if(name==="sum"||name==="sumSymbol")return "\\sum";
  const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);
  if(namedSub)return namedSub[1]+"_{"+namedSub[2]+"}";
  const numericSub=name.match(/^([a-zA-Z]+)(\\d+)$/);

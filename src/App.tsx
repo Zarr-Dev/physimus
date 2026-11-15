@@ -550,10 +550,10 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   const impulse=occurred?c.m1*(c.v1-c.u1):0;
   const tc=Number.isFinite(c.collisionTime)?c.collisionTime:NaN;
   const formulaV1=occurred
-   ?"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+n(c.m1)+"-"+n(c.e)+"("+n(c.m2)+"))("+n(c.u1)+")+(1+"+n(c.e)+")("+n(c.m2)+")("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(c.v1,"m/s")
+   ?"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+qty(c.m1,"kg")+"-"+n(c.e)+"("+qty(c.m2,"kg")+"))("+qty(c.u1,"m/s")+")+(1+"+n(c.e)+")("+qty(c.m2,"kg")+")("+qty(c.u2,"m/s")+")}{"+qty(c.m1,"kg")+"+"+qty(c.m2,"kg")+"}="+qty(c.v1,"m/s")
    :"v_1(t)=u_1=("+n(c.u1)+"\\,\\mathrm{m/s})="+qty(v1,"m/s")+"\\quad(\\text{before impact})";
   const formulaV2=occurred
-   ?"v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+"-"+n(c.e)+"("+n(c.m1)+"))("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(c.v2,"m/s")
+   ?"v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+qty(c.m1,"kg")+")("+qty(c.u1,"m/s")+")+("+qty(c.m2,"kg")+"-"+n(c.e)+"("+qty(c.m1,"kg")+"))("+qty(c.u2,"m/s")+")}{"+qty(c.m1,"kg")+"+"+qty(c.m2,"kg")+"}="+qty(c.v2,"m/s")
    :"v_2(t)=u_2=("+n(c.u2)+"\\,\\mathrm{m/s})="+qty(v2,"m/s")+"\\quad(\\text{before impact})";
   const tExpression=Number.isFinite(tc)
    ?"t_c=\\frac{s-d}{u_1-u_2}=\\frac{("+n(c.separation)+"-"+n(c.contactDistance)+")\\,\\mathrm{m}}{("+n(c.u1)+"-("+n(c.u2)+"))\\,\\mathrm{m/s}}="+qty(tc,"s")

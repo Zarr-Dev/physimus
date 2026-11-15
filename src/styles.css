@@ -1453,3 +1453,64 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .app-root[data-theme="dark"] .sandbox-scalar-result{background:#14251f;border-left-color:#5b9f83}
 .app-root[data-theme="dark"] .sandbox-scalar-result span{color:#9abcae}
 .app-root[data-theme="dark"] .sandbox-scalar-result strong{color:#a8e0c5}
+
+
+/* Step-by-step numeric derivations in the course experiment card. */
+.lesson-experiment-steps{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid #dce8f2;
+}
+.lesson-experiment-steps>strong{
+  display:block;
+  margin-bottom:7px;
+  color:#5d7891;
+  font-size:10px;
+  font-weight:800;
+}
+.lesson-experiment-step{
+  display:grid;
+  grid-template-columns:20px minmax(0,1fr);
+  align-items:start;
+  gap:7px;
+  padding:8px 0;
+  border-top:1px solid #e6edf3;
+}
+.lesson-experiment-step>span{
+  width:18px;
+  height:18px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#e8f1f8;
+  color:#4679a5;
+  font-size:9px;
+  font-weight:800;
+}
+.lesson-experiment-step>div{
+  min-width:0;
+  overflow-x:auto;
+  color:#3e6f98;
+  font-size:12px;
+}
+.lesson-experiment-step .katex-display{margin:.2em 0;text-align:left}
+.lesson-experiment-step .katex{white-space:nowrap}
+.app-root[data-theme="dark"] .lesson-experiment-steps{border-color:#33495d}
+.app-root[data-theme="dark"] .lesson-experiment-steps>strong{color:#c0d4e5}
+.app-root[data-theme="dark"] .lesson-experiment-step{border-color:#2a3c4d}
+.app-root[data-theme="dark"] .lesson-experiment-step>span{background:#20384d;color:#b5d7f3}
+.app-root[data-theme="dark"] .lesson-experiment-step>div{color:#c3def6}
+.app-root[data-theme="dark"] .sandbox-math-suggestions button.active,
+.app-root[data-theme="dark"] .sandbox-math-suggestions button[aria-selected="true"]{
+  background:#25445c;
+  border-color:#6ca1c9;
+  outline:2px solid #5085ad55;
+}
+.sandbox-math-suggestions button.active,
+.sandbox-math-suggestions button[aria-selected="true"]{
+  background:#edf6fd;
+  border-color:#80acd0;
+  outline:2px solid #7aa9cf33;
+}
+.sandbox-canvas-wrap canvas{cursor:crosshair;touch-action:none}
+.sandbox-canvas-wrap canvas:active{cursor:grabbing}

@@ -1175,3 +1175,105 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .app-root[data-theme="dark"] .sandbox-measurement>b{color:#e1edf7}
 .app-root[data-theme="dark"] .sandbox-measurement>small{border-color:#34495e;color:#b7d8f7}
 .app-root[data-theme="dark"] .sandbox-context-hint{background:#152638e8;border-color:#34495e;color:#a8b9c8}
+
+
+/* Near-black appearance: reduce the blue cast and keep text/controls legible. */
+.app-root[data-theme="dark"]{
+  --app-bg:#080b10;
+  --app-ink:#edf2f7;
+  --ink:#edf2f7;
+  --muted:#aebdca;
+  --soft:#8394a5;
+  --line:#27313d;
+  --plot-bg:#0c1118;
+  --plot-grid:#202a36;
+  --plot-axis:#7d91a6;
+  background:#080b10;
+  color:#edf2f7;
+  color-scheme:dark;
+}
+.app-root[data-theme="dark"] body,
+.app-root[data-theme="dark"] .page-shell,
+.app-root[data-theme="dark"] .workspace-page,
+.app-root[data-theme="dark"] .secondary-page,
+.app-root[data-theme="dark"] .sandbox-workspace,
+.app-root[data-theme="dark"] .hero,
+.app-root[data-theme="dark"] .lab-collection,
+.app-root[data-theme="dark"] .page-footer{background:#080b10}
+.app-root[data-theme="dark"] .topbar,
+.app-root[data-theme="dark"] .settings-popover,
+.app-root[data-theme="dark"] .lab-studio,
+.app-root[data-theme="dark"] .control-drawer,
+.app-root[data-theme="dark"] .graph-panel,
+.app-root[data-theme="dark"] .drawer-content,
+.app-root[data-theme="dark"] .sandbox-studio,
+.app-root[data-theme="dark"] .sandbox-editor,
+.app-root[data-theme="dark"] .sandbox-main,
+.app-root[data-theme="dark"] .sandbox-analysis,
+.app-root[data-theme="dark"] .sandbox-analysis-grid>div{
+  background:#10151d;
+  border-color:#27313d;
+}
+.app-root[data-theme="dark"] .lab-topic-sidebar,
+.app-root[data-theme="dark"] .drawer-rail,
+.app-root[data-theme="dark"] .sandbox-validation,
+.app-root[data-theme="dark"] .sandbox-syntax,
+.app-root[data-theme="dark"] .sandbox-constants{
+  background:#0b1017;
+  border-color:#27313d;
+}
+.app-root[data-theme="dark"] .graph-header,
+.app-root[data-theme="dark"] .measurement-area,
+.app-root[data-theme="dark"] .graph-footer,
+.app-root[data-theme="dark"] .playback-bar,
+.app-root[data-theme="dark"] .sandbox-toolbar,
+.app-root[data-theme="dark"] .sandbox-playback{
+  background:#10151d;
+  border-color:#27313d;
+}
+.app-root[data-theme="dark"] .measurement,
+.app-root[data-theme="dark"] .equation-card,
+.app-root[data-theme="dark"] .sandbox-variable-grid label,
+.app-root[data-theme="dark"] .sandbox-example-list button,
+.app-root[data-theme="dark"] .sandbox-object-item,
+.app-root[data-theme="dark"] .sandbox-object-properties,
+.app-root[data-theme="dark"] .sandbox-variable-panel,
+.app-root[data-theme="dark"] .sandbox-measurement{
+  background:#151c26;
+  border-color:#2b3745;
+}
+.app-root[data-theme="dark"] input,
+.app-root[data-theme="dark"] select,
+.app-root[data-theme="dark"] textarea,
+.app-root[data-theme="dark"] .sandbox-equation-row input,
+.app-root[data-theme="dark"] .sandbox-variable-grid input,
+.app-root[data-theme="dark"] .sandbox-property-grid input,
+.app-root[data-theme="dark"] .sandbox-viewport input,
+.app-root[data-theme="dark"] .sandbox-playback label input,
+.app-root[data-theme="dark"] .sandbox-playback label select{
+  background:#0b1118;
+  border-color:#303d4d;
+  color:#e5edf5;
+}
+.app-root[data-theme="dark"] .formula-box,
+.app-root[data-theme="dark"] .equation-feature .formula-box,
+.app-root[data-theme="dark"] .question-box,
+.app-root[data-theme="dark"] .sandbox-equation-preview,
+.app-root[data-theme="dark"] .sandbox-top-tabs{
+  background:#0d141d;
+  border-color:#2a3949;
+}
+.app-root[data-theme="dark"] .lab-topic-sidebar nav button.active{background:#1a2a3b;border-color:#38516a;color:#b8d8f4}
+.app-root[data-theme="dark"] .lab-topic-sidebar nav button:hover{background:#17222f}
+.app-root[data-theme="dark"] .sandbox-measurement>small,
+.app-root[data-theme="dark"] .sandbox-equation-preview>div,
+.app-root[data-theme="dark"] .equation-math,
+.app-root[data-theme="dark"] .math-inline{color:#c3def8}
+.app-root[data-theme="dark"] .lab-studio .measurement-equation{background:#0d141d}
+.app-root[data-theme="dark"] .settings-control,
+.app-root[data-theme="dark"] .settings-popover-head{border-color:#27313d}
+.app-root[data-theme="dark"] .primary-button{background:#397fbd;color:#fff}
+.app-root[data-theme="dark"] .secondary-button{background:#151e29;border-color:#344252;color:#c1ceda}
+.app-root[data-theme="dark"] .secondary-button:hover{background:#1b2a39;border-color:#4a6680}
+.app-root[data-theme="dark"] .canvas-area,
+.app-root[data-theme="dark"] .sandbox-canvas-wrap{background:#0c1118}

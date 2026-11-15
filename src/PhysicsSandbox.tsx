@@ -350,7 +350,7 @@ function equationSuggestions(source:string,language:Language):EquationSuggestion
  const symbol=trimmed.slice(-1);
  const match=trimmed.match(/(\\?[a-zA-Z]+)$/);
  const rawToken=match?.[1]??"";
- const token=symbol==="∫"?"int":symbol==="Σ"||symbol==="∑"?"sum":rawToken.replace(/^\\/,"").toLowerCase();
+ const token=symbol==="∫"?"int":symbol==="Σ"||symbol==="∑"?"sum":symbol==="∏"?"prod":rawToken.replace(/^\\/,"").toLowerCase();
  if(!token)return [];
  const labels=language==="ID";
  const greek:Record<string,{latex:string;id:string;en:string}>={
@@ -407,7 +407,7 @@ function equationSuggestions(source:string,language:Language):EquationSuggestion
 }
 function acceptSuggestion(source:string,suggestion:EquationSuggestion){
  const trimmed=source.trimEnd();
- const suffix=trimmed.endsWith("∫")?"∫":trimmed.endsWith("Σ")?"Σ":trimmed.endsWith("∑")?"∑":suggestion.trigger;
+ const suffix=trimmed.endsWith("∫")?"∫":trimmed.endsWith("Σ")?"Σ":trimmed.endsWith("∑")?"∑":trimmed.endsWith("∏")?"∏":suggestion.trigger;
  if(!trimmed.endsWith(suffix))return source+suggestion.insert;
  return trimmed.slice(0,-suffix.length)+suggestion.insert+source.slice(trimmed.length);
 }

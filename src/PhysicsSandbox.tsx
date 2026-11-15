@@ -114,10 +114,12 @@ function variableLatex(name:string){
  return name.length===1?name:"\\mathrm{"+name+"}";
 }
 function equationToLatex(source:string){
- const match=source.trim().match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);
- if(!match)throw new Error("Equation must start with y=, x(t)= or y(t)=");
- const lhs=match[1].replace(/\s/g,"").replace(/([xy])\(/g,"$1\\left(").replace(/\)/g,"\\right)");
- const root=parse(match[2]);
+ const clean=source.trim();
+ const target=clean.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);
+ const assignment=!target?clean.match(/^([a-zA-Z_][a-zA-Z0-9_]*(?:\s*\([^)]*\))?)\s*=\s*(.+)$/):null;
+ const lhs=target?target[1].replace(/\s/g,"").replace(/([xy])\(/g,"$1\\left(").replace(/\)/g,"\\right)"):assignment?variableLatex(assignment[1].replace(/\s/g,""))+"=":"";
+ const expression=target?target[2]:assignment?assignment[2]:clean;
+ const root=parse(expression);
  const render=(node:Node):string=>{
   if(node.kind==="num")return String(node.n);
   if(node.kind==="var")return variableLatex(node.name);
@@ -146,7 +148,7 @@ function equationToLatex(source:string){
   const operators:Record<string,string>={sin:"\\sin",cos:"\\cos",tan:"\\tan",asin:"\\arcsin",acos:"\\arccos",atan:"\\arctan",sec:"\\sec",csc:"\\csc",cot:"\\cot",sinh:"\\sinh",cosh:"\\cosh",tanh:"\\tanh",ln:"\\ln",log:"\\log",log2:"\\log_2",exp:"\\exp",min:"\\min",max:"\\max"};
   return (operators[name]??("\\operatorname{"+name+"}"))+"\\left("+node.args.map(render).join(", ")+"\\right)";
  };
- return lhs+"="+render(root);
+ return lhs+render(root);
 }
 function equationPreviewHtml(source:string){
  try{return katex.renderToString(equationToLatex(source),{throwOnError:false,strict:"ignore",trust:false,displayMode:true});}

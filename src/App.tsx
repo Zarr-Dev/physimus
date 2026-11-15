@@ -11,6 +11,8 @@ import {
 
 type Language = "ID" | "EN";
 type Page = "discover" | "laboratory" | "learn" | "sandbox";
+type Theme = "light" | "dark";
+type MotionLevel = "low" | "medium" | "high";
 type LabId = "projectile" | "mru" | "mrua" | "circular" | "energy" | "incline" | "collision" | "spring";
 type Param = { key: string; label: string; min: number; max: number; step: number; unit: string; initial: number };
 type Point = { x: number; y: number; t: number; vx: number; vy: number; speed: number; kinetic: number; potential: number; x2?:number; vx2?:number; collisionOccurred?:boolean };
@@ -267,8 +269,9 @@ function LanguageSwitch({language,onChange}:{language:Language;onChange:(v:Langu
   </div>;
 }
 
-function Header({page,setPage,language,onLanguage}:{page:Page;setPage:(p:Page)=>void;language:Language;onLanguage:(v:Language)=>void}) {
+function Header({page,setPage,language,onLanguage,theme,onTheme,fontScale,onFontScale,motionLevel,onMotionLevel}:{page:Page;setPage:(p:Page)=>void;language:Language;onLanguage:(v:Language)=>void;theme:Theme;onTheme:(v:Theme)=>void;fontScale:number;onFontScale:(v:number)=>void;motionLevel:MotionLevel;onMotionLevel:(v:MotionLevel)=>void}) {
   const w=words[language];
+  const [settingsOpen,setSettingsOpen]=useState(false);
   const items: {id:Page;label:string;icon:typeof HomeIcon}[]=[
     {id:"discover",label:w.discover,icon:HomeIcon},
     {id:"laboratory",label:w.laboratory,icon:FlaskConical},
@@ -280,7 +283,17 @@ function Header({page,setPage,language,onLanguage}:{page:Page;setPage:(p:Page)=>
     <nav className="main-nav" aria-label="Main navigation">
       {items.map(item=><button key={item.id} className={page===item.id?"nav-link active":"nav-link"} onClick={()=>setPage(item.id)}><item.icon size={17}/><span>{item.label}</span></button>)}
     </nav>
-    <LanguageSwitch language={language} onChange={onLanguage}/>
+    <div className="topbar-tools">
+      <LanguageSwitch language={language} onChange={onLanguage}/>
+      <button className={settingsOpen?"settings-trigger active":"settings-trigger"} onClick={()=>setSettingsOpen(v=>!v)} aria-expanded={settingsOpen} aria-label={language==="ID"?"Buka pengaturan tampilan":"Open display settings"}><Settings2 size={18}/></button>
+    </div>
+    {settingsOpen&&<section className="settings-popover" aria-label={language==="ID"?"Pengaturan tampilan":"Display settings"}>
+      <div className="settings-popover-head"><div><span className="eyebrow">PHYSIMUS / SETTINGS</span><strong>{language==="ID"?"Preferensi tampilan":"Display preferences"}</strong></div><button onClick={()=>setSettingsOpen(false)} aria-label="Close">×</button></div>
+      <div className="settings-control"><span>{language==="ID"?"Tema":"Theme"}</span><div className="settings-choice"><button className={theme==="light"?"chosen":""} onClick={()=>onTheme("light")}>{language==="ID"?"Terang":"Light"}</button><button className={theme==="dark"?"chosen":""} onClick={()=>onTheme("dark")}>{language==="ID"?"Gelap":"Dark"}</button></div></div>
+      <div className="settings-control"><label htmlFor="font-scale">{language==="ID"?"Ukuran teks":"Text size"} <strong>{Math.round(fontScale*100)}%</strong></label><input id="font-scale" type="range" min=".9" max="1.2" step=".05" value={fontScale} onChange={e=>onFontScale(Number(e.target.value))}/><div className="settings-range-labels"><span>{language==="ID"?"Kecil":"Small"}</span><span>{language==="ID"?"Besar":"Large"}</span></div></div>
+      <div className="settings-control"><span>{language==="ID"?"Intensitas animasi":"Animation intensity"}</span><div className="settings-choice three"><button className={motionLevel==="low"?"chosen":""} onClick={()=>onMotionLevel("low")}>{language==="ID"?"Rendah":"Low"}</button><button className={motionLevel==="medium"?"chosen":""} onClick={()=>onMotionLevel("medium")}>{language==="ID"?"Sedang":"Med"}</button><button className={motionLevel==="high"?"chosen":""} onClick={()=>onMotionLevel("high")}>{language==="ID"?"Tinggi":"High"}</button></div></div>
+      <p className="settings-note">{language==="ID"?"Preferensi disimpan pada browser ini. Animasi tetap menghormati pengaturan Reduce Motion perangkat.":"Preferences are saved in this browser. Animations still respect your device's Reduce Motion setting."}</p>
+    </section>}
   </header>;
 }
 
@@ -972,6 +985,16 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       </div>
     </div>
     <div className="lab-studio">
+      <aside className="lab-topic-sidebar">
+        <div className="lab-topic-heading"><span className="eyebrow">{language==="ID"?"MEKANIKA":"MECHANICS"}</span><strong>{language==="ID"?"Laboratorium":"Laboratories"}</strong></div>
+        <nav aria-label={language==="ID"?"Daftar laboratorium":"Laboratory list"}>
+          {labs.map((item,index)=><button key={item.id} className={item.id===lab.id?"active":""} onClick={()=>onChoose(item.id)}>
+            <span className="lab-topic-number">{String(index+1).padStart(2,"0")}</span>
+            <span className="lab-topic-label"><strong>{language==="ID"?item.title:item.subtitle}</strong><small>{categoryText(language,item.category)}</small></span>
+            <span className="lab-topic-indicator"/>
+          </button>)}
+        </nav>
+      </aside>
       <aside className="control-drawer">
         <nav className="drawer-rail" aria-label={language==="ID"?"Panel laboratorium":"Laboratory panels"}>
           <button className={drawerTab==="parameters"?"selected":""} onClick={()=>setDrawerTab("parameters")} title={w.parameters}><SlidersHorizontal/><span>{language==="ID"?"Atur":"Setup"}</span></button>
@@ -1021,11 +1044,15 @@ export default function App() {
   const [page,setPage]=useState<Page>("discover");
   const [language,setLanguage]=useState<Language>("ID");
   const [selectedLab,setSelectedLab]=useState<LabId>("projectile");
+  const [theme,setTheme]=useState<Theme>(()=>{try{return localStorage.getItem("physimus-theme")==="dark"?"dark":"light";}catch{return "light";}});
+  const [fontScale,setFontScale]=useState<number>(()=>{try{const value=Number(localStorage.getItem("physimus-font-scale"));return Number.isFinite(value)&&value>=.9&&value<=1.2?value:1;}catch{return 1;}});
+  const [motionLevel,setMotionLevel]=useState<MotionLevel>(()=>{try{const value=localStorage.getItem("physimus-motion");return value==="low"||value==="high"?value:"medium";}catch{return "medium";}});
   const openLab=(id:LabId)=>{setSelectedLab(id);setPage("laboratory");};
-  return <div className="app-root">
-    <Header page={page} setPage={setPage} language={language} onLanguage={setLanguage}/>
+  useEffect(()=>{try{localStorage.setItem("physimus-theme",theme);localStorage.setItem("physimus-font-scale",String(fontScale));localStorage.setItem("physimus-motion",motionLevel);}catch{/* Settings remain active for this session if storage is disabled. */}},[theme,fontScale,motionLevel]);
+  return <div className="app-root" data-theme={theme} data-motion={motionLevel} style={{"--font-scale":fontScale} as CSSProperties}>
+    <Header page={page} setPage={setPage} language={language} onLanguage={setLanguage} theme={theme} onTheme={setTheme} fontScale={fontScale} onFontScale={setFontScale} motionLevel={motionLevel} onMotionLevel={setMotionLevel}/>
     {page==="discover"&&<Discover language={language} onOpen={openLab}/>}
-    {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} onBack={()=>setPage("discover")} onChoose={()=>setPage("discover")}/>}
+    {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} onBack={()=>setPage("discover")} onChoose={openLab}/>}
     {page==="learn"&&<Learn language={language} onOpen={openLab}/>}
     {page==="sandbox"&&<PhysicsSandbox language={language}/>}
   </div>;

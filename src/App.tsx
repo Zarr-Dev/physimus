@@ -543,17 +543,23 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  }
  if(id==="collision"){
   const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
-  const impulse=c.m1*(v1-c.u1);
+  const impulse=occurred?c.m1*(c.v1-c.u1):0;
   const tc=Number.isFinite(c.collisionTime)?c.collisionTime:NaN;
+  const formulaV1=occurred
+   ?"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+n(c.m1)+"-"+n(c.e)+"("+n(c.m2)+"))("+n(c.u1)+")+(1+"+n(c.e)+")("+n(c.m2)+")("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(c.v1,"m/s")
+   :"v_1(t)=u_1=("+n(c.u1)+"\\,\\mathrm{m/s})="+qty(v1,"m/s")+"\\quad(\\text{before impact})";
+  const formulaV2=occurred
+   ?"v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+"-"+n(c.e)+"("+n(c.m1)+"))("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(c.v2,"m/s")
+   :"v_2(t)=u_2=("+n(c.u2)+"\\,\\mathrm{m/s})="+qty(v2,"m/s")+"\\quad(\\text{before impact})";
   const tExpression=Number.isFinite(tc)
    ?"t_c=\\frac{s-d}{u_1-u_2}=\\frac{"+n(c.separation)+"-"+n(c.contactDistance)+"}{"+n(c.u1)+"-("+n(c.u2)+")}="+qty(tc,"s")
    :language==="ID"?"\\text{Tidak terjadi kontak: }u_1\\leq u_2":"\\text{No collision: }u_1\\leq u_2";
   return [
-   "v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+n(c.m1)+"-"+n(c.e)+"("+n(c.m2)+"))("+n(c.u1)+")+(1+"+n(c.e)+")("+n(c.m2)+")("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v1,"m/s"),
-   "v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+"-"+n(c.e)+"("+n(c.m1)+"))("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v2,"m/s"),
-   "p_{total}=m_1u_1+m_2u_2=("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+")("+n(c.u2)+")="+n(c.initialMomentum)+"\\,\\mathrm{kg\\,m/s}",
-   "K=\\frac12m_1v_1^2+\\frac12m_2v_2^2=\\frac12("+n(c.m1)+")("+n(v1)+")^2+\\frac12("+n(c.m2)+")("+n(v2)+")="+qty(p.kinetic,"J"),
-   "J_1=m_1(v_1-u_1)=("+n(c.m1)+")("+n(v1)+"-("+n(c.u1)+"))="+qty(impulse,"N\\,s"),
+   formulaV1,
+   formulaV2,
+   "p_{total}=m_1u_1+m_2u_2=("+n(c.m1)+"\\,\\mathrm{kg})("+n(c.u1)+"\\,\\mathrm{m/s})+("+n(c.m2)+"\\,\\mathrm{kg})("+n(c.u2)+"\\,\\mathrm{m/s})="+n(c.initialMomentum)+"\\,\\mathrm{kg\\,m/s}",
+   "K(t)=\\frac12m_1v_1(t)^2+\\frac12m_2v_2(t)^2=\\frac12("+n(c.m1)+")("+n(v1)+")^2+\\frac12("+n(c.m2)+")("+n(v2)+")^2="+qty(p.kinetic,"J"),
+   occurred?"J_1=m_1(v_1-u_1)=("+n(c.m1)+"\\,\\mathrm{kg})[("+n(c.v1)+")-("+n(c.u1)+")]="+qty(impulse,"N\\,s"):"J_1(t)=0\\,\\mathrm{N\\,s}\\quad(\\text{no impact yet})",
    tExpression
   ][index];
  }
@@ -570,13 +576,17 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="incline"){
-  const mu=v.friction??0,muS=v.staticFriction??0,a=Math.tan(theta)<=muS?0:Math.max(0,g*(Math.sin(theta)-mu*Math.cos(theta)));
-  const normal=m*g*Math.cos(theta),friction=a===0?m*g*Math.sin(theta):mu*normal;
+  const mu=v.friction??0,muS=v.staticFriction??0,staticHolds=Math.tan(theta)<=muS;
+  const a=staticHolds?0:Math.max(0,g*(Math.sin(theta)-mu*Math.cos(theta)));
+  const normal=m*g*Math.cos(theta),friction=staticHolds?m*g*Math.sin(theta):mu*normal;
+  const frictionFormula=staticHolds
+   ?"f_s=mg\\sin\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\sin("+n(v.angle??0)+"^\\circ)="+qty(friction,"N")
+   :"f_k=\\mu_kN=("+n(mu)+")("+n(normal)+"\\,\\mathrm{N})="+qty(friction,"N");
   return [
-   a===0?"a=0\\quad(\\tan\\theta\\leq\\mu_s)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=("+n(g)+")[\\sin("+n(v.angle??0)+"^\\circ)-("+n(mu)+")\\cos("+n(v.angle??0)+"^\\circ)]="+qty(a,"m/s^2"),
+   staticHolds?"a=0\\quad(\\tan\\theta\\leq\\mu_s)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=("+n(g)+")[\\sin("+n(v.angle??0)+"^\\circ)-("+n(mu)+")\\cos("+n(v.angle??0)+"^\\circ)]="+qty(a,"m/s^2"),
    "\\sum F_{\\parallel}=ma=("+n(m)+"\\,\\mathrm{kg})("+n(a)+"\\,\\mathrm{m/s^2})="+qty(m*a,"N"),
-   "N=mg\\cos\\theta=("+n(m)+")("+n(g)+")\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
-   "f=\\mu_kN\\;(\\text{atau }f_s\\text{ saat diam})="+n(friction)+"\\,\\mathrm{N}",
+   "N=mg\\cos\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
+   frictionFormula,
    "v=at=("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s"),
    "s=\\frac12at^2=\\frac12("+n(a)+")("+n(time)+")^2="+qty(Math.hypot(p.x,p.y),"m")
   ][index];

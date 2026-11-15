@@ -12,7 +12,7 @@ type Node = { kind:"num"; n:number } | { kind:"var"; name:string } | { kind:"una
 type Compiled = { id:number; text:string; target:"y(x)"|"x(t)"|"y(t)"|"scalar"; root:Node; error?:string };
 type Motion = { x:number;y:number;vx:number;vy:number;ax:number;ay:number;speed:number;acceleration:number;energy:number;potential:number;mechanical:number;momentum:number;force:number;weight:number };
 
-const allowedFunctions = new Set(["sin","cos","tan","asin","acos","atan","atan2","sec","csc","cot","sinh","cosh","tanh","sqrt","cbrt","abs","exp","ln","log","log2","log10","min","max","floor","ceil","round","sign","mod","clamp","hypot","int","sum","diff"]);
+const allowedFunctions = new Set(["sin","cos","tan","asin","acos","atan","atan2","sec","csc","cot","sinh","cosh","tanh","sqrt","cbrt","abs","exp","ln","log","log2","log10","min","max","floor","ceil","round","sign","mod","clamp","hypot","int","sum","diff","frac"]);
 const copy = {
  ID:{title:"Physimus Sandbox",subtitle:"Ruang eksperimen persamaan mekanika",hint:"Buat persamaan sendiri. Bentuk kurva atau lintasan benda, jalankan waktu, dan amati besaran fisik yang muncul.",math:"Ekspresi matematika",delete:"Hapus",hide:"Sembunyikan",show:"Tampilkan",gravity:"Gravitasi",amplitude:"Amplitudo A",initialSpeed:"Kecepatan awal v₀",angularSpeed:"Kecepatan sudut ω",stiffness:"Konstanta pegas k",phase:"Sudut/fase θ (rad)",add:"Tambah persamaan",play:"Jalankan",pause:"Jeda",reset:"Reset",time:"Waktu",duration:"Durasi (s)",mass:"Massa (kg)",object:"Objek",grid:"Grid",axes:"Sumbu",trail:"Jejak",velocity:"Vektor kecepatan",acceleration:"Vektor percepatan",force:"Vektor gaya",energy:"Besaran energi",labels:"Label",view:"Rentang grafik",xmin:"x minimum",xmax:"x maksimum",ymin:"y minimum",ymax:"y maksimum",examples:"Contoh cepat",syntax:"Sintaks",syntaxText:"+, −, ×, ÷, pangkat, kurung; sin, cos, tan, asin, acos, atan; sqrt, cbrt, abs, exp, ln, log, log2, floor, ceil, round, min, max, clamp, hypot; int(f,x) = integral akumulasi 0→x; int(f,x,a,b) = integral tentu; sum(f,i,a,b); diff(f,x); θ, ω, α, β, γ, δ, ε, φ, ψ, μ, σ, ρ, λ, τ, π. Sudut dalam radian.",status:"Validasi model",ok:"Persamaan lolos uji sintaks dan kestabilan pada titik sampel. Ini belum membuktikan kesesuaian dimensi atau semua hukum fisika; pastikan model dan satuan SI konsisten.",bad:"Persamaan salah sintaks atau menghasilkan nilai tidak hingga/tidak stabil. Grafik dapat terputus.",empty:"Tambahkan persamaan di panel kiri untuk mulai menggambar.",inspector:"Arahkan kursor ke grafik untuk membaca koordinat.",motion:"Analisis gerak langsung",notMotion:"Tambahkan x(t) dan/atau y(t) untuk membentuk objek bergerak.",parametric:"Lintasan parametrik",function:"Kurva y = f(x)",particle:"Partikel",ball:"Bola",cart:"Kereta",satellite:"Satelit",rocket:"Roket",export:"Ekspor CSV",zoom:"Zoom",noBackend:"Berjalan lokal di browser; tidak ada data yang dikirim ke backend.",warning:"Turunan dihitung dengan beda hingga pusat. Pemeriksaan dimensi dan penegakan semua hukum fisika belum otomatis; periksa konsistensi satuan dan model.",tabEquations:"Persamaan",tabObjects:"Objek mekanika",tabExamples:"Contoh",tabGraph:"Grafik",variables:"Variabel persamaan",noVariables:"Variabel yang digunakan persamaan akan muncul di sini.",addObject:"Tambah objek",objectPosition:"Posisi objek",objectMass:"Massa",objectRadius:"Jari-jari / ukuran",objectSpring:"Konstanta pegas",objectAngle:"Sudut",enabled:"Tampil",objectNames:{box:"Kotak / balok",circle:"Lingkaran",spring:"Pegas",rope:"Tali",pulley:"Katrol",wheel:"Roda",beam:"Batang",ramp:"Bidang miring",pendulum:"Bandul",mass:"Balok massa"},panHint:"Seret grafik untuk menggeser. Gunakan roda mouse untuk zoom."},
  EN:{title:"Physimus Sandbox",subtitle:"A mechanics equation playground",hint:"Create your own equations. Shape a curve or an object's trajectory, run time, and inspect the physical quantities that emerge.",math:"Mathematical expressions",delete:"Delete",hide:"Hide",show:"Show",gravity:"Gravity g",amplitude:"Amplitude A",initialSpeed:"Initial speed v₀",angularSpeed:"Angular speed ω",stiffness:"Spring constant k",phase:"Angle/phase θ (rad)",add:"Add equation",play:"Run",pause:"Pause",reset:"Reset",time:"Time",duration:"Duration (s)",mass:"Mass (kg)",object:"Object",grid:"Grid",axes:"Axes",trail:"Trail",velocity:"Velocity vector",acceleration:"Acceleration vector",force:"Force vector",energy:"Energy quantities",labels:"Labels",view:"Graph range",xmin:"x minimum",xmax:"x maximum",ymin:"y minimum",ymax:"y maximum",examples:"Quick examples",syntax:"Syntax",syntaxText:"+, −, ×, ÷, powers, parentheses; sin, cos, tan, asin, acos, atan; sqrt, cbrt, abs, exp, ln, log, log2, floor, ceil, round, min, max, clamp, hypot; int(f,x) = accumulation from 0 to x; int(f,x,a,b) = definite integral; sum(f,i,a,b); diff(f,x); θ, ω, α, β, γ, δ, ε, φ, ψ, μ, σ, ρ, λ, τ, π. Angles are in radians.",status:"Model validation",ok:"Expressions pass syntax and numerical-stability checks at sampled points. This does not prove dimensional consistency or compliance with every physics law; check the model and SI units.",bad:"Invalid syntax or non-finite/unstable values were found. Curves may break.",empty:"Add an equation in the left panel to start plotting.",inspector:"Move the pointer over the graph to inspect coordinates.",motion:"Live motion analysis",notMotion:"Add x(t) and/or y(t) to create a moving object.",parametric:"Parametric trajectory",function:"Curve y = f(x)",particle:"Particle",ball:"Ball",cart:"Cart",satellite:"Satellite",rocket:"Rocket",export:"Export CSV",zoom:"Zoom",noBackend:"Runs locally in your browser; no data is sent to a backend.",warning:"Derivatives use central finite differences. Dimensional analysis and enforcement of all physics laws are not automatic; check model and unit consistency.",tabEquations:"Equations",tabObjects:"Mechanics objects",tabExamples:"Examples",tabGraph:"Graph",variables:"Equation variables",noVariables:"Variables used in the equations will appear here.",addObject:"Add object",objectPosition:"Object position",objectMass:"Mass",objectRadius:"Radius / size",objectSpring:"Spring constant",objectAngle:"Angle",enabled:"Visible",objectNames:{box:"Box / block",circle:"Circle",spring:"Spring",rope:"Rope",pulley:"Pulley",wheel:"Wheel",beam:"Beam",ramp:"Inclined plane",pendulum:"Pendulum",mass:"Mass block"},panHint:"Drag the graph to pan. Use the mouse wheel to zoom."}
@@ -20,13 +20,13 @@ const copy = {
 
 function tokenize(source:string):string[] {
  const aliases:[RegExp,string][]=[
-  [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\sum\b/gi,"sum"],[/\\int\b/gi,"int"],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
+  [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\sum\b/gi,"sum"],[/\\int\b/gi,"int"],[/\\frac\b/gi,"frac"],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
   [/[θϑ]/g,"theta"],[/[ωΩ]/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/[γΓ]/g,"gamma"],[/[δΔ]/g,"delta"],[/[εϵ]/g,"epsilon"],[/ζ/g,"zeta"],[/η/g,"eta"],[/κ/g,"kappa"],[/λ/g,"lambda"],[/μ/g,"mu"],[/ν/g,"nu"],[/ξ/g,"xi"],[/π/g,"pi"],[/ρ/g,"rho"],[/[σς]/g,"sigma"],[/τ/g,"tau"],[/[φϕ]/g,"phi"],[/χ/g,"chi"],[/ψ/g,"psi"],[/[Σ∑]/g,"sum"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]
  ];
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
  const superscripts:Record<string,string>={"⁰":"^0","¹":"^1","²":"^2","³":"^3","⁴":"^4","⁵":"^5","⁶":"^6","⁷":"^7","⁸":"^8","⁹":"^9"};
  const subscripts:Record<string,string>={"₀":"_0","₁":"_1","₂":"_2","₃":"_3","₄":"_4","₅":"_5","₆":"_6","₇":"_7","₈":"_8","₉":"_9"};
- source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char);
+ source=source.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,char=>superscripts[char]??char).replace(/[₀₁₂₃₄₅₆₇₈₉]/g,char=>subscripts[char]??char).replace(/\\b([a-zA-Z]+)_([0-9]+)\\b/g,"$1$2");
  const tokens:string[]=[];
  const re=/\s*([0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?|\.[0-9]+(?:e[+-]?[0-9]+)?|[a-zA-Z_][a-zA-Z0-9_]*|\*\*|[+\-*/^(),])/gy;
  let pos=0;
@@ -36,7 +36,7 @@ function tokenize(source:string):string[] {
   const raw=match[1],normal=raw.toLowerCase();
   // Adjacent two-letter identifiers are treated as implicit multiplication (F=ma),
   // while constants, Greek names, functions and longer custom identifiers stay intact.
-  if(new Set(["ma","mv","mg","vt","at","ax","ay","vx","vy","dx","dt","ds","dp","kv","kx","v2","xv"]).has(normal))tokens.push(raw[0],raw[1]);
+  if(normal==="mgh")tokens.push("m","g","h");else if(new Set(["ma","mv","mg","vt","at","ax","ay","vx","vy","dx","dt","ds","dp","kv","kx","v2","xv"]).has(normal))tokens.push(raw[0],raw[1]);
   else tokens.push(raw);
   pos=re.lastIndex;
  }
@@ -60,7 +60,7 @@ function parse(source:string):Node {
   if(/^([0-9]|\.)/.test(token))return {kind:"num",n:Number(token)};
   if(/^[a-z_]/i.test(token)){
    const functionName=token.toLowerCase();
-   if(allowedFunctions.has(functionName)){need("(");const args:Node[]=[];if(peek()!==")"){args.push(add());while(peek()===","){take();args.push(add());}}need(")");const validArgs=(functionName==="min"||functionName==="max"||functionName==="hypot")?args.length>=2:functionName==="atan2"||functionName==="mod"?args.length===2:functionName==="clamp"?args.length===3:functionName==="int"?(args.length===2||args.length===4):functionName==="sum"?args.length===4:functionName==="diff"?args.length===2:args.length===1;if(!validArgs)throw new Error("Jumlah argumen "+functionName+" tidak sesuai");if((functionName==="int"||functionName==="sum"||functionName==="diff")&&args[1]?.kind!=="var")throw new Error("Variabel operator harus berupa simbol, misalnya x atau i");return {kind:"call",name:functionName,args};}
+   if(allowedFunctions.has(functionName)){need("(");const args:Node[]=[];if(peek()!==")"){args.push(add());while(peek()===","){take();args.push(add());}}need(")");const validArgs=(functionName==="min"||functionName==="max"||functionName==="hypot")?args.length>=2:functionName==="atan2"||functionName==="mod"?args.length===2:functionName==="clamp"?args.length===3:functionName==="int"?(args.length===2||args.length===4):functionName==="sum"?args.length===4:functionName==="diff"||functionName==="frac"?args.length===2:args.length===1;if(!validArgs)throw new Error("Jumlah argumen "+functionName+" tidak sesuai");if((functionName==="int"||functionName==="sum"||functionName==="diff")&&args[1]?.kind!=="var")throw new Error("Variabel operator harus berupa simbol, misalnya x atau i");return {kind:"call",name:functionName,args};}
    return {kind:"var",name:token};
   }
   throw new Error("Token tidak valid: "+token);
@@ -103,7 +103,7 @@ function calc(n:Node,v:Vars):number {
   return (calc(expression,{...v,[indexNode.name]:at+h})-calc(expression,{...v,[indexNode.name]:at-h}))/(2*h);
  }
  const a=n.args.map(x=>calc(x,v)),q=a[0];
- switch(n.name){case "sin":return Math.sin(q);case "cos":return Math.cos(q);case "tan":return Math.tan(q);case "asin":return Math.asin(q);case "acos":return Math.acos(q);case "atan":return Math.atan(q);case "sec":return 1/Math.cos(q);case "csc":return 1/Math.sin(q);case "cot":return 1/Math.tan(q);case "sinh":return Math.sinh(q);case "cosh":return Math.cosh(q);case "tanh":return Math.tanh(q);case "sqrt":return Math.sqrt(q);case "cbrt":return Math.cbrt(q);case "abs":return Math.abs(q);case "exp":return Math.exp(q);case "ln":return Math.log(q);case "log":case "log10":return Math.log10(q);case "log2":return Math.log2(q);case "min":return Math.min(...a);case "max":return Math.max(...a);case "hypot":return Math.hypot(...a);case "floor":return Math.floor(q);case "ceil":return Math.ceil(q);case "round":return Math.round(q);case "sign":return Math.sign(q);case "atan2":return Math.atan2(a[0],a[1]);case "mod":return a[1]===0?NaN:((a[0]%a[1])+a[1])%a[1];case "clamp":return Math.max(a[1],Math.min(a[2],a[0]));default:return NaN;}
+ switch(n.name){case "sin":return Math.sin(q);case "cos":return Math.cos(q);case "tan":return Math.tan(q);case "asin":return Math.asin(q);case "acos":return Math.acos(q);case "atan":return Math.atan(q);case "sec":return 1/Math.cos(q);case "csc":return 1/Math.sin(q);case "cot":return 1/Math.tan(q);case "sinh":return Math.sinh(q);case "cosh":return Math.cosh(q);case "tanh":return Math.tanh(q);case "sqrt":return Math.sqrt(q);case "cbrt":return Math.cbrt(q);case "abs":return Math.abs(q);case "exp":return Math.exp(q);case "ln":return Math.log(q);case "log":case "log10":return Math.log10(q);case "log2":return Math.log2(q);case "min":return Math.min(...a);case "max":return Math.max(...a);case "hypot":return Math.hypot(...a);case "floor":return Math.floor(q);case "ceil":return Math.ceil(q);case "round":return Math.round(q);case "sign":return Math.sign(q);case "atan2":return Math.atan2(a[0],a[1]);case "mod":return a[1]===0?NaN:((a[0]%a[1])+a[1])%a[1];case "clamp":return Math.max(a[1],Math.min(a[2],a[0]));case "frac":return a[1]===0?NaN:a[0]/a[1];default:return NaN;}
 }
 function compile(rows:Row[]):Compiled[]{
  return rows.filter(r=>r.enabled&&r.text.trim()).map(row=>{
@@ -127,11 +127,11 @@ function collectVariables(node:Node,result:Set<string>){
  if(node.kind==="call"){if(["int","sum","diff"].includes(node.name)&&node.args[1]?.kind==="var"){collectVariables(node.args[0],result);node.args.slice(2).forEach(child=>collectVariables(child,result));return;}node.args.forEach(child=>collectVariables(child,result));}
 }
 function variableDefaults(name:string){
- const defaults:Record<string,number>={m:1,g:9.81,a:1,A:2,v0:5,omega:1,k:10,theta:Math.PI/4,r:3,e:1,mu:.2,f:10,h:2,sigma:1,alpha:1,beta:1,phi:0,lambda:1};
+ const defaults:Record<string,number>={m:1,mass:1,m1:2,m2:1,g:9.81,a:1,A:2,v:3,v0:5,omega:1,omega_d:3,k:10,theta:Math.PI/4,r:3,e:1,mu:.2,mu_s:.4,mu_k:.2,f:10,F:10,G:6.6743e-11,h:2,L:2,I:2,c:1,beta:.15,s:4,dx:4,delta_t:.25,N:20,sigma:1,alpha:1,phi:0,lambda:1};
  return defaults[name]??1;
 }
 function variableDescription(name:string,language:Language){
- const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Percepatan",en:"Acceleration",unit:"m/s²"},A:{id:"Amplitudo",en:"Amplitude",unit:"m"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},f:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"}};
+ const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Percepatan",en:"Acceleration",unit:"m/s²"},A:{id:"Amplitudo",en:"Amplitude",unit:"m"},v:{id:"Kecepatan",en:"Velocity",unit:"m/s"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},f:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"},F:{id:"Gaya",en:"Force",unit:"N"},G:{id:"Konstanta gravitasi universal",en:"Universal gravitational constant",unit:"N·m²/kg²"},L:{id:"Panjang",en:"Length",unit:"m"},I:{id:"Momen inersia",en:"Moment of inertia",unit:"kg·m²"},c:{id:"Koefisien redaman",en:"Damping coefficient",unit:"kg/s"},beta:{id:"Koefisien redaman relatif",en:"Damping rate",unit:"s⁻¹"}};
  const item=labels[name];
  return item?{label:language==="ID"?item.id:item.en,unit:item.unit}:{label:name,unit:language==="ID"?"nilai bebas":"custom"};
 }
@@ -165,6 +165,7 @@ function equationToLatex(source:string){
    return "\\left("+render(node.a)+node.op+render(node.b)+"\\right)";
   }
   const name=node.name;
+  if(name==="frac")return "\\frac{"+render(node.args[0])+"}{"+render(node.args[1])+"}";
   if(name==="sqrt")return "\\sqrt{"+render(node.args[0])+"}";
   if(name==="cbrt")return "\\sqrt[3]{"+render(node.args[0])+"}";
   if(name==="abs")return "\\left|"+render(node.args[0])+"\\right|";
@@ -187,7 +188,7 @@ function equationToLatex(source:string){
  };
  return lhs+render(root);
 }
-const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",omega:"rad/s",k:"N/m",theta:"rad",phi:"rad",r:"m",f:"N",F:"N",N:"N",h:"m",x:"m",x0:"m",d:"m",s:"m",t:"s",delta_t:"s",I:"kg\\,m^2",p:"kg\\,m/s"};
+const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",omega:"rad/s",omega_d:"rad/s",k:"N/m",theta:"rad",phi:"rad",r:"m",f:"N",F:"N",N:"N",h:"m",x:"m",x0:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s"};
 function substitutedAstLatex(node:Node,vars:Vars):string{
  const num=(value:number)=>Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
  if(node.kind==="num")return num(node.n);
@@ -207,6 +208,7 @@ function substitutedAstLatex(node:Node,vars:Vars):string{
   return "\\left("+a+node.op+b+"\\right)";
  }
  const a=node.args.map(value=>substitutedAstLatex(value,vars)),name=node.name;
+ if(name==="frac")return "\\frac{"+a[0]+"}{"+a[1]+"}";
  if(name==="abs")return "\\left|"+a[0]+"\\right|";
  if(name==="cbrt")return "\\sqrt[3]{"+a[0]+"}";
  if(name==="floor")return "\\left\\lfloor "+a[0]+"\\right\\rfloor";
@@ -258,6 +260,7 @@ function dimensionOf(node:Node):Dimension|null{
  }
  const name=node.name,args=node.args,dims=args.map(dimensionOf);
  if(name==="abs"||name==="floor"||name==="ceil"||name==="round"||name==="sign")return dims[0]??null;
+ if(name==="frac"&&dims[0]&&dims[1])return subtractDimension(dims[0],dims[1]);
  if(name==="sqrt"&&dims[0])return scaleDimension(dims[0],.5);
  if(name==="cbrt"&&dims[0])return scaleDimension(dims[0],1/3);
  if(name==="int"&&dims[0]&&args[1]?.kind==="var")return addDimension(dims[0],variableDimensions[args[1].name]??zero);
@@ -280,7 +283,7 @@ function dimensionUnitLatex(dimension:Dimension|null):string{
   "0,1,-1":"\\mathrm{m/s}","0,1,-2":"\\mathrm{m/s^2}","1,1,-2":"\\mathrm{N}",
   "1,2,-2":"\\mathrm{J}","1,1,-1":"\\mathrm{kg\\,m/s}","1,0,-1":"\\mathrm{kg/s}",
   "1,0,-2":"\\mathrm{N/m}","0,0,-1":"\\mathrm{rad/s}","0,0,-2":"\\mathrm{rad/s^2}",
-  "1,2,-3":"\\mathrm{W}"
+  "1,2,-3":"\\mathrm{W}","1,2,-1":"\\mathrm{kg\\,m^2/s}","-1,3,-2":"\\mathrm{N\\,m^2/kg^2}"
  };
  if(Object.prototype.hasOwnProperty.call(known,key))return known[key];
  const units:[string,number][]=[["kg",m],["m",l],["s",t]];
@@ -308,7 +311,7 @@ function equationPreviewHtml(source:string){
   const token=command?.[1].replace(/^\\/,"").toLowerCase();
   const pending:Record<string,string>={
    int:"\\int_{0}^{x}\\square\\,dx",sum:"\\sum_{i=1}^{n}\\square",
-   diff:"\\frac{d}{dx}\\square",sqrt:"\\sqrt{\\square}",cbrt:"\\sqrt[3]{\\square}",
+   diff:"\\frac{d}{dx}\\square",frac:"\\frac{a}{b}",sqrt:"\\sqrt{\\square}",cbrt:"\\sqrt[3]{\\square}",
    sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"
   };
   let tail="\\square";
@@ -344,6 +347,7 @@ function equationSuggestions(source:string,language:Language):EquationSuggestion
  const suggestions:EquationSuggestion[]=[];
  const trigger=rawToken||symbol;
  const addGreek=(name:string)=>{const item=greek[name];if(item)suggestions.push(make((labels?"Simbol ":"Symbol ")+item[labels?"id":"en"],item.latex,name,trigger));};
+ if(token==="frac"||("fraction".startsWith(token)&&token.length>=3)){suggestions.push(make(labels?"Pecahan / rasio":"Fraction / ratio","\\frac{a}{b}","frac(a, b)",trigger));return suggestions;}
  if(token==="int"||("integral".startsWith(token)&&token.length>=3)){
   suggestions.push(make(labels?"Integral akumulasi dari 0 ke x":"Accumulation integral from 0 to x","\\int_0^x f(u)\\,du","int(u^2, u, 0, x)",trigger));
   suggestions.push(make(labels?"Integral tentu":"Definite integral","\\int_a^b f(x)\\,dx","int(x^2, x, 0, 1)",trigger));

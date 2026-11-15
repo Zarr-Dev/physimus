@@ -219,7 +219,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   reset();
  };
  const addSceneObject=(kind:ObjectKind)=>{
-  const item:MechanicalObject={id:nextObjectId,kind,x:0,y:0,mass:1,radius:1,stiffness:20,angle:0,length:2,damping:.08,friction:.2,elasticity:.8,enabled:true};
+  const slot=nextObjectId-1;const item:MechanicalObject={id:nextObjectId,kind,x:(slot%5)*2.2-4.4,y:-Math.floor(slot/5)*2.1,mass:1,radius:1,stiffness:20,angle:0,length:2,damping:.08,friction:.2,elasticity:.8,enabled:true};
   setSceneObjects(old=>[...old,item]);setSelectedObjectId(nextObjectId);setNextObjectId(value=>value+1);
  };
  const updateSceneObject=(id:number,key:keyof MechanicalObject,value:number|boolean)=>{

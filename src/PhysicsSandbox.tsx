@@ -121,11 +121,11 @@ function collectVariables(node:Node,result:Set<string>){
  if(node.kind==="call"){if(["int","sum","diff"].includes(node.name)&&node.args[1]?.kind==="var"){collectVariables(node.args[0],result);node.args.slice(2).forEach(child=>collectVariables(child,result));return;}node.args.forEach(child=>collectVariables(child,result));}
 }
 function variableDefaults(name:string){
- const defaults:Record<string,number>={m:1,g:9.81,a:2,v0:5,omega:1,k:10,theta:Math.PI/4,r:3,e:1,mu:.2,f:10,h:2,sigma:1,alpha:1,beta:1,phi:0,lambda:1};
+ const defaults:Record<string,number>={m:1,g:9.81,a:1,A:2,v0:5,omega:1,k:10,theta:Math.PI/4,r:3,e:1,mu:.2,f:10,h:2,sigma:1,alpha:1,beta:1,phi:0,lambda:1};
  return defaults[name]??1;
 }
 function variableDescription(name:string,language:Language){
- const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Amplitudo / percepatan",en:"Amplitude / acceleration",unit:"m atau m/s²"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},f:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"}};
+ const labels:Record<string,{id:string;en:string;unit:string}>={m:{id:"Massa",en:"Mass",unit:"kg"},g:{id:"Gravitasi",en:"Gravity",unit:"m/s²"},a:{id:"Percepatan",en:"Acceleration",unit:"m/s²"},A:{id:"Amplitudo",en:"Amplitude",unit:"m"},v0:{id:"Kecepatan awal",en:"Initial velocity",unit:"m/s"},omega:{id:"Kecepatan sudut",en:"Angular velocity",unit:"rad/s"},k:{id:"Konstanta pegas",en:"Spring constant",unit:"N/m"},theta:{id:"Sudut / fase",en:"Angle / phase",unit:"rad"},r:{id:"Jari-jari",en:"Radius",unit:"m"},e:{id:"Restitusi",en:"Restitution",unit:"—"},mu:{id:"Koefisien gesek",en:"Friction coefficient",unit:"—"},f:{id:"Gaya",en:"Force",unit:"N"},h:{id:"Ketinggian",en:"Height",unit:"m"}};
  const item=labels[name];
  return item?{label:language==="ID"?item.id:item.en,unit:item.unit}:{label:name,unit:language==="ID"?"nilai bebas":"custom"};
 }
@@ -322,7 +322,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const parsed=useMemo(()=>compile(rows),[rows]);const valid=useMemo(()=>parsed.filter(x=>!x.error),[parsed]);const errors=useMemo(()=>parsed.filter(x=>x.error),[parsed]);
  const hasMotion=valid.some(x=>x.target==="x(t)"||x.target==="y(t)");
  const usedVariables=useMemo(()=>{const result=new Set<string>();valid.forEach(item=>collectVariables(item.root,result));return Array.from(result).filter(name=>!["x","t","pi","e"].includes(name)).sort();},[valid]);
- const knownVariables=useMemo(()=>({m:mass,g:gravity,a:amplitude,v0:initialSpeed,omega:angularSpeed,k:stiffness,theta:phase}),[mass,gravity,amplitude,initialSpeed,angularSpeed,stiffness,phase]);
+ const knownVariables=useMemo(()=>({m:mass,g:gravity,A:amplitude,v0:initialSpeed,omega:angularSpeed,k:stiffness,theta:phase}),[mass,gravity,amplitude,initialSpeed,angularSpeed,stiffness,phase]);
  const parameterSet=useMemo<Vars>(()=>({x:0,t:0,...Object.fromEntries(usedVariables.map(name=>[name,customVariables[name]??knownVariables[name as keyof typeof knownVariables]??variableDefaults(name)])),...knownVariables}),[usedVariables,customVariables,knownVariables]);
   const scalarResults=useMemo(()=>valid.filter(item=>item.target==="scalar").map(item=>({id:item.id,value:calc(item.root,parameterSet)})),[valid,parameterSet]);
  const current=useMemo(()=>motionAt(valid,time,parameterSet),[valid,time,parameterSet]);const constrainedDevice=typeof navigator!=="undefined"&&((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);const effectiveMotionLevel=constrainedDevice&&motionLevel==="high"?"medium":motionLevel;const motionBudget=effectiveMotionLevel==="low"?{fps:12,trail:120}:effectiveMotionLevel==="medium"?{fps:24,trail:240}:{fps:40,trail:360};const renderQuality={...motionBudget,dpr:renderMode==="performance"?1:renderMode==="detail"?(constrainedDevice?1.5:2):effectiveMotionLevel==="low"?1:effectiveMotionLevel==="medium"?1.25:1.5,samples:renderMode==="performance"?120:renderMode==="detail"?(constrainedDevice?360:520):effectiveMotionLevel==="low"?150:effectiveMotionLevel==="medium"?260:400};const functionCurves=useMemo(()=>{const halfSpan=(view.xmax-view.xmin)/(2*scale),mid=(view.xmin+view.xmax)/2,lo=mid-halfSpan,hi=mid+halfSpan;return valid.filter(item=>item.target==="y(x)").map((item,index)=>({id:item.id,color:["#347fd5","#4da786","#d99a46","#8b6bd6"][index%4],points:Array.from({length:renderQuality.samples+1},(_,i)=>{const x=lo+(hi-lo)*i/renderQuality.samples;return {x,y:calc(item.root,{...parameterSet,x,t:0})};})}));},[valid,parameterSet,view,scale,renderQuality.samples]);const motionTrail=useMemo(()=>hasMotion?Array.from({length:renderQuality.trail+1},(_,i)=>{const t=duration*i/renderQuality.trail,p=motionAt(valid,t,{...parameterSet,t});return p?{x:p.x,y:p.y}:{x:Number.NaN,y:Number.NaN};}):[],[hasMotion,valid,duration,parameterSet,renderQuality.trail]);
@@ -400,7 +400,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   if(!Number.isFinite(value))return;
   if(name==="m")setMass(Math.max(.01,Math.min(10000,value)));
   else if(name==="g")setGravity(Math.max(0,Math.min(1000,value)));
-  else if(name==="a")setAmplitude(Math.max(-1000,Math.min(1000,value)));
+  else if(name==="A")setAmplitude(Math.max(-1000,Math.min(1000,value)));
   else if(name==="v0")setInitialSpeed(Math.max(-1000,Math.min(1000,value)));
   else if(name==="omega")setAngularSpeed(Math.max(-1000,Math.min(1000,value)));
   else if(name==="k")setStiffness(Math.max(0,Math.min(100000,value)));

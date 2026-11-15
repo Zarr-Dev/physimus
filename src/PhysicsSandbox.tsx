@@ -160,7 +160,7 @@ function variableLatex(name:string){
  if(name==="sum"||name==="sumsymbol")return "\\sum";
  const component=name.match(/^(v|a|F|p|r|E|f)([xyz])$/);
  if(component)return component[1]+"_{"+component[2]+"}";
- const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+)$/);
+ const namedSub=name.match(/^([a-zA-Z]+)_([a-zA-Z0-9]+(?:_[a-zA-Z0-9]+)*)$/);
  if(namedSub)return namedSub[1]+"_{"+namedSub[2]+"}";
  const numericSub=name.match(/^([a-zA-Z]+)(\\d+)$/);
  if(numericSub)return numericSub[1]+"_{"+numericSub[2]+"}";
@@ -208,7 +208,7 @@ function equationToLatex(source:string){
  };
  return lhs+render(root);
 }
-const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",ax:"m/s^2",ay:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",u1:"m/s",u2:"m/s",v1:"m/s",v2:"m/s",Fx:"N",Fy:"N",F:"N",N:"N",w:"N",f_k:"N",f_s:"N",F_d:"N",F_g:"N",F_c:"N",omega:"rad/s",omega0:"rad/s",omega_d:"rad/s",alpha:"rad/s^2",k:"N/m",theta:"rad",phi:"rad",r:"m",h:"m",x:"m",x0:"m",x_s:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",T:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",beta:"1/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s",J:"N\\,s",H:"kg\\,m^2/s",tau:"N\\,m",P:"W",K_rot:"J",E_k:"J",E_p:"J",E_m:"J",U_s:"J",W_net:"J",mu:"1",mu_s:"1",mu_k:"1",e:"1"};
+const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",m1:"kg",m2:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",ax:"m/s^2",ay:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",u1:"m/s",u2:"m/s",v1:"m/s",v2:"m/s",Fx:"N",Fy:"N",F:"N",N:"N",w:"N",f_k:"N",f_s:"N",f_s_max:"N",F_d:"N",F_g:"N",F_c:"N",omega:"rad/s",omega0:"rad/s",omega_d:"rad/s",alpha:"rad/s^2",k:"N/m",theta:"rad",phi:"rad",r:"m",h:"m",x:"m",x0:"m",x_s:"m",L:"m",d:"m",s:"m",dx:"m",t:"s",T:"s",delta_t:"s",I:"kg\\,m^2",c:"kg/s",beta:"1/s",G:"N\\,m^2/kg^2",p:"kg\\,m/s",J:"N\\,s",H:"kg\\,m^2/s",tau:"N\\,m",P:"W",K_rot:"J",E_k:"J",E_p:"J",E_m:"J",U_s:"J",W_net:"J",mu:"1",mu_s:"1",mu_k:"1",e:"1"};
 function substitutedAstLatex(node:Node,vars:Vars):string{
  const num=(value:number)=>Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
  if(node.kind==="num")return num(node.n);
@@ -257,7 +257,7 @@ const variableDimensions:Record<string,Dimension>={
  A:[0,1,0],x:[0,1,0],x0:[0,1,0],h:[0,1,0],r:[0,1,0],d:[0,1,0],s:[0,1,0],L:[0,1,0],
  v:[0,1,-1],v0:[0,1,-1],vx:[0,1,-1],vy:[0,1,-1],u:[0,1,-1],u1:[0,1,-1],u2:[0,1,-1],v1:[0,1,-1],v2:[0,1,-1],
  omega:[0,0,-1],theta:[0,0,0],phi:[0,0,0],mu:[0,0,0],e:[0,0,0],
- k:[1,0,-2],F:[1,1,-2],f:[1,1,-2],N:[1,1,-2],w:[1,1,-2],Fx:[1,1,-2],Fy:[1,1,-2],f_k:[1,1,-2],f_s:[1,1,-2],F_d:[1,1,-2],F_g:[1,1,-2],F_c:[1,1,-2],p:[1,1,-1],J:[1,1,-1],I:[1,2,0],H:[1,2,-1],
+ k:[1,0,-2],F:[1,1,-2],f:[1,1,-2],N:[1,1,-2],w:[1,1,-2],Fx:[1,1,-2],Fy:[1,1,-2],f_k:[1,1,-2],f_s:[1,1,-2],f_s_max:[1,1,-2],F_d:[1,1,-2],F_g:[1,1,-2],F_c:[1,1,-2],p:[1,1,-1],J:[1,1,-1],I:[1,2,0],H:[1,2,-1],
  alpha:[0,0,-2],tau:[1,2,-2],W:[1,2,-2],E:[1,2,-2],P:[1,2,-3],K_rot:[1,2,-2],E_k:[1,2,-2],E_p:[1,2,-2],E_m:[1,2,-2],U_s:[1,2,-2],W_net:[1,2,-2],
  delta_t:[0,0,1],t:[0,0,1],m1:[1,0,0],m2:[1,0,0],dx:[0,1,0],x_s:[0,1,0],T:[0,0,1],ax:[0,1,-2],ay:[0,1,-2],G:[-1,3,-2],c:[1,0,-1],beta:[0,0,-1],omega_d:[0,0,-1],omega0:[0,0,-1],mu_s:[0,0,0],mu_k:[0,0,0]
 };
@@ -569,7 +569,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    integral:["y=int(u^2,u,0,x)"],
    summation:["y=sum(i^2,i,1,floor(x))"],
     product:["y=prod(i,i,1,floor(x))"],
-   derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["w=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"],centripetal:["F_c=m*omega^2*r","a_c=omega^2*r"],potential:["U=m*g*h"],impulse:["J=F*delta_t"],torque:["tau=I*alpha"],rotation:["K_rot=0.5*I*omega^2"],springenergy:["U_s=0.5*k*x_s^2"],friction:["f_k=mu_k*N","N=m*g*cos(theta)"],components:["F_x=F*cos(theta)","F_y=F*sin(theta)"],torricelli:["v=sqrt(v0^2+2*a*s)"],power:["P=F*v"],gravitation:["F_g=frac(G*m1*m2,r^2)"],angularmomentum:["H=I*omega"],damped:["x(t)=A*exp(-beta*t)*cos(omega_d*t)","v(t)=-A*exp(-beta*t)*(beta*cos(omega_d*t)+omega_d*sin(omega_d*t))"],workenergy:["W_net=0.5*m*(v^2-v0^2)"],dampedforce:["F_d=-c*v"],staticfriction:["f_s=mu_s*N","N=m*g*cos(theta)"],angularkinematics:["omega_f=omega0+alpha*t"]
+   derivative:["y=diff(sin(x),x)"],newton:["F=ma"],weight:["w=mg"],momentum:["p=mv"],work:["W=F*d*cos(theta)"],kinetic:["E_k=0.5*m*v^2"],springforce:["F=-k*x"],centripetal:["F_c=m*omega^2*r","a_c=omega^2*r"],potential:["U=m*g*h"],impulse:["J=F*delta_t"],torque:["tau=I*alpha"],rotation:["K_rot=0.5*I*omega^2"],springenergy:["U_s=0.5*k*x_s^2"],friction:["f_k=mu_k*N","N=m*g*cos(theta)"],components:["F_x=F*cos(theta)","F_y=F*sin(theta)"],torricelli:["v=sqrt(v0^2+2*a*s)"],power:["P=F*v"],gravitation:["F_g=frac(G*m1*m2,r^2)"],angularmomentum:["H=I*omega"],damped:["x(t)=A*exp(-beta*t)*cos(omega_d*t)","v(t)=-A*exp(-beta*t)*(beta*cos(omega_d*t)+omega_d*sin(omega_d*t))"],workenergy:["W_net=0.5*m*(v^2-v0^2)"],dampedforce:["F_d=-c*v"],staticfriction:["f_s_max=mu_s*N","N=m*g*cos(theta)"],angularkinematics:["omega_f=omega0+alpha*t"]
   };
   const list=data[kind]||[];if(!list.length)return;
   setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);setFocusedEquationId(1);setEditorTab("equations");setPlaying(false);setTime(0);timeRef.current=0;setCustomVariables({});setMass(1);setGravity(9.81);setAmplitude(2);setInitialSpeed(5);setAngularSpeed(1);setStiffness(10);setPhase(Math.PI/4);setDuration(12);setScale(1);setView({xmin:-10,xmax:10,ymin:-10,ymax:10});
@@ -725,7 +725,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <button onClick={()=>preset("damped")}><strong>31 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><code>x=Ae^(−βt) cos(ωᵈt)</code></button>
         <button onClick={()=>preset("workenergy")}><strong>32 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><code>Wₙₑₜ=½m(v²−v₀²)</code></button>
         <button onClick={()=>preset("dampedforce")}><strong>33 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><code>Fᵈ=−cv</code></button>
-        <button onClick={()=>preset("staticfriction")}><strong>34 · {language==="ID"?"Gesekan statis":"Static friction"}</strong><code>0≤fₛ≤μₛN</code></button>
+        <button onClick={()=>preset("staticfriction")}><strong>34 · {language==="ID"?"Batas gaya gesek statis":"Maximum static friction"}</strong><code>fₛ,max=μₛN</code></button>
         <button onClick={()=>preset("angularkinematics")}><strong>35 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><code>ω=ω₀+αt</code></button>
       </div>
     </>}

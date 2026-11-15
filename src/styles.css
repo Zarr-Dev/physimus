@@ -1938,3 +1938,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .equation-calc-result{align-items:flex-start;flex-direction:column}
 }
 @media(prefers-reduced-motion:reduce){.equation-calculator-workspace *{scroll-behavior:auto}}
+
+
+/* KaTeX presentation for calculator symbols and evaluated expressions */
+.equation-calc-field-label{display:flex!important;align-items:center;flex-wrap:wrap;gap:5px 7px}
+.equation-calc-field-label .math-inline{display:inline-flex;font-size:14px;color:var(--blue);line-height:1}
+.equation-calc-substitution-math{min-height:34px;display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;padding:7px 0;color:var(--ink);font-size:clamp(14px,1.8vw,17px);line-height:1.8}
+.equation-calc-substitution-math .math-inline{white-space:nowrap}
+.equation-calc-substitution-math>span:not(.math-inline){color:var(--muted);font-size:12px}
+.equation-calc-result strong .math-inline{display:inline-flex;align-items:center;font-size:inherit}
+.equation-calc-result strong small{font-size:12px;font-weight:650}

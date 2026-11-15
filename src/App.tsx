@@ -215,19 +215,61 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
 
 function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language}) {
  const definitions=calculatorDefinitions[labId];
- const [inputs,setInputs]=useState<Record<string,Record<string,string>>>(()=>Object.fromEntries(definitions.map(def=>[def.id,Object.fromEntries(def.fields.map(field=>[field.key,String(field.initial)]))])));
- useEffect(()=>{setInputs(Object.fromEntries(definitions.map(def=>[def.id,Object.fromEntries(def.fields.map(field=>[field.key,String(field.initial)]))])));},[labId]);
- return <section className="equation-calculator-panel">
-  <div className="equation-calculator-heading"><span className="eyebrow">MECHANICS / FORMULA WORKBENCH</span><h2>{language==="ID"?"Kalkulator Persamaan":"Equation Calculator"}</h2><p>{language==="ID"?"Masukkan nilai variabel untuk melihat substitusi dan hasilnya. Gunakan persamaan sebagai alat hitung sekaligus pengingat konsep.":"Enter variable values to see the substitution and result. Use each equation as both a calculator and a concept reminder."}</p></div>
+ const createInitialInputs=()=>Object.fromEntries(definitions.map(def=>[def.id,Object.fromEntries(def.fields.map(field=>[field.key,String(field.initial)]))]));
+ const [inputs,setInputs]=useState<Record<string,Record<string,string>>>(createInitialInputs);
+ useEffect(()=>{setInputs(createInitialInputs());},[labId]);
+ const resetCard=(id:string,fields:CalcField[])=>setInputs(old=>({...old,[id]:Object.fromEntries(fields.map(field=>[field.key,String(field.initial)]))}));
+ return <section className="equation-calculator-panel" aria-label={language==="ID"?"Kalkulator persamaan mekanika":"Mechanics equation calculator"}>
+  <div className="equation-calculator-heading">
+   <div><span className="eyebrow">MECHANICS / FORMULA WORKBENCH</span><h2>{language==="ID"?"Kalkulator Persamaan":"Equation Calculator"}</h2></div>
+   <p>{language==="ID"?"Ubah variabel untuk melihat substitusi dan hasil secara langsung. Setiap kalkulator dilengkapi batas input dan penjelasan konsep.":"Change the variables to see the substitution and result instantly. Each calculator includes input limits and a concept note."}</p>
+  </div>
   <div className="equation-calculator-list">{definitions.map((def,index)=>{
-   const raw=inputs[def.id]??{};const values=Object.fromEntries(def.fields.map(field=>[field.key,Number(raw[field.key]??field.initial)]));const valid=def.fields.every(field=>raw[field.key]!==""&&Number.isFinite(values[field.key])&&(field.min===undefined||values[field.key]>=field.min)&&(field.max===undefined||values[field.key]<=field.max))&&((def.id!=="final1"&&def.id!=="final2")||(values.m1+values.m2>0));
-   const result=valid?def.evaluate(values):null;
+   const raw=inputs[def.id]??{};
+   const values=Object.fromEntries(def.fields.map(field=>[field.key,raw[field.key]===undefined?field.initial:Number(raw[field.key])])) as Record<string,number>;
+   const invalidField=def.fields.find(field=>{
+    const rawValue=raw[field.key]??String(field.initial);
+    const value=values[field.key];
+    return rawValue.trim()===""||!Number.isFinite(value)||(field.min!==undefined&&value<field.min)||(field.max!==undefined&&value>field.max);
+   });
+   let result:CalcResult|null=null;
+   let calculationFailed=false;
+   if(!invalidField){
+    try{const evaluated=def.evaluate(values);if(Number.isFinite(Number(evaluated.value)))result=evaluated;else calculationFailed=true;}
+    catch{calculationFailed=true;}
+   }
+   const errorText=invalidField
+    ? (raw[invalidField.key]??"").trim()===""
+      ? (language==="ID"?"Nilai belum diisi.":"Enter a value.")
+      : language==="ID"
+        ? `Masukkan nilai ${invalidField.min!==undefined?"≥ "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?" dan ":""}${invalidField.max!==undefined?"≤ "+invalidField.max:""}.`
+        : `Enter a value ${invalidField.min!==undefined?"≥ "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?" and ":""}${invalidField.max!==undefined?"≤ "+invalidField.max:""}.`
+    : calculationFailed?(language==="ID"?"Perhitungan tidak dapat dilakukan. Periksa kembali nilai variabel.":"Calculation failed. Check the variable values."):null;
    return <article className="equation-calculator-card" key={def.id}>
-    <div className="equation-calculator-card-head"><span>{String(index+1).padStart(2,"0")}</span><h3>{language==="ID"?def.titleID:def.titleEN}</h3></div>
-    <div className="equation-calc-row"><span>{language==="ID"?"Persamaan":"Equation"}</span><div className="equation-calc-math"><Equation value={def.formula}/></div></div>
-    <div className="equation-calc-fields">{def.fields.map(field=><label key={field.key}><span>{language==="ID"?field.labelID:field.labelEN} <small>({field.unit})</small></span><input type="number" min={field.min} max={field.max} step={field.step??"any"} value={raw[field.key]??String(field.initial)} onChange={event=>setInputs(old=>({...old,[def.id]:{...(old[def.id]??{}),[field.key]:event.target.value}}))}/></label>)}</div>
-    <div className="equation-calc-row substitution"><span>{language==="ID"?"Substitusi nilai":"Substitute values"}</span><div className="equation-calc-math">{result?result.substitution:<span className="equation-calc-placeholder">—</span>}</div></div>
-    <div className="equation-calc-result"><span>{language==="ID"?"Hasil perhitungan":"Calculated result"}</span><strong>{result?result.value:"—"} <small>{result?.unit??""}</small></strong></div>
+    <div className="equation-calculator-card-head">
+     <span className="equation-calculator-index">{String(index+1).padStart(2,"0")}</span>
+     <h3>{language==="ID"?def.titleID:def.titleEN}</h3>
+     <button type="button" className="equation-calc-reset" onClick={()=>resetCard(def.id,def.fields)} aria-label={language==="ID"?"Reset nilai kalkulator":"Reset calculator values"} title={language==="ID"?"Kembalikan nilai awal":"Restore default values"}><RotateCcw size={14}/></button>
+    </div>
+    <div className="equation-calc-formula"><span>{language==="ID"?"PERSAMAAN":"FORMULA"}</span><div className="equation-calc-math"><Equation value={def.formula}/></div></div>
+    <div className="equation-calc-fields">{def.fields.map(field=>{
+     const value=raw[field.key]??String(field.initial);
+     const fieldInvalid=value.trim()===""||!Number.isFinite(Number(value))||(field.min!==undefined&&Number(value)<field.min)||(field.max!==undefined&&Number(value)>field.max);
+     return <label key={field.key}>
+      <span>{language==="ID"?field.labelID:field.labelEN}<small>{field.unit}</small></span>
+      <input type="number" inputMode="decimal" min={field.min} max={field.max} step={field.step??"any"} value={value} aria-invalid={fieldInvalid} onChange={event=>setInputs(old=>({...old,[def.id]:{...(old[def.id]??{}),[field.key]:event.target.value}}))}/>
+      {(field.min!==undefined||field.max!==undefined)&&<small className="equation-calc-range">{field.min!==undefined&&field.max!==undefined?`${field.min} – ${field.max}`:field.min!==undefined?`≥ ${field.min}`:`≤ ${field.max}`}</small>}
+     </label>;
+    })}</div>
+    <div className="equation-calc-substitution">
+     <span>{language==="ID"?"SUBSTITUSI NILAI":"SUBSTITUTION"}</span>
+     <code>{result?result.substitution:(language==="ID"?"Lengkapi input untuk melihat substitusi.":"Complete the inputs to see the substitution.")}</code>
+    </div>
+    {errorText&&<p className="equation-calc-error" role="status">{errorText}</p>}
+    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}>
+     <span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span>
+     <strong>{result?result.value:"—"} <small>{result?.unit??""}</small></strong>
+    </div>
     <p className="equation-calc-note">{language==="ID"?def.noteID:def.noteEN}</p>
    </article>;
   })}</div>

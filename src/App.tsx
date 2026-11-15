@@ -448,7 +448,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
     ? {x:"Posisi x",y:"Posisi y",speed:"Kelajuan",range:"Jangkauan",max:"Tinggi maksimum",flight:"Waktu terbang",position:"Posisi",velocity:"Kecepatan",acceleration:lab.id==="projectile"?"Percepatan vertikal":"Percepatan",time:"Waktu",period:"Periode",omega:"Kecepatan sudut",centripetal:"Percepatan sentripetal",kinetic:"Energi kinetik",potential:"Energi potensial",mechanical:"Energi mekanik",height:"Ketinggian",initial:"Energi awal",net:"Resultan gaya",distance:"Jarak",mass:"Massa"}
     : {x:"Position x",y:"Position y",speed:"Speed",range:"Range",max:"Maximum height",flight:"Flight time",position:"Position",velocity:"Velocity",acceleration:lab.id==="projectile"?"Vertical acceleration":"Acceleration",time:"Time",period:"Period",omega:"Angular velocity",centripetal:"Centripetal acceleration",kinetic:"Kinetic energy",potential:"Potential energy",mechanical:"Mechanical energy",height:"Height",initial:"Initial energy",net:"Net force",distance:"Distance",mass:"Mass"};
   const peak=points.reduce((best,p)=>p.y>best.y?p:best,points[0]);
-  const exactProjectilePeak=lab.id==="projectile"?(values.height??0)+((values.speed??0)*Math.sin((values.angle??0)*Math.PI/180))**2/(2*g):peak.y;
+  const exactProjectilePeak=lab.id==="projectile"?(values.height??0)+((values.speed??0)*Math.sin((values.angle??0)*Math.PI/180))**2/(2*(values.gravity??9.81)):peak.y;
   const total=point.kinetic+point.potential;
   const mass=values.mass??1;
   const g=values.gravity??9.81;

@@ -467,7 +467,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
       [language==="ID"?"Momentum total":"Total momentum",c.initialMomentum,"kg·m/s"],
       [language==="ID"?"Energi kinetik sistem":"System kinetic energy",point.kinetic,"J"],
       [language==="ID"?"Impuls benda 1":"Impulse on body 1",c.m1*(v1-c.u1),"N·s"],
-      [language==="ID"?"Waktu tumbukan":"Collision time",Number.isFinite(c.collisionTime)?c.collisionTime:0,"s"]
+      [language==="ID"?"Waktu tumbukan":"Collision time",Number.isFinite(c.collisionTime)?c.collisionTime:NaN,"s"]
     ] as [string,number,string][];
   }
   if(lab.id==="energy") return [
@@ -493,7 +493,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
 
 
 
-function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,time:number,duration:number){
+function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,time:number,duration:number,language:Language){
  const n=(x:number,digits=2)=>Number.isFinite(x)?Number(x.toFixed(digits)).toString():"\\text{—}";
  const qty=(x:number,unit:string)=>"("+n(x)+")\\,\\mathrm{"+unit+"}";
  const m=v.mass??1,g=v.gravity??9.81,theta=(v.angle??0)*Math.PI/180;
@@ -536,7 +536,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
    "x=r\\cos(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.x,"m"),
    "y=r\\sin(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.y,"m"),
    "v=\\omega r=("+n(omega)+"\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+qty(p.speed,"m/s"),
-   "T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"}="+qty(2*Math.PI/(omega||1),"s"),
+   omega>0?"T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"}="+qty(2*Math.PI/omega,"s"):"T=\\frac{2\\pi}{0}=\\text{undefined for }\\omega=0",
    "\\omega="+qty(omega,"rad/s"),
    "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
   ][index];
@@ -547,7 +547,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   const tc=Number.isFinite(c.collisionTime)?c.collisionTime:NaN;
   const tExpression=Number.isFinite(tc)
    ?"t_c=\\frac{s-d}{u_1-u_2}=\\frac{"+n(c.separation)+"-"+n(c.contactDistance)+"}{"+n(c.u1)+"-("+n(c.u2)+")}="+qty(tc,"s")
-   :"\\text{Tidak terjadi kontak: }u_1\\leq u_2";
+   :language==="ID"?"\\text{Tidak terjadi kontak: }u_1\\leq u_2":"\\text{No collision: }u_1\\leq u_2";
   return [
    "v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+n(c.m1)+"-"+n(c.e)+"("+n(c.m2)+"))("+n(c.u1)+")+(1+"+n(c.e)+")("+n(c.m2)+")("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v1,"m/s"),
    "v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+n(c.m1)+")("+n(c.u1)+")+("+n(c.m2)+"-"+n(c.e)+"("+n(c.m1)+"))("+n(c.u2)+")}{"+n(c.m1)+"+"+n(c.m2)+"}="+qty(v2,"m/s"),
@@ -573,7 +573,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   const mu=v.friction??0,muS=v.staticFriction??0,a=Math.tan(theta)<=muS?0:Math.max(0,g*(Math.sin(theta)-mu*Math.cos(theta)));
   const normal=m*g*Math.cos(theta),friction=a===0?m*g*Math.sin(theta):mu*normal;
   return [
-   "a=g(\\sin\\theta-\\mu_k\\cos\\theta)=("+n(g)+")[\\sin("+n(v.angle??0)+"^\\circ)-("+n(mu)+")\\cos("+n(v.angle??0)+"^\\circ)]="+qty(a,"m/s^2"),
+   a===0?"a=0\\quad(\\tan\\theta\\leq\\mu_s)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=("+n(g)+")[\\sin("+n(v.angle??0)+"^\\circ)-("+n(mu)+")\\cos("+n(v.angle??0)+"^\\circ)]="+qty(a,"m/s^2"),
    "\\sum F_{\\parallel}=ma=("+n(m)+"\\,\\mathrm{kg})("+n(a)+"\\,\\mathrm{m/s^2})="+qty(m*a,"N"),
    "N=mg\\cos\\theta=("+n(m)+")("+n(g)+")\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
    "f=\\mu_kN\\;(\\text{atau }f_s\\text{ saat diam})="+n(friction)+"\\,\\mathrm{N}",
@@ -588,7 +588,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   "a(t)=-\\omega^2x=-("+n(omega)+")^2("+n(p.x)+")="+qty(acceleration,"m/s^2"),
   "E_k=\\frac12mv^2=\\frac12("+n(m)+")("+n(p.speed)+")^2="+qty(p.kinetic,"J"),
   "E_p=\\frac12kx^2=\\frac12("+n(k)+")("+n(p.x)+")^2="+qty(p.potential,"J"),
-  "T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+n(m)+"}{"+n(k)+"}}="+qty(2*Math.PI*Math.sqrt(m/(k||1)),"s")
+  k>0?"T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+n(m)+"}{"+n(k)+"}}="+qty(2*Math.PI*Math.sqrt(m/k),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0"
  ][index];
 }
 function objectOptionsFor(id:LabId,language:Language):{value:string;label:string}[] {
@@ -1130,7 +1130,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
           <div className="timeline"><div><span>{w.time}</span><strong>{time.toFixed(2)} s <small>/ {duration.toFixed(2)} s</small></strong></div><input type="range" min="0" max={duration} step={duration/600} value={time} onChange={e=>seek(Number(e.target.value))}/></div>
           <div className="play-speeds">{[.5,1,2].map(v=><button key={v} className={speedFactor===v?"selected":""} onClick={()=>setSpeedFactor(v)}>{v}×</button>)}</div>
         </div>
-        <div className="measurement-area"><div className="measurement-heading"><span>03</span><strong>{w.values}</strong></div><div className="measurement-grid">{metrics.map(([label,value,unit],index)=>{const metricId=lab.id+":"+index;const expanded=expandedMetric===metricId;return <button type="button" className={expanded?"measurement expanded":"measurement"} key={metricId} onClick={()=>setExpandedMetric(expanded?null:metricId)} aria-expanded={expanded}><span>{label}</span><strong>{Number.isFinite(value)?value.toFixed(2):"—"} <small>{unit}</small></strong>{expanded&&<div className="measurement-equation"><Equation value={metricFormulaFor(lab.id,index,values,current,time,duration)} display/></div>}</button>;})}</div></div>
+        <div className="measurement-area"><div className="measurement-heading"><span>03</span><strong>{w.values}</strong></div><div className="measurement-grid">{metrics.map(([label,value,unit],index)=>{const metricId=lab.id+":"+index;const expanded=expandedMetric===metricId;return <button type="button" className={expanded?"measurement expanded":"measurement"} key={metricId} onClick={()=>setExpandedMetric(expanded?null:metricId)} aria-expanded={expanded}><span>{label}</span><strong>{Number.isFinite(value)?value.toFixed(2):"—"} <small>{unit}</small></strong>{expanded&&<div className="measurement-equation"><Equation value={metricFormulaFor(lab.id,index,values,current,time,duration,language)} display/></div>}</button>;})}</div></div>
         <div className="graph-footer"><span className="ready-dot"/>{w.status}<span className="footer-spacer"/><button onClick={exportCsv}><Download size={16}/>{w.export}</button><button onClick={()=>{reset();setGraphPan({x:0,y:0});setGraphZoom(1);}}><RotateCcw size={15}/>{w.resetView}</button>{notice&&<span className="notice"><Check size={15}/>{notice}</span>}</div>
       </section>
     </div>

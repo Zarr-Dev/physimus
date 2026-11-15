@@ -502,7 +502,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   return [
    "x(t)=x_0+v_0\\cos\\theta\\,t=0+"+qty(v0,"m/s")+"\\cos("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})="+qty(p.x,"m"),
    "y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2="+qty(h0,"m")+"+"+qty(v0,"m/s")+"\\sin("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})-\\frac12("+n(g)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})^2="+qty(p.y,"m"),
-   "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+n(p.vx)+"\\,\\mathrm{m/s})^2+("+n(p.vy)+"\\,\\mathrm{m/s})^2)="+qty(p.speed,"m/s"),
+   "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+n(p.vx)+"\\,\\mathrm{m/s})^2+("+n(p.vy)+"\\,\\mathrm{m/s})^2}="+qty(p.speed,"m/s"),
    "R=v_0\\cos\\theta\\,t_f=("+n(v0)+"\\,\\mathrm{m/s})\\cos("+n(angle)+"^\\circ)("+n(tf)+"\\,\\mathrm{s})="+qty(range,"m"),
    "H_{\\max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+n(h0)+"+\\frac{("+n(v0)+")^2\\sin^2("+n(angle)+"^\\circ)}{2("+n(g)+")}="+qty(peak,"m"),
    "t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}=\\frac{("+n(v0)+")\\sin("+n(angle)+"^\\circ)+\\sqrt{[("+n(v0)+")\\sin("+n(angle)+"^\\circ)]^2+2("+n(g)+")("+n(h0)+")}}{"+n(g)+"}="+qty(tf,"s")

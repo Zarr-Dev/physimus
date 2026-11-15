@@ -187,7 +187,7 @@ function equationToLatex(source:string){
  };
  return lhs+render(root);
 }
-const scalarVariableUnits:Record<string,string>={m:"kg",g:"m/s^2",a:"m/s^2",A:"m",v0:"m/s",omega:"rad/s",k:"N/m",theta:"rad",r:"m",f:"N",h:"m",x:"m",t:"s"};
+const scalarVariableUnits:Record<string,string>={m:"kg",mass:"kg",g:"m/s^2",a:"m/s^2",accel:"m/s^2",A:"m",v:"m/s",v0:"m/s",vx:"m/s",vy:"m/s",u:"m/s",omega:"rad/s",k:"N/m",theta:"rad",phi:"rad",r:"m",f:"N",F:"N",N:"N",h:"m",x:"m",x0:"m",d:"m",s:"m",t:"s",delta_t:"s",I:"kg\\,m^2",p:"kg\\,m/s"};
 function substitutedAstLatex(node:Node,vars:Vars):string{
  const num=(value:number)=>Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
  if(node.kind==="num")return num(node.n);
@@ -568,7 +568,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   if(id==="mechanical")return "E_m=E_k+E_p="+qty(current.energy,"J")+"+"+qty(current.potential,"J")+"="+qty(current.mechanical,"J");
   if(id==="momentum")return "p=m|\\vec v|=("+m+"\\,\\mathrm{kg})("+n(current.speed)+"\\,\\mathrm{m/s})="+qty(current.momentum,"kg\\,m/s");
   if(id==="force")return "|\\vec F|=m|\\vec a|=("+m+"\\,\\mathrm{kg})("+n(current.acceleration)+"\\,\\mathrm{m/s^2})="+qty(current.force,"N");
-  if(id==="weight")return W=mg=("+m+"\\,\\mathrm{kg})("+g+"\\,\\mathrm{m/s^2})="+qty(current.weight,"N");
+  if(id==="weight")return "W=mg=("+m+"\\,\\mathrm{kg})("+g+"\\,\\mathrm{m/s^2})="+qty(current.weight,"N");
   return "";
  };
  return <main className="sandbox-workspace">

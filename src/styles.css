@@ -1277,3 +1277,161 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .app-root[data-theme="dark"] .secondary-button:hover{background:#1b2a39;border-color:#4a6680}
 .app-root[data-theme="dark"] .canvas-area,
 .app-root[data-theme="dark"] .sandbox-canvas-wrap{background:#0c1118}
+
+
+/* Desmos-like equation authoring, contextual operator suggestions and switch-led objects. */
+.sandbox-math-palette{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 13px;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--panel-soft,#f7f9fc)}
+.sandbox-math-palette button{min-width:31px;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel,#fff);color:var(--ink,#32475d);font-family:"KaTeX_Main",serif;font-size:14px;font-weight:600}
+.sandbox-math-palette button:hover{border-color:#8db9e0;background:#edf6ff;color:#286da9}
+.sandbox-equation-row input{font-family:"DM Mono","SFMono-Regular",Consolas,monospace;font-size:13px;letter-spacing:.01em}
+.sandbox-equation-preview{min-height:42px;align-items:center}
+.sandbox-equation-preview>div{font-size:16px}
+.sandbox-math-suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 4px 4px}
+.sandbox-math-suggestions button{min-width:0;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;align-items:center;gap:3px 8px;padding:8px;border:1px solid #cdddeb;border-radius:8px;background:#f5f9fd;color:#3d5d7e;text-align:left}
+.sandbox-math-suggestions button>span{grid-row:1/3;min-width:45px;text-align:center;font-size:18px}
+.sandbox-math-suggestions button strong{font-size:10px}
+.sandbox-math-suggestions button small{font-size:9px;color:#8598aa;overflow-wrap:anywhere}
+.sandbox-math-suggestions button:hover{background:#eaf4ff;border-color:#90bce4}
+.sandbox-object-switch-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0}
+.sandbox-object-switch-grid .sandbox-toggle{min-width:0;display:flex;align-items:center;justify-content:space-between;gap:7px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel,#fff);color:var(--ink,#344d66);font-size:10px;text-align:left}
+.sandbox-object-switch-grid .sandbox-toggle span{flex:0 0 auto;padding:3px 6px;border-radius:12px;background:#e8edf2;color:#728499;font-size:8px;font-weight:800}
+.sandbox-object-switch-grid .sandbox-toggle.active{border-color:#9fc3e5;background:#f0f7ff;color:#2d6ea9}
+.sandbox-object-switch-grid .sandbox-toggle.active span{background:#d8ebfc;color:#2268a6}
+.sandbox-object-advanced{margin-top:12px;border:1px solid var(--line);border-radius:9px;background:var(--panel-soft,#f8fafc)}
+.sandbox-object-advanced summary{padding:10px 12px;color:var(--ink,#40576d);font-size:11px;font-weight:750;cursor:pointer}
+.sandbox-object-advanced[open]{padding-bottom:9px}
+.sandbox-object-advanced .sandbox-property-slider{display:block;padding:7px 12px}
+.sandbox-property-slider>span{display:flex;justify-content:space-between;gap:8px;color:var(--muted,#788b9f);font-size:10px}
+.sandbox-property-slider output{color:var(--ink,#38516a);font-size:11px;font-weight:750}
+.sandbox-property-slider input[type="range"]{width:100%;margin:8px 0 3px;accent-color:#478ac2}
+.sandbox-object-properties>p{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted,#7d8ea0);font-size:10px;line-height:1.6}
+.sandbox-example-list button{min-height:68px}
+.sandbox-example-list button code{white-space:normal;overflow-wrap:anywhere}
+
+/* Structured high-school learning modules. */
+.lesson-page{max-width:1600px}
+.lesson-layout{display:grid;grid-template-columns:230px minmax(0,1fr) 300px;align-items:start;gap:18px;margin-top:26px}
+.lesson-topic-nav,.lesson-experiment{position:sticky;top:88px;max-height:calc(100vh - 112px);overflow:auto;border:1px solid var(--line);border-radius:13px;background:var(--panel,#fff);box-shadow:0 8px 28px #20364a0b}
+.lesson-nav-heading{padding:15px 15px 10px;color:var(--muted,#7a8ea2);font-size:9px;font-weight:850;letter-spacing:.12em}
+.lesson-topic-nav button{width:100%;display:grid;grid-template-columns:25px minmax(0,1fr);align-items:center;gap:9px;padding:11px 13px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink,#364e66);text-align:left;cursor:pointer}
+.lesson-topic-nav button>span{color:#9aabba;font-size:10px;font-weight:800}
+.lesson-topic-nav button strong{font-size:11px;line-height:1.4;font-weight:650}
+.lesson-topic-nav button:hover{background:var(--panel-soft,#f6f9fc)}
+.lesson-topic-nav button.active{background:#eef6fd;color:#276fae;box-shadow:inset 3px 0 #438bc8}
+.lesson-content{min-width:0}
+.lesson-topic-heading{padding:4px 2px 15px}
+.lesson-topic-heading h2{margin:7px 0 9px;color:var(--ink,#243a51);font-size:clamp(23px,2.4vw,33px);line-height:1.2;letter-spacing:-.025em}
+.lesson-topic-heading p{max-width:820px;color:var(--muted,#71869b);font-size:13px;line-height:1.75}
+.lesson-goals{margin:8px 0 19px;padding:14px 17px;border:1px solid #cfe0ee;border-radius:10px;background:#f5f9fd}
+.lesson-goals strong{font-size:11px;color:#426888}
+.lesson-goals ul{display:grid;gap:7px;margin:9px 0 0;padding-left:19px;color:#59748d;font-size:11px;line-height:1.55}
+.lesson-chapter-tabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:4px}
+.lesson-chapter-tabs button{flex:1 0 0;min-width:150px;display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel,#fff);color:var(--muted,#70849a);font-size:10px;font-weight:700;text-align:left}
+.lesson-chapter-tabs button span{color:#93a5b5;font-size:9px}
+.lesson-chapter-tabs button.active{border-color:#8eb8dc;background:#eef6fd;color:#2f6eaa}
+.lesson-chapter-card{padding:20px;border:1px solid var(--line);border-radius:13px;background:var(--panel,#fff);box-shadow:0 8px 25px #20364a08}
+.lesson-chapter-title>span{color:#8ca0b3;font-size:9px;font-weight:850;letter-spacing:.1em}
+.lesson-chapter-title h3{margin:7px 0 12px;color:var(--ink,#2b425b);font-size:20px;line-height:1.3}
+.lesson-intro-text{color:var(--muted,#62798f);font-size:12px;line-height:1.8}
+.lesson-diagram{display:block;width:100%;height:auto;max-height:230px;margin:14px 0;border:1px solid var(--line);border-radius:10px;background:var(--plot-bg,#fbfdff)}
+.lesson-diagram text{fill:var(--muted,#6d8298);font-size:11px;font-family:"DM Sans",sans-serif}
+.diagram-ground,.diagram-tick,.diagram-edge,.diagram-wall{stroke:var(--plot-axis,#8399ac);stroke-width:2;fill:none}
+.diagram-tick{stroke-width:1}
+.diagram-trajectory{stroke:#4388c6;stroke-width:3;fill:none;stroke-linecap:round}
+.diagram-guide{stroke:#d49a49;stroke-dasharray:4 4;stroke-width:1.5}
+.diagram-vector{stroke:#d18c3c;stroke-width:2.5;fill:none;stroke-linecap:round}
+.diagram-vector-alt{stroke:#4c9c84;stroke-width:2.5;fill:none;stroke-linecap:round}
+.diagram-object{fill:#4c91c9;stroke:#e2f1ff;stroke-width:2}
+.diagram-block{fill:#d7a15b;stroke:#986932;stroke-width:1.5}
+.diagram-centre{fill:#6a8299}
+.diagram-orbit{fill:none;stroke:#9b8acb;stroke-width:2.5;stroke-dasharray:6 5}
+.diagram-plane{fill:#dfe8f0;stroke:none}
+.diagram-spring{fill:none;stroke:#8e7ac8;stroke-width:3;stroke-linejoin:round}
+.lesson-steps{margin:18px 0}
+.lesson-steps>strong{display:block;margin-bottom:10px;color:var(--ink,#405b73);font-size:12px}
+.lesson-step{display:grid;grid-template-columns:25px minmax(0,1fr);gap:10px;align-items:start;padding:9px 0;border-top:1px solid var(--line)}
+.lesson-step>span{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#e9f2f9;color:#3f79ab;font-size:10px;font-weight:850}
+.lesson-step p{color:var(--muted,#657c92);font-size:11px;line-height:1.7}
+.lesson-formula-block{margin:14px 0;padding:14px 12px;border:1px solid #d3e2ef;border-radius:9px;background:#f5f9fd;overflow-x:auto}
+.lesson-formula-block>span{display:block;margin-bottom:8px;color:#7e98b0;font-size:8px;font-weight:850;letter-spacing:.12em}
+.lesson-formula-block .math-display{color:#315f87;font-size:17px}
+.lesson-takeaway{padding:13px 15px;border-left:3px solid #d7a254;border-radius:0 8px 8px 0;background:#fff9ef}
+.lesson-takeaway strong{color:#986b31;font-size:11px}
+.lesson-takeaway p{margin-top:5px;color:#856d4d;font-size:11px;line-height:1.65}
+.lesson-chapter-nav{display:flex;justify-content:space-between;gap:9px;margin:12px 0 23px}
+.lesson-chapter-nav button{min-height:38px;font-size:10px}
+.lesson-practice-intro{margin:22px 0 11px}
+.lesson-practice-intro h3{margin:5px 0;color:var(--ink,#2c435a);font-size:19px}
+.lesson-practice-intro p{color:var(--muted,#788a9b);font-size:11px;line-height:1.6}
+.lesson-experiment{padding:15px}
+.lesson-experiment-head h3{margin:6px 0;color:var(--ink,#2f475f);font-size:16px}
+.lesson-experiment-head p{color:var(--muted,#7a8ea0);font-size:10px;line-height:1.6}
+.lesson-experiment .lesson-diagram{max-height:175px;margin:12px 0}
+.lesson-experiment-slider{display:block;margin:14px 0;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--panel-soft,#f8fafc)}
+.lesson-experiment-slider>span{display:flex;justify-content:space-between;gap:8px;color:var(--muted,#71869a);font-size:10px}
+.lesson-experiment-slider strong{color:var(--ink,#344d66);font-size:11px}
+.lesson-experiment-slider input{width:100%;margin:12px 0 5px;accent-color:#428bc6}
+.lesson-experiment-slider small{display:flex;justify-content:space-between;color:#9aabba;font-size:9px}
+.lesson-result{padding:13px;border:1px solid #cfe0ef;border-radius:10px;background:#f2f8fd}
+.lesson-result>span{display:block;color:#6f8ba4;font-size:10px;font-weight:700}
+.lesson-result>strong{display:block;margin:4px 0;color:#2c6fa9;font-size:22px;font-variant-numeric:tabular-nums}
+.lesson-result-formula{overflow-x:auto;padding:9px 0;border-top:1px solid #dce8f2;border-bottom:1px solid #dce8f2;color:#3e6f98}
+.lesson-result-formula .math-display{font-size:12px}
+.lesson-result>p{margin-top:9px;color:#698198;font-size:10px;line-height:1.6}
+.lesson-assumption{margin-top:12px;color:var(--soft,#91a0ad);font-size:9px;line-height:1.6}
+@media(max-width:1280px){.lesson-layout{grid-template-columns:210px minmax(0,1fr)}.lesson-experiment{position:static;grid-column:2;max-height:none;display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-experiment-head{grid-column:1/-1}.lesson-experiment .lesson-diagram{max-height:180px}}
+@media(max-width:850px){.lesson-layout{grid-template-columns:minmax(0,1fr)}.lesson-topic-nav{position:static;max-height:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.lesson-nav-heading{grid-column:1/-1}.lesson-topic-nav button{border-top:1px solid var(--line)}.lesson-experiment{grid-column:1}}
+@media(max-width:560px){.lesson-topic-nav{grid-template-columns:1fr 1fr}.lesson-topic-nav button{grid-template-columns:20px minmax(0,1fr);padding:9px}.lesson-topic-nav button strong{font-size:9px}.lesson-chapter-card{padding:14px}.lesson-chapter-tabs button{min-width:125px}.lesson-experiment{display:block}.lesson-diagram{max-height:180px}.lesson-practice-intro h3{font-size:17px}}
+
+/* Dark-theme equivalents for the learning course and symbol editor. */
+.app-root[data-theme="dark"] .lesson-topic-nav,
+.app-root[data-theme="dark"] .lesson-experiment,
+.app-root[data-theme="dark"] .lesson-chapter-card{background:#10151d;border-color:#2a3745}
+.app-root[data-theme="dark"] .lesson-topic-nav button{color:#d3e0ec;border-color:#263342}
+.app-root[data-theme="dark"] .lesson-topic-nav button:hover{background:#172432}
+.app-root[data-theme="dark"] .lesson-topic-nav button.active{background:#1a3044;color:#b9ddfb;box-shadow:inset 3px 0 #5796ca}
+.app-root[data-theme="dark"] .lesson-topic-heading h2,
+.app-root[data-theme="dark"] .lesson-chapter-title h3,
+.app-root[data-theme="dark"] .lesson-experiment-head h3,
+.app-root[data-theme="dark"] .lesson-practice-intro h3{color:#e5edf5}
+.app-root[data-theme="dark"] .lesson-goals,
+.app-root[data-theme="dark"] .lesson-formula-block,
+.app-root[data-theme="dark"] .lesson-result{background:#142333;border-color:#31495e}
+.app-root[data-theme="dark"] .lesson-goals strong,
+.app-root[data-theme="dark"] .lesson-formula-block .math-display{color:#b7d8f5}
+.app-root[data-theme="dark"] .lesson-goals ul,
+.app-root[data-theme="dark"] .lesson-intro-text,
+.app-root[data-theme="dark"] .lesson-step p{color:#a9bac9}
+.app-root[data-theme="dark"] .lesson-step{border-color:#273747}
+.app-root[data-theme="dark"] .lesson-step>span{background:#21394f;color:#a9d2f3}
+.app-root[data-theme="dark"] .lesson-takeaway{background:#2a241a;border-color:#c3914c}
+.app-root[data-theme="dark"] .lesson-takeaway strong{color:#e5bd82}
+.app-root[data-theme="dark"] .lesson-takeaway p{color:#d8c4a5}
+.app-root[data-theme="dark"] .lesson-chapter-tabs button{background:#141e29;border-color:#303f50;color:#aabccd}
+.app-root[data-theme="dark"] .lesson-chapter-tabs button.active{background:#1b3449;border-color:#496a87;color:#c4e2fb}
+.app-root[data-theme="dark"] .lesson-experiment-slider{background:#141e29;border-color:#334354}
+.app-root[data-theme="dark"] .lesson-experiment-slider strong{color:#e1ebf4}
+.app-root[data-theme="dark"] .lesson-result>strong{color:#a9d7fb}
+.app-root[data-theme="dark"] .lesson-result-formula{border-color:#33495d;color:#c3def6}
+.app-root[data-theme="dark"] .lesson-result>p{color:#afc2d2}
+.app-root[data-theme="dark"] .lesson-diagram{background:#0c141e;border-color:#334354}
+.app-root[data-theme="dark"] .diagram-ground,
+.app-root[data-theme="dark"] .diagram-tick,
+.app-root[data-theme="dark"] .diagram-edge,
+.app-root[data-theme="dark"] .diagram-wall{stroke:#8297ab}
+.app-root[data-theme="dark"] .diagram-plane{fill:#26384a}
+.app-root[data-theme="dark"] .lesson-diagram text{fill:#c1d0dd}
+.app-root[data-theme="dark"] .sandbox-math-palette{background:#101923;border-color:#304050}
+.app-root[data-theme="dark"] .sandbox-math-palette button{background:#172330;color:#d6e4f0;border-color:#38495b}
+.app-root[data-theme="dark"] .sandbox-math-palette button:hover{background:#203b52;border-color:#5482aa;color:#d9efff}
+.app-root[data-theme="dark"] .sandbox-math-suggestions button{background:#172635;border-color:#3a5166;color:#c5dbee}
+.app-root[data-theme="dark"] .sandbox-math-suggestions button:hover{background:#203a50;border-color:#5a85aa}
+.app-root[data-theme="dark"] .sandbox-math-suggestions button small{color:#9db0c1}
+.app-root[data-theme="dark"] .sandbox-object-switch-grid .sandbox-toggle{background:#172330;border-color:#334658;color:#ccd9e5}
+.app-root[data-theme="dark"] .sandbox-object-switch-grid .sandbox-toggle span{background:#2b3947;color:#a6b6c5}
+.app-root[data-theme="dark"] .sandbox-object-switch-grid .sandbox-toggle.active{background:#1b3549;border-color:#4a7192;color:#d6eafa}
+.app-root[data-theme="dark"] .sandbox-object-switch-grid .sandbox-toggle.active span{background:#2c5270;color:#d4ebff}
+.app-root[data-theme="dark"] .sandbox-object-advanced{background:#111b26;border-color:#354759}
+.app-root[data-theme="dark"] .sandbox-object-advanced summary{color:#c8d8e6}
+.app-root[data-theme="dark"] .sandbox-property-slider output{color:#d9e8f5}
+.app-root[data-theme="dark"] .lesson-page .practice-panel{background:#101923;border-color:#2e3c4a}

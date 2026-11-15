@@ -253,7 +253,7 @@ function tLabel(language: Language, lab: Lab) {
 }
 
 function Equation({ value, display = false }: { value: string; display?: boolean }) {
-  const html = useMemo(() => katex.renderToString(value, {throwOnError:false, displayMode:display}), [value,display]);
+  const html = useMemo(() => {try{return katex.renderToString(value, {throwOnError:false, strict:"ignore", trust:false, displayMode:display});}catch{return `<span class="math-render-error">${value.replace(/[&<>]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[char]??char))}</span>`;}}, [value,display]);
   return <span className={display ? "math-display" : "math-inline"} dangerouslySetInnerHTML={{__html:html}} />;
 }
 
@@ -668,7 +668,7 @@ function downloadFile(name:string,data:string,mime:string) {
   window.setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
-function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Language;onBack:()=>void;onChoose:(id:LabId)=>void}) {
+function Laboratory({labId,language,onBack,onChoose,theme}:{labId:LabId;language:Language;onBack:()=>void;onChoose:(id:LabId)=>void;theme:Theme}) {
   const lab=labs.find(item=>item.id===labId)??labs[0];
   const w=words[language];
   const [values,setValues]=useState<Record<string,number>>(()=>Object.fromEntries(lab.params.map(p=>[p.key,p.initial])));
@@ -726,7 +726,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.setTransform(dpr,0,0,dpr,0,0);
       const width=rect.width,height=rect.height,left=76,right=34,top=36,bottom=65;
       const pw=width-left-right,ph=height-top-bottom;
-      ctx.clearRect(0,0,width,height);ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);
+      const plotStyle=getComputedStyle(canvas),plotBg=plotStyle.getPropertyValue("--plot-bg").trim()||(document.documentElement.dataset.theme==="dark"?"#111d2b":"#fff");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
       const plotted=graphMode==="trajectory"?points:points.map((p,i)=>{
         const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan((values.angle??0)*Math.PI/180)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin((values.angle??0)*Math.PI/180)-(values.friction??0)*Math.cos((values.angle??0)*Math.PI/180)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
         return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
@@ -868,7 +868,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
           drawArrow(ctx,px,py,px+dx*scale*pw/sx,py-dy*scale*ph/sy,color);
         };
         const tag=(label:string,color:string,x:number,y:number)=>{
-          ctx.fillStyle=color;ctx.font="700 10px DM Sans, sans-serif";ctx.textAlign="left";ctx.fillText(label,x,y);
+          ctx.fillStyle=color;ctx.font="700 14px DM Sans, sans-serif";ctx.textAlign="left";ctx.lineWidth=3;ctx.strokeStyle=theme==="dark"?"#111d2b":"#fff";ctx.strokeText(label,x,y);ctx.fillStyle=color;ctx.fillText(label,x,y);
         };
         if(lab.id==="projectile"){
           vector(current.vx,0,"#347fd5",current.speed);vector(0,current.vy,"#4da786",current.speed);vector(current.vx,current.vy,"#d99a46",current.speed);
@@ -916,7 +916,7 @@ function Laboratory({labId,language,onBack,onChoose}:{labId:LabId;language:Langu
       ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2,objectOrientation]);
+  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2,objectOrientation,theme]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
@@ -1052,8 +1052,8 @@ export default function App() {
   return <div className="app-root" data-theme={theme} data-motion={motionLevel} style={{"--font-scale":fontScale} as CSSProperties}>
     <Header page={page} setPage={setPage} language={language} onLanguage={setLanguage} theme={theme} onTheme={setTheme} fontScale={fontScale} onFontScale={setFontScale} motionLevel={motionLevel} onMotionLevel={setMotionLevel}/>
     {page==="discover"&&<Discover language={language} onOpen={openLab}/>}
-    {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} onBack={()=>setPage("discover")} onChoose={openLab}/>}
+    {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} theme={theme} onBack={()=>setPage("discover")} onChoose={openLab}/>}
     {page==="learn"&&<Learn language={language} onOpen={openLab}/>}
-    {page==="sandbox"&&<PhysicsSandbox language={language}/>}
+    {page==="sandbox"&&<PhysicsSandbox language={language} theme={theme}/>}
   </div>;
 }

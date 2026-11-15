@@ -1514,3 +1514,44 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 }
 .sandbox-canvas-wrap canvas{cursor:crosshair;touch-action:none}
 .sandbox-canvas-wrap canvas:active{cursor:grabbing}
+
+
+/* Scalar result cards are controls: keep them readable and expandable. */
+.sandbox-scalar-result{
+  width:calc(100% - 42px);
+  min-height:36px;
+  border:0;
+  border-left:2px solid #68a58e;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+  flex-wrap:wrap;
+}
+.sandbox-scalar-result:hover{background:#e8f3ed}
+.sandbox-scalar-result:focus-visible{outline:2px solid #6fa78f;outline-offset:2px}
+.sandbox-scalar-result.expanded{align-items:flex-start}
+.sandbox-scalar-result>span{flex:1 1 auto}
+.sandbox-scalar-result>strong{flex:0 0 auto}
+.sandbox-scalar-result>small{
+  display:block;
+  flex:1 0 100%;
+  min-width:0;
+  margin-top:5px;
+  padding:8px 2px 2px;
+  border-top:1px solid #d9e8df;
+  color:#3f725a;
+  overflow-x:auto;
+  white-space:nowrap;
+  font-size:13px;
+}
+.app-root[data-theme="dark"] .sandbox-scalar-result{
+  background:#14251f;
+  border-left-color:#5b9f83;
+}
+.app-root[data-theme="dark"] .sandbox-scalar-result:hover{background:#193329}
+.app-root[data-theme="dark"] .sandbox-scalar-result>small{border-color:#315342;color:#b7ddca}
+.sandbox-math-suggestions button{cursor:pointer}
+.sandbox-math-suggestions button:focus-visible{outline:2px solid #6da5d2;outline-offset:2px}
+.sandbox-equation-preview{min-width:0}
+.sandbox-equation-preview>div{overflow-x:auto}

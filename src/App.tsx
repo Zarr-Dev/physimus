@@ -228,6 +228,11 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
 
 };
 
+function calcVariableSymbol(key:string) {
+ const symbols:Record<string,string>={v0:"v_0",theta:"\\\\theta",h0:"h_0",g:"g",x0:"x_0",v:"v",t:"t",dx:"\\\\Delta x",dt:"\\\\Delta t",a:"a",omega:"\\\\omega",r:"r",m:"m",k:"k",mu:"\\\\mu_k",e:"e",m1:"m_1",m2:"m_2",u1:"u_1",u2:"u_2",x:"x"};
+ return symbols[key]??key;
+}
+
 function calculatorMath(value:string) {
  let out=value
   .replace(/θ_c/g,"\\theta_c").replace(/θ/g,"\\theta").replace(/ω/g,"\\omega")
@@ -299,7 +304,7 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
      const value=raw[field.key]??String(field.initial);
      const fieldInvalid=value.trim()===""||!Number.isFinite(Number(value))||(field.min!==undefined&&Number(value)<field.min)||(field.max!==undefined&&Number(value)>field.max);
      return <label key={field.key}>
-      <span>{language==="ID"?field.labelID:field.labelEN}<small>{field.unit}</small></span>
+      <span className="equation-calc-field-label">{language==="ID"?field.labelID:field.labelEN}<Equation value={calcVariableSymbol(field.key)}/><small>{field.unit}</small></span>
       <input type="number" inputMode="decimal" min={field.min} max={field.max} step={field.step??"any"} value={value} aria-invalid={fieldInvalid} onChange={event=>setInputs(old=>({...old,[active.id]:{...(old[active.id]??{}),[field.key]:event.target.value}}))}/>
       {(field.min!==undefined||field.max!==undefined)&&<small className="equation-calc-range">{field.min!==undefined&&field.max!==undefined?`${field.min} – ${field.max}`:field.min!==undefined?`≥ ${field.min}`:`≤ ${field.max}`}</small>}
      </label>;

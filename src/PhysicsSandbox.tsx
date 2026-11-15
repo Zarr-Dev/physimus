@@ -182,7 +182,7 @@ function equationPreviewHtml(source:string){
  const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true} as const;
  try{return katex.renderToString(equationToLatex(source),options);}
  catch{
-  const token=source.trim().match(/(int|sum|diff|sqrt|sin|cos|tan|ln|log)$/i)?.[1]?.toLowerCase();
+  let token=source.trim().match(/(int|sum|diff|sqrt|sin|cos|tan|ln|log)$/i)?.[1]?.toLowerCase();if(source.trim().endsWith("∫"))token="int";if(/[Σ∑]$/.test(source.trim()))token="sum";
   const pending:Record<string,string>={int:"\\int\\,\\square",sum:"\\sum\\limits_{i=1}^{n}\\square",diff:"\\frac{d}{dx}\\square",sqrt:"\\sqrt{\\square}",sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"};
   return katex.renderToString(token&&pending[token]?pending[token]:"\\text{Continue the expression}",options);
  }
@@ -194,7 +194,7 @@ function equationSuggestions(source:string,language:Language):EquationSuggestion
  const token=match[1].toLowerCase(),labels=language==="ID";
  const catalog:Record<string,EquationSuggestion[]> = {
   int:[
-   {title:labels?"Integral tak tentu":"Indefinite integral",description:"\\\\int f(x)\\\\,dx",insert:"int(x^2, x)",trigger:token},
+   {title:labels?"Integral akumulasi 0 sampai x":"Accumulation integral from 0 to x",description:"\\\\int_0^x f(u)\\\\,du",insert:"int(u^2, u, 0, x)",trigger:token},
    {title:labels?"Integral tentu":"Definite integral",description:"\\\\int_a^b f(x)\\\\,dx",insert:"int(x^2, x, 0, 1)",trigger:token}
   ],
   sum:[{title:labels?"Notasi sigma / jumlah":"Sigma summation",description:"\\\\sum_{i=1}^{n}f(i)",insert:"sum(i^2, i, 1, 5)",trigger:token}],
@@ -424,7 +424,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
           <div className="sandbox-object-switch-grid">
             <Toggle label={language==="ID"?"Tampilkan objek":"Show object"} value={selectedSceneObject.enabled} onClick={()=>updateSceneObject(selectedSceneObject.id,"enabled",!selectedSceneObject.enabled)}/>
             <Toggle label={language==="ID"?"Label nama/massa":"Name and mass label"} value={selectedSceneObject.showLabel} onClick={()=>updateSceneObject(selectedSceneObject.id,"showLabel",!selectedSceneObject.showLabel)}/>
-            <Toggle label={language==="ID"?"Kunci posisi":"Pin position"} value={selectedSceneObject.pinned} onClick={()=>updateSceneObject(selectedSceneObject.id,"pinned",!selectedSceneObject.pinned)}/>
+            <Toggle label={language==="ID"?"Tandai jangkar visual":"Mark visual anchor"} value={selectedSceneObject.pinned} onClick={()=>updateSceneObject(selectedSceneObject.id,"pinned",!selectedSceneObject.pinned)}/>
             <Toggle label={language==="ID"?"Gravitasi aktif":"Gravity enabled"} value={selectedSceneObject.gravityEnabled} onClick={()=>updateSceneObject(selectedSceneObject.id,"gravityEnabled",!selectedSceneObject.gravityEnabled)}/>
             {(selectedSceneObject.kind==="spring"||selectedSceneObject.kind==="rope")&&<Toggle label={language==="ID"?"Elemen elastis aktif":"Elastic element active"} value={selectedSceneObject.springEnabled} onClick={()=>updateSceneObject(selectedSceneObject.id,"springEnabled",!selectedSceneObject.springEnabled)}/>}
             {(selectedSceneObject.kind==="pulley"||selectedSceneObject.kind==="wheel")&&<Toggle label={language==="ID"?"Rotasi aktif":"Rotation enabled"} value={selectedSceneObject.rotationEnabled} onClick={()=>updateSceneObject(selectedSceneObject.id,"rotationEnabled",!selectedSceneObject.rotationEnabled)}/>}

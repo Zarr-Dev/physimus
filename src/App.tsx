@@ -1427,7 +1427,7 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
   </svg>;
  }
  if(id==="collision"){
-  const e=value,m1=2,m2=2,u1=6,u2=0,v1=3*(1-e),v2=3*(1+e);
+   const e=value,m1=2,m2=2,u1=6,u2=0,v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
   const x1=stage===0?100:stage===1?165:stage===2?100:100;
   const x2=stage===0?280:stage===1?205:stage===2?285:285;
   const speed1=stage===2?Math.abs(v1)*12:stage===0?u1*10:0;

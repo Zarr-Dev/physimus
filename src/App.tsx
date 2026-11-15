@@ -95,7 +95,7 @@ const labs: Lab[] = [
   {
     id: "collision", category: "MOMENTUM & IMPULS", title: "Tumbukan Satu Dimensi", subtitle: "One-Dimensional Collisions",
     description: "Bandingkan tumbukan lenting sempurna hingga tidak lenting. Amati kekekalan momentum, impuls, koefisien restitusi, dan perubahan energi kinetik dua benda.",
-    formula: String.raw`m_1u_1+m_2u_2=m_1v_1+m_2v_2,\quad e=\\frac{v_2-v_1}{u_1-u_2}`,
+    formula: String.raw`m_1u_1+m_2u_2=m_1v_1+m_2v_2,\quad e=\frac{v_2-v_1}{u_1-u_2}`,
     question: "Bagaimana koefisien restitusi memengaruhi kecepatan akhir dan energi kinetik setelah tumbukan?",
     params: [
       {key:"mass1",label:"Massa benda 1",min:.5,max:10,step:.1,unit:"kg",initial:2},
@@ -384,7 +384,11 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const energyAcceleration=energyStaticHolds?0:g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
   if(lab.id==="energy"&&energyAcceleration>0) duration=Math.sqrt(2*(p("height")/Math.sin(energyAngle))/energyAcceleration);
   if(lab.id==="spring") duration=2*Math.PI/Math.sqrt(p("spring")/p("mass"))*2;
-  const count=240;
+  if(lab.id==="collision"){
+    const collision=collisionResults(values);
+    if(Number.isFinite(collision.collisionTime))duration=Math.max(duration,collision.collisionTime+Math.max(2,Math.min(8,1/Math.max(Math.abs(collision.v2-collision.v1),.5))));
+  }
+  const count=Math.min(1800,Math.max(240,Math.ceil(duration*24)));
   const points:Point[]=[];
   const angle=p("angle")*Math.PI/180;
   const omega=lab.id==="spring"?Math.sqrt(p("spring")/p("mass")):p("omega");
@@ -1042,7 +1046,14 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   },[]);
 
   const changeParam=(key:string,value:number)=>{
-    setValues(prev=>({...prev,[key]:value}));timeRef.current=0;setTime(0);setPlaying(false);setGraphPan({x:0,y:0});setGraphZoom(1);setExpandedMetric(null);
+    setValues(prev=>{
+      const next={...prev,[key]:value};
+      if((lab.id==="incline"||lab.id==="energy")&&typeof next.friction==="number"&&typeof next.staticFriction==="number"){
+        if(key==="friction"&&next.friction>next.staticFriction)next.staticFriction=next.friction;
+        if(key==="staticFriction"&&next.staticFriction<next.friction)next.friction=next.staticFriction;
+      }
+      return next;
+    });timeRef.current=0;setTime(0);setPlaying(false);setGraphPan({x:0,y:0});setGraphZoom(1);setExpandedMetric(null);
   };
   const reset=()=>{timeRef.current=0;setTime(0);setPlaying(false);};
   const togglePlay=()=>{
@@ -1074,6 +1085,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
           if(typeof n!=="number"||!Number.isFinite(n))throw new Error("Invalid parameter");
           next[param.key]=Math.max(param.min,Math.min(param.max,n));
         }
+        if((lab.id==="incline"||lab.id==="energy")&&typeof next.friction==="number"&&typeof next.staticFriction==="number"&&next.friction>next.staticFriction)next.friction=next.staticFriction;
         setValues(next);reset();setNotice(words[language].projectLoaded);
       }catch{setNotice(words[language].projectError);}
       input.value="";

@@ -558,7 +558,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="energy"){
-  const h0=v.height??0,mu=v.friction??0,alpha=Math.PI/6,staticHolds=Math.tan(alpha)<=(v.staticFriction??0),a=staticHolds?0:g*(Math.sin(alpha)-mu*Math.cos(alpha)),distance=Math.hypot(p.x,(h0-p.y)/Math.tan(alpha));
+  const h0=v.height??0,mu=v.friction??0,alpha=Math.PI/6,staticHolds=Math.tan(alpha)<=(v.staticFriction??0),a=staticHolds?0:g*(Math.sin(alpha)-mu*Math.cos(alpha)),distance=Math.hypot(p.x,h0-p.y);
   const dissipated=Math.max(0,m*g*h0-p.kinetic-p.potential);
   return [
    "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),

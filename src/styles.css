@@ -1032,7 +1032,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 }
 .lab-studio.focus-mode>.lab-topic-sidebar{display:none!important}
 .lab-studio.focus-mode>.control-drawer{
-  display:flex!important;
+  display:grid!important;
+  grid-template-columns:58px minmax(0,1fr);
   grid-column:1;
   grid-row:1;
   min-width:0;
@@ -1786,7 +1787,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 }
 @media(max-width:760px){
  .lab-studio.focus-mode{display:flex;flex-direction:column}
- .lab-studio.focus-mode>.control-drawer{max-height:none;min-height:0;border-right:0;border-bottom:1px solid var(--line)}
+ .lab-studio.focus-mode>.control-drawer{display:grid!important;grid-template-columns:minmax(0,1fr);max-height:none;min-height:0;border-right:0;border-bottom:1px solid var(--line)}
+ .lab-studio.focus-mode>.control-drawer .drawer-rail{flex-direction:row;justify-content:space-around;gap:4px;padding:8px;border-right:0;border-bottom:1px solid var(--line)}
+ .lab-studio.focus-mode>.control-drawer .drawer-rail button{width:auto;min-width:54px;min-height:48px;flex:1}
+ .lab-studio.focus-mode>.control-drawer .drawer-content{max-height:280px;padding:14px}
  .lab-studio.focus-mode>.graph-panel{display:flex;flex-direction:column}
  .lab-studio.focus-mode .canvas-area{height:58vh;min-height:400px}
  .equation-calculator-panel{padding:15px}

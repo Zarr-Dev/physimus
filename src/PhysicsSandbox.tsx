@@ -23,6 +23,14 @@ function tokenize(source:string):string[] {
   [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\sigma\b/gi,"sigma"],[/\\Sigma\b/g,"sum"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\sum\b/gi,"sum"],[/\\prod\b/gi,"prod"],[/\\int\b/gi,"int"],[/\\frac\b/gi,"frac"],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
   [/[θϑ]/g,"theta"],[/[ωΩ]/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/[γΓ]/g,"gamma"],[/[δΔ]/g,"delta"],[/[εϵ]/g,"epsilon"],[/ζ/g,"zeta"],[/η/g,"eta"],[/κ/g,"kappa"],[/λ/g,"lambda"],[/μ/g,"mu"],[/ν/g,"nu"],[/ξ/g,"xi"],[/π/g,"pi"],[/ρ/g,"rho"],[/[σς]/g,"sigma"],[/τ/g,"tau"],[/[φϕ]/g,"phi"],[/χ/g,"chi"],[/ψ/g,"psi"],[/[Σ∑]/g,"sum"],[/∏/g,"prod"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]
  ];
+ source=source
+  .replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g,"frac($1,$2)")
+  .replace(/\\sqrt\s*\{([^{}]+)\}/g,"sqrt($1)")
+  .replace(/\\cbrt\s*\{([^{}]+)\}/g,"cbrt($1)")
+  .replace(/\\mathrm\s*\{([a-zA-Z]+)\}/g,"$1")
+  .replace(/\\(?:left|right)\b/g,"")
+  .replace(/\b([a-zA-Z]+)_\{([a-zA-Z0-9]+)\}/g,"$1_$2")
+  .replace(/\^\{([^{}]+)\}/g,"^($1)");
  source=aliases.reduce((value,[pattern,replacement])=>value.replace(pattern,replacement),source);
  const superscripts:Record<string,string>={"⁰":"^0","¹":"^1","²":"^2","³":"^3","⁴":"^4","⁵":"^5","⁶":"^6","⁷":"^7","⁸":"^8","⁹":"^9"};
  const subscripts:Record<string,string>={"₀":"_0","₁":"_1","₂":"_2","₃":"_3","₄":"_4","₅":"_5","₆":"_6","₇":"_7","₈":"_8","₉":"_9"};

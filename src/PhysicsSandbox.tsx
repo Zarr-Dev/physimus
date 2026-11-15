@@ -280,15 +280,20 @@ function dimensionOf(node:Node):Dimension|null{
   return a.every((value,index)=>Math.abs(value-b[index])<1e-9)?a:null;
  }
  const name=node.name,args=node.args,dims=args.map(dimensionOf);
- if(name==="abs"||name==="floor"||name==="ceil"||name==="round"||name==="sign")return dims[0]??null;
+ if(name==="abs"||name==="floor"||name==="ceil"||name==="round")return dims[0]??null;
+ if(name==="sign")return dims[0]?zero:null;
  if(name==="frac"&&dims[0]&&dims[1])return subtractDimension(dims[0],dims[1]);
  if(name==="sqrt"&&dims[0])return scaleDimension(dims[0],.5);
  if(name==="cbrt"&&dims[0])return scaleDimension(dims[0],1/3);
- if(name==="int"&&dims[0]&&args[1]?.kind==="var")return addDimension(dims[0],variableDimensions[args[1].name]??zero);
+ if(name==="int"&&dims[0]&&args[1]?.kind==="var"&&variableDimensions[args[1].name])return addDimension(dims[0],variableDimensions[args[1].name]);
  if(name==="sum")return dims[0]??null;
  if(name==="prod")return dims[0]?.every(value=>Math.abs(value)<1e-9)?zero:null;
- if(name==="diff"&&dims[0]&&args[1]?.kind==="var")return subtractDimension(dims[0],variableDimensions[args[1].name]??zero);
- if(["sin","cos","tan","asin","acos","atan","atan2","sec","csc","cot","sinh","cosh","tanh","exp","ln","log","log2","log10"].includes(name)){
+ if(name==="diff"&&dims[0]&&args[1]?.kind==="var"&&variableDimensions[args[1].name])return subtractDimension(dims[0],variableDimensions[args[1].name]);
+ if(name==="atan2"){
+  const first=dims[0],second=dims[1];
+  return first&&second&&first.every((value,index)=>Math.abs(value-second[index])<1e-9)?zero:null;
+ }
+ if(["sin","cos","tan","asin","acos","atan","sec","csc","cot","sinh","cosh","tanh","exp","ln","log","log2","log10"].includes(name)){
   return dims.every(dimension=>dimension?.every(value=>Math.abs(value)<1e-9))?zero:null;
  }
  if(["min","max","hypot","clamp","mod"].includes(name)){

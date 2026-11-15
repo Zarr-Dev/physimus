@@ -153,6 +153,31 @@ function equationPreviewHtml(source:string){
  catch{return katex.renderToString("\\text{Complete expression to preview}",{throwOnError:false,strict:"ignore",trust:false,displayMode:true});}
 }
 
+type EquationSuggestion={title:string;description:string;insert:string;trigger:string};
+function equationSuggestions(source:string,language:Language):EquationSuggestion[]{
+ const match=source.match(/([a-zA-Z]+)$/);if(!match)return [];
+ const token=match[1].toLowerCase(),labels=language==="ID";
+ const catalog:Record<string,EquationSuggestion[]> = {
+  int:[
+   {title:labels?"Integral tak tentu":"Indefinite integral",description:"\\\\int f(x)\\\\,dx",insert:"int(x^2, x)",trigger:token},
+   {title:labels?"Integral tentu":"Definite integral",description:"\\\\int_a^b f(x)\\\\,dx",insert:"int(x^2, x, 0, 1)",trigger:token}
+  ],
+  sum:[{title:labels?"Notasi sigma / jumlah":"Sigma summation",description:"\\\\sum_{i=1}^{n}f(i)",insert:"sum(i^2, i, 1, 5)",trigger:token}],
+  sigma:[{title:labels?"Huruf sigma":"Greek sigma",description:"\\\\sigma",insert:"sigma",trigger:token},{title:labels?"Operator jumlah":"Summation operator",description:"\\\\sum",insert:"sum(i^2, i, 1, 5)",trigger:token}],
+  theta:[{title:labels?"Huruf theta":"Greek theta",description:"\\\\theta",insert:"theta",trigger:token}],
+  omega:[{title:labels?"Huruf omega":"Greek omega",description:"\\\\omega",insert:"omega",trigger:token}],
+  alpha:[{title:labels?"Huruf alpha":"Greek alpha",description:"\\\\alpha",insert:"alpha",trigger:token}],
+  beta:[{title:labels?"Huruf beta":"Greek beta",description:"\\\\beta",insert:"beta",trigger:token}],
+  pi:[{title:labels?"Konstanta pi":"Pi constant",description:"\\\\pi",insert:"pi",trigger:token}],
+  diff:[{title:labels?"Turunan numerik":"Numerical derivative",description:"\\\\frac{d}{dx}f(x)",insert:"diff(x^2, x)",trigger:token}],
+  sqrt:[{title:labels?"Akar kuadrat":"Square root",description:"\\\\sqrt{x}",insert:"sqrt(x)",trigger:token}]
+ };
+ return catalog[token]??[];
+}
+function acceptSuggestion(source:string,suggestion:EquationSuggestion){
+ return source.replace(new RegExp(suggestion.trigger+"$","i"),suggestion.insert);
+}
+
 function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
  const m=vars.m;
  const fx=list.find(q=>q.target==="x(t)"&&!q.error),fy=list.find(q=>q.target==="y(t)"&&!q.error);if(!fx&&!fy)return null;

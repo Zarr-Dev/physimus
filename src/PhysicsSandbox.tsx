@@ -228,24 +228,97 @@ function substitutedAstLatex(node:Node,vars:Vars):string{
  const operators:Record<string,string>={sin:"\\sin",cos:"\\cos",tan:"\\tan",asin:"\\arcsin",acos:"\\arccos",atan:"\\arctan",sec:"\\sec",csc:"\\csc",cot:"\\cot",sinh:"\\sinh",cosh:"\\cosh",tanh:"\\tanh",sqrt:"\\sqrt",cbrt:"\\sqrt[3]",abs:"\\operatorname{abs}",exp:"\\exp",ln:"\\ln",log:"\\log",log2:"\\log_2",log10:"\\log",min:"\\min",max:"\\max",floor:"\\lfloor",ceil:"\\lceil",round:"\\operatorname{round}",atan2:"\\operatorname{atan2}",hypot:"\\operatorname{hypot}",mod:"\\operatorname{mod}",clamp:"\\operatorname{clamp"};
  return (operators[name]??("\\operatorname{"+name+"}"))+"\\left("+a.join(", ")+"\\right)";
 }
+type Dimension=[number,number,number]; // [mass, length, time]
+const variableDimensions:Record<string,Dimension>={
+ m:[1,0,0],mass:[1,0,0],g:[0,1,-2],a:[0,1,-2],accel:[0,1,-2],
+ A:[0,1,0],x:[0,1,0],x0:[0,1,0],h:[0,1,0],r:[0,1,0],d:[0,1,0],s:[0,1,0],L:[0,1,0],
+ v:[0,1,-1],v0:[0,1,-1],vx:[0,1,-1],vy:[0,1,-1],u:[0,1,-1],
+ omega:[0,0,-1],theta:[0,0,0],phi:[0,0,0],mu:[0,0,0],e:[0,0,0],
+ k:[1,0,-2],F:[1,1,-2],f:[1,1,-2],N:[1,1,-2],p:[1,1,-1],I:[1,2,0],
+ alpha:[0,0,-2],tau:[1,2,-2],W:[1,2,-2],E:[1,2,-2],
+ delta_t:[0,0,1],t:[0,0,1]
+};
+function addDimension(a:Dimension,b:Dimension):Dimension{return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
+function subtractDimension(a:Dimension,b:Dimension):Dimension{return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+function scaleDimension(a:Dimension,factor:number):Dimension{return [a[0]*factor,a[1]*factor,a[2]*factor];}
+function dimensionOf(node:Node):Dimension|null{
+ const zero:Dimension=[0,0,0];
+ if(node.kind==="num")return zero;
+ if(node.kind==="var")return node.name==="pi"||node.name==="e"?zero:variableDimensions[node.name]??null;
+ if(node.kind==="unary")return dimensionOf(node.child);
+ if(node.kind==="binary"){
+  const a=dimensionOf(node.a),b=dimensionOf(node.b);if(!a||!b)return null;
+  if(node.op==="*" )return addDimension(a,b);
+  if(node.op==="/")return subtractDimension(a,b);
+  if(node.op==="^"){
+   if(b.some(value=>Math.abs(value)>1e-9)||node.b.kind!=="num")return null;
+   return scaleDimension(a,node.b.n);
+  }
+  return a.every((value,index)=>Math.abs(value-b[index])<1e-9)?a:null;
+ }
+ const name=node.name,args=node.args,dims=args.map(dimensionOf);
+ if(name==="abs"||name==="floor"||name==="ceil"||name==="round"||name==="sign")return dims[0]??null;
+ if(name==="sqrt"&&dims[0])return scaleDimension(dims[0],.5);
+ if(name==="cbrt"&&dims[0])return scaleDimension(dims[0],1/3);
+ if(name==="int"&&dims[0]&&args[1]?.kind==="var")return addDimension(dims[0],variableDimensions[args[1].name]??zero);
+ if(name==="sum")return dims[0]??null;
+ if(name==="diff"&&dims[0]&&args[1]?.kind==="var")return subtractDimension(dims[0],variableDimensions[args[1].name]??zero);
+ if(["sin","cos","tan","asin","acos","atan","atan2","sec","csc","cot","sinh","cosh","tanh","exp","ln","log","log2","log10"].includes(name)){
+  return dims.every(dimension=>dimension?.every(value=>Math.abs(value)<1e-9))?zero:null;
+ }
+ if(["min","max","hypot","clamp","mod"].includes(name)){
+  const first=dims[0];return first&&dims.every(dimension=>dimension&&dimension.every((value,index)=>Math.abs(value-first[index])<1e-9))?first:null;
+ }
+ return null;
+}
+function dimensionUnitLatex(dimension:Dimension|null):string{
+ if(!dimension)return "";
+ const [m,l,t]=dimension;
+ const key=dimension.map(value=>Math.round(value*1000)/1000).join(",");
+ const known:Record<string,string>={
+  "0,0,0":"","1,0,0":"\\mathrm{kg}","0,1,0":"\\mathrm{m}","0,0,1":"\\mathrm{s}",
+  "0,1,-1":"\\mathrm{m/s}","0,1,-2":"\\mathrm{m/s^2}","1,1,-2":"\\mathrm{N}",
+  "1,2,-2":"\\mathrm{J}","1,1,-1":"\\mathrm{kg\\,m/s}","1,0,-1":"\\mathrm{kg/s}",
+  "1,0,-2":"\\mathrm{N/m}","0,0,-1":"\\mathrm{rad/s}","0,0,-2":"\\mathrm{rad/s^2}",
+  "1,2,-3":"\\mathrm{W}","0,0,-1":"\\mathrm{s^{-1}}"
+ };
+ if(Object.prototype.hasOwnProperty.call(known,key))return known[key];
+ const units:[string,number][]=[["kg",m],["m",l],["s",t]];
+ const numerator=units.filter(([,power])=>power>1e-9).map(([unit,power])=>power===1?unit:unit+"^{"+power+"}");
+ const denominator=units.filter(([,power])=>power< -1e-9).map(([unit,power])=>unit+"^{"+(-power)+"}");
+ if(!numerator.length&&!denominator.length)return "";
+ return "\\,\\mathrm{"+(numerator.length?numerator.join("\\,"):"1")+(denominator.length?"/"+denominator.join("\\,"):"")+"}";
+}
 function scalarSubstitutionLatex(row:Row,compiled:Compiled,vars:Vars,value:number):string{
- const lhs=row.text.match(/^\\s*([^=]+)=/)?.[1]?.trim()??"y";
+ const lhs=row.text.match(/^\s*([^=]+)=/)?.[1]?.trim()??"y";
  const expression=substitutedAstLatex(compiled.root,vars);
  const result=Number.isFinite(value)?Number(value.toPrecision(6)).toString():"\\text{undefined}";
- return variableLatex(lhs)+"="+expression+"="+result;
+ const unit=dimensionUnitLatex(dimensionOf(compiled.root));
+ return variableLatex(lhs)+"="+expression+"="+result+unit;
 }
-
 function equationPreviewHtml(source:string){
  const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true} as const;
  try{return katex.renderToString(equationToLatex(source),options);}
  catch{
-  const tail=source.trim().slice(-1);
-  const token=tail==="∫"?"int":tail==="Σ"||tail==="∑"?"sum":source.trim().match(/(int|sum|diff|sqrt|sin|cos|tan|ln|log)$/i)?.[1]?.toLowerCase();
-  const pending:Record<string,string>={int:"\\int_0^x\\square\\,dx",sum:"\\sum_{i=1}^{n}\\square",diff:"\\frac{d}{dx}\\square",sqrt:"\\sqrt{\\square}",sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"};
-  return katex.renderToString(token&&pending[token]?pending[token]:"\\text{Complete the expression}",options);
+  const clean=source.trim();
+  const lhs=clean.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=|[a-zA-Z_][a-zA-Z0-9_]*\s*=)/);
+  const left=lhs?lhs[1].replace(/\s/g,"").replace(/([xy])\(/g,"$1\\left(").replace(/\)/g,"\\right)"):"";
+  const body=lhs?clean.slice(lhs[0].length).trimEnd():clean;
+  const command=body.match(/(\\?[a-zA-Z]+)\s*\(?$/);
+  const token=command?.[1].replace(/^\\/,"").toLowerCase();
+  const pending:Record<string,string>={
+   int:"\\int_{0}^{x}\\square\\,dx",sum:"\\sum_{i=1}^{n}\\square",
+   diff:"\\frac{d}{dx}\\square",sqrt:"\\sqrt{\\square}",cbrt:"\\sqrt[3]{\\square}",
+   sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"
+  };
+  let tail="\\square";
+  if(body==="")tail="\\square";
+  else if(token&&pending[token])tail=pending[token];
+  else if(/[+\-*/^]\s*$/.test(body))tail=body.trim()+"\\square";
+  else tail="\\text{complete the expression}";
+  return katex.renderToString(left+tail,options);
  }
 }
-
 type EquationSuggestion={title:string;description:string;insert:string;trigger:string};
 function equationSuggestions(source:string,language:Language):EquationSuggestion[]{
  const trimmed=source.trimEnd();
@@ -484,17 +557,18 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const mathHtml=(value:string)=>{try{return {__html:katex.renderToString(value,{throwOnError:false,strict:"ignore",trust:false})};}catch{return {__html:"<span class=\"math-render-error\">LaTeX error</span>"};}};
  const measurementFormula=(id:string)=>{
   if(!current)return "";
-  const n=(v:number)=>Number.isFinite(v)?v.toFixed(2):"\\\\text{undefined}";
+  const n=(v:number)=>Number.isFinite(v)?Number(v.toFixed(2)).toString():"\\text{undefined}";
+  const qty=(value:number,unit:string)=>"("+n(value)+"\\,\\mathrm{"+unit+"})";
   const x=n(current.x),y=n(current.y),vx=n(current.vx),vy=n(current.vy),ax=n(current.ax),ay=n(current.ay),m=n(mass),g=n(gravity);
-  if(id==="position")return "\\\\vec r=x\\\\hat i+y\\\\hat j=("+x+")\\\\hat i+("+y+")\\\\hat j\\\\;\\\\mathrm{m}";
-  if(id==="velocity")return "v=\\\\sqrt{v_x^2+v_y^2}=\\\\sqrt{("+vx+")^2+("+vy+")^2}="+n(current.speed)+"\\\\;\\\\mathrm{m/s}";
-  if(id==="acceleration")return "a=\\\\sqrt{a_x^2+a_y^2}=\\\\sqrt{("+ax+")^2+("+ay+")^2}="+n(current.acceleration)+"\\\\;\\\\mathrm{m/s^2}";
-  if(id==="kinetic")return "E_k=\\\\frac12m(v_x^2+v_y^2)=\\\\frac12("+m+")[("+vx+")^2+("+vy+")^2]="+n(current.energy)+"\\\\;\\\\mathrm{J}";
-  if(id==="potential")return "E_p=mgy=("+m+")("+g+")("+y+")="+n(current.potential)+"\\\\;\\\\mathrm{J}";
-  if(id==="mechanical")return "E_m=E_k+E_p="+n(current.energy)+"+"+n(current.potential)+"="+n(current.mechanical)+"\\\\;\\\\mathrm{J}";
-  if(id==="momentum")return "p=mv=m\\\\sqrt{v_x^2+v_y^2}=("+m+")\\\\sqrt{("+vx+")^2+("+vy+")^2}="+n(current.momentum)+"\\\\;\\\\mathrm{kg\\\\,m/s}";
-  if(id==="force")return "F=ma=m\\\\sqrt{a_x^2+a_y^2}=("+m+")\\\\sqrt{("+ax+")^2+("+ay+")^2}="+n(current.force)+"\\\\;\\\\mathrm{N}";
-  if(id==="weight")return "W=mg=("+m+")("+g+")="+n(current.weight)+"\\\\;\\\\mathrm{N}";
+  if(id==="position")return "\\vec r(t)=x(t)\\hat i+y(t)\\hat j="+qty(current.x,"m")+"\\hat i+"+qty(current.y,"m")+"\\hat j";
+  if(id==="velocity")return "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+vx+"\\,\\mathrm{m/s})^2+("+vy+"\\,\\mathrm{m/s})^2) }="+qty(current.speed,"m/s");
+  if(id==="acceleration")return "a=\\sqrt{a_x^2+a_y^2}=\\sqrt{("+ax+"\\,\\mathrm{m/s^2})^2+("+ay+"\\,\\mathrm{m/s^2})^2) }="+qty(current.acceleration,"m/s^2");
+  if(id==="kinetic")return "E_k=\\frac12m(v_x^2+v_y^2)=\\frac12("+m+"\\,\\mathrm{kg})[("+vx+"\\,\\mathrm{m/s})^2+("+vy+"\\,\\mathrm{m/s})^2]="+qty(current.energy,"J");
+  if(id==="potential")return "E_p=mgy=("+m+"\\,\\mathrm{kg})("+g+"\\,\\mathrm{m/s^2})("+y+"\\,\\mathrm{m})="+qty(current.potential,"J");
+  if(id==="mechanical")return "E_m=E_k+E_p="+qty(current.energy,"J")+"+"+qty(current.potential,"J")+"="+qty(current.mechanical,"J");
+  if(id==="momentum")return "p=m|\\vec v|=("+m+"\\,\\mathrm{kg})("+n(current.speed)+"\\,\\mathrm{m/s})="+qty(current.momentum,"kg\\,m/s");
+  if(id==="force")return "|\\vec F|=m|\\vec a|=("+m+"\\,\\mathrm{kg})("+n(current.acceleration)+"\\,\\mathrm{m/s^2})="+qty(current.force,"N");
+  if(id==="weight")return W=mg=("+m+"\\,\\mathrm{kg})("+g+"\\,\\mathrm{m/s^2})="+qty(current.weight,"N");
   return "";
  };
  return <main className="sandbox-workspace">

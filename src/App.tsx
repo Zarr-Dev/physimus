@@ -6,13 +6,14 @@ import {
   Activity, ArrowLeft, ArrowRight, Atom, BookOpen, Check, ChevronDown,
   CircleHelp, Copy, Download, FlaskConical, Globe2, Grid3X3, Home as HomeIcon,
   Layers3, Pause, Play, RotateCcw, Save, Settings2, SlidersHorizontal,
-  Sparkles, Upload, Waves
+  Sparkles, Upload, Waves, Maximize2, Minimize2, ZoomIn, ZoomOut
 } from "lucide-react";
 
 type Language = "ID" | "EN";
 type Page = "discover" | "laboratory" | "learn" | "sandbox";
 type Theme = "light" | "dark";
 type MotionLevel = "low" | "medium" | "high";
+type RenderMode = "auto" | "performance" | "detail";
 type LabId = "projectile" | "mru" | "mrua" | "circular" | "energy" | "incline" | "collision" | "spring";
 type Param = { key: string; label: string; min: number; max: number; step: number; unit: string; initial: number };
 type Point = { x: number; y: number; t: number; vx: number; vy: number; speed: number; kinetic: number; potential: number; x2?:number; vx2?:number; collisionOccurred?:boolean };
@@ -269,7 +270,7 @@ function LanguageSwitch({language,onChange}:{language:Language;onChange:(v:Langu
   </div>;
 }
 
-function Header({page,setPage,language,onLanguage,theme,onTheme,fontScale,onFontScale,motionLevel,onMotionLevel}:{page:Page;setPage:(p:Page)=>void;language:Language;onLanguage:(v:Language)=>void;theme:Theme;onTheme:(v:Theme)=>void;fontScale:number;onFontScale:(v:number)=>void;motionLevel:MotionLevel;onMotionLevel:(v:MotionLevel)=>void}) {
+function Header({page,setPage,language,onLanguage,theme,onTheme,fontScale,onFontScale,motionLevel,onMotionLevel,renderMode,onRenderMode}:{page:Page;setPage:(p:Page)=>void;language:Language;onLanguage:(v:Language)=>void;theme:Theme;onTheme:(v:Theme)=>void;fontScale:number;onFontScale:(v:number)=>void;motionLevel:MotionLevel;onMotionLevel:(v:MotionLevel)=>void;renderMode:RenderMode;onRenderMode:(v:RenderMode)=>void}) {
   const w=words[language];
   const [settingsOpen,setSettingsOpen]=useState(false);
   const items: {id:Page;label:string;icon:typeof HomeIcon}[]=[
@@ -292,7 +293,8 @@ function Header({page,setPage,language,onLanguage,theme,onTheme,fontScale,onFont
       <div className="settings-control"><span>{language==="ID"?"Tema":"Theme"}</span><div className="settings-choice"><button className={theme==="light"?"chosen":""} onClick={()=>onTheme("light")}>{language==="ID"?"Terang":"Light"}</button><button className={theme==="dark"?"chosen":""} onClick={()=>onTheme("dark")}>{language==="ID"?"Gelap":"Dark"}</button></div></div>
       <div className="settings-control"><label htmlFor="font-scale">{language==="ID"?"Ukuran teks & antarmuka":"Text & interface scale"} <strong>{Math.round(fontScale*100)}%</strong></label><input id="font-scale" type="range" min=".9" max="1.2" step=".05" value={fontScale} onChange={e=>onFontScale(Number(e.target.value))}/><div className="settings-range-labels"><span>{language==="ID"?"Kecil":"Small"}</span><span>{language==="ID"?"Besar":"Large"}</span></div></div>
       <div className="settings-control"><span>{language==="ID"?"Intensitas animasi":"Animation intensity"}</span><div className="settings-choice three"><button className={motionLevel==="low"?"chosen":""} onClick={()=>onMotionLevel("low")}>{language==="ID"?"Rendah":"Low"}</button><button className={motionLevel==="medium"?"chosen":""} onClick={()=>onMotionLevel("medium")}>{language==="ID"?"Sedang":"Med"}</button><button className={motionLevel==="high"?"chosen":""} onClick={()=>onMotionLevel("high")}>{language==="ID"?"Tinggi":"High"}</button></div></div>
-      <p className="settings-note">{language==="ID"?"Preferensi disimpan pada browser ini. Animasi tetap menghormati pengaturan Reduce Motion perangkat.":"Preferences are saved in this browser. Animations still respect your device's Reduce Motion setting."}</p>
+      <div className="settings-control"><span>{language==="ID"?"Kualitas simulasi":"Simulation quality"}</span><div className="settings-choice three"><button className={renderMode==="auto"?"chosen":""} onClick={()=>onRenderMode("auto")}>{language==="ID"?"Otomatis":"Auto"}</button><button className={renderMode==="performance"?"chosen":""} onClick={()=>onRenderMode("performance")}>{language==="ID"?"Hemat":"Eco"}</button><button className={renderMode==="detail"?"chosen":""} onClick={()=>onRenderMode("detail")}>{language==="ID"?"Detail":"Detail"}</button></div></div>
+       <p className="settings-note">{language==="ID"?"Preferensi disimpan pada browser ini. Animasi tetap menghormati pengaturan Reduce Motion perangkat.":"Preferences are saved in this browser. Animations still respect your device's Reduce Motion setting."}</p>
     </section>}
   </header>;
 }
@@ -1048,13 +1050,14 @@ export default function App() {
   const [theme,setTheme]=useState<Theme>(()=>{try{return localStorage.getItem("physimus-theme")==="dark"?"dark":"light";}catch{return "light";}});
   const [fontScale,setFontScale]=useState<number>(()=>{try{const value=Number(localStorage.getItem("physimus-font-scale"));return Number.isFinite(value)&&value>=.9&&value<=1.2?value:1;}catch{return 1;}});
   const [motionLevel,setMotionLevel]=useState<MotionLevel>(()=>{try{const value=localStorage.getItem("physimus-motion");return value==="low"||value==="high"?value:"medium";}catch{return "medium";}});
+   const [renderMode,setRenderMode]=useState<RenderMode>(()=>{try{const value=localStorage.getItem("physimus-render-mode");return value==="performance"||value==="detail"?value:"auto";}catch{return "auto";}});
   const openLab=(id:LabId)=>{setSelectedLab(id);setPage("laboratory");};
-  useEffect(()=>{try{localStorage.setItem("physimus-theme",theme);localStorage.setItem("physimus-font-scale",String(fontScale));localStorage.setItem("physimus-motion",motionLevel);}catch{/* Settings remain active for this session if storage is disabled. */}},[theme,fontScale,motionLevel]);
+  useEffect(()=>{try{localStorage.setItem("physimus-theme",theme);localStorage.setItem("physimus-font-scale",String(fontScale));localStorage.setItem("physimus-motion",motionLevel);localStorage.setItem("physimus-render-mode",renderMode);}catch{/* Settings remain active for this session if storage is disabled. */}},[theme,fontScale,motionLevel,renderMode]);
   return <div className="app-root" data-theme={theme} data-motion={motionLevel} style={{"--font-scale":fontScale} as CSSProperties}>
-    <Header page={page} setPage={setPage} language={language} onLanguage={setLanguage} theme={theme} onTheme={setTheme} fontScale={fontScale} onFontScale={setFontScale} motionLevel={motionLevel} onMotionLevel={setMotionLevel}/>
+    <Header page={page} setPage={setPage} language={language} onLanguage={setLanguage} theme={theme} onTheme={setTheme} fontScale={fontScale} onFontScale={setFontScale} motionLevel={motionLevel} onMotionLevel={setMotionLevel} renderMode={renderMode} onRenderMode={setRenderMode}/>
     {page==="discover"&&<Discover language={language} onOpen={openLab}/>}
-    {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} theme={theme} onBack={()=>setPage("discover")} onChoose={openLab}/>}
+    {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode} onBack={()=>setPage("discover")} onChoose={openLab}/>}
     {page==="learn"&&<Learn language={language} onOpen={openLab}/>}
-    {page==="sandbox"&&<PhysicsSandbox language={language} theme={theme}/>}
+    {page==="sandbox"&&<PhysicsSandbox language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode}/>}
   </div>;
 }

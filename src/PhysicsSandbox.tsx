@@ -195,7 +195,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const [time,setTime]=useState(0);const [duration,setDuration]=useState(12);const [mass,setMass]=useState(1);const [customVariables,setCustomVariables]=useState<Record<string,number>>({});const [gravity,setGravity]=useState(9.81);const [amplitude,setAmplitude]=useState(2);const [initialSpeed,setInitialSpeed]=useState(5);const [angularSpeed,setAngularSpeed]=useState(1);const [stiffness,setStiffness]=useState(10);const [phase,setPhase]=useState(Math.PI/4);const [playing,setPlaying]=useState(false);
  const [showGrid,setShowGrid]=useState(true);const [showAxes,setShowAxes]=useState(true);const [showTrail,setShowTrail]=useState(true);const [showVelocity,setShowVelocity]=useState(true);const [showAcceleration,setShowAcceleration]=useState(true);const [showForce,setShowForce]=useState(false);const [showWeight,setShowWeight]=useState(true);const [showMomentum,setShowMomentum]=useState(true);const [showEnergy,setShowEnergy]=useState(true);const [showLabels,setShowLabels]=useState(true);
  const [object,setObject]=useState("particle");const [expandedMeasurements,setExpandedMeasurements]=useState<string[]>([]);const [scale,setScale]=useState(1);const [cursor,setCursor]=useState<{x:number;y:number}|null>(null);const [view,setView]=useState({xmin:-10,xmax:10,ymin:-10,ymax:10});const [canvasSize,setCanvasSize]=useState(0);
- const [editorTab,setEditorTab]=useState<EditorTab>("equations");const [sceneObjects,setSceneObjects]=useState<MechanicalObject[]>([]);const [nextObjectId,setNextObjectId]=useState(1);const [selectedObjectId,setSelectedObjectId]=useState<number|null>(null);
+ const [editorTab,setEditorTab]=useState<EditorTab>("equations");const [focusedEquationId,setFocusedEquationId]=useState(1);const [sceneObjects,setSceneObjects]=useState<MechanicalObject[]>([]);const [nextObjectId,setNextObjectId]=useState(1);const [selectedObjectId,setSelectedObjectId]=useState<number|null>(null);
  const canvasRef=useRef<HTMLCanvasElement>(null);const objectPropertiesRef=useRef<HTMLDivElement>(null);const timeRef=useRef(0);const dragRef=useRef<{x:number;y:number;view:{xmin:number;xmax:number;ymin:number;ymax:number}}|null>(null);const dragFrameRef=useRef<number|null>(null);const cursorFrameRef=useRef<number|null>(null);const pendingViewRef=useRef<typeof view|null>(null);const pendingCursorRef=useRef<{x:number;y:number}|null>(null);
  const parsed=useMemo(()=>compile(rows),[rows]);const valid=useMemo(()=>parsed.filter(x=>!x.error),[parsed]);const errors=useMemo(()=>parsed.filter(x=>x.error),[parsed]);
  const hasMotion=valid.some(x=>x.target==="x(t)"||x.target==="y(t)");
@@ -271,7 +271,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const observer=new ResizeObserver(()=>setCanvasSize(v=>v+1));observer.observe(canvas);return()=>observer.disconnect();},[]);
  useEffect(()=>{timeRef.current=time;},[time]);
   useEffect(()=>{if(editorTab!=="objects"||!selectedSceneObject)return;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;objectPropertiesRef.current?.scrollIntoView({behavior:reduced||motionLevel==="low"?"auto":"smooth",block:"nearest"});},[editorTab,selectedObjectId,motionLevel]);
- const add=()=>{setRows(old=>[...old,{id:nextId,text:"",enabled:true}]);setNextId(v=>v+1);};
+ const add=()=>{setRows(old=>[...old,{id:nextId,text:"",enabled:true}]);setFocusedEquationId(nextId);setNextId(v=>v+1);};
  const setVariable=(name:string,value:number)=>{
   if(!Number.isFinite(value))return;
   if(name==="m")setMass(Math.max(.01,Math.min(10000,value)));
@@ -294,6 +294,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const selectedSceneObject=sceneObjects.find(item=>item.id===selectedObjectId)??null;
 
  const update=(id:number,text:string)=>setRows(old=>old.map(r=>r.id===id?{...r,text}:r));
+ const insertToken=(token:string)=>{const row=rows.find(item=>item.id===focusedEquationId)??rows[rows.length-1];if(!row)return;const join=row.text.trim()&&!/[=+\\-*/^(,]$/.test(row.text.trim())?"*":"";update(row.id,row.text+join+token);setFocusedEquationId(row.id);};
  const reset=()=>{setTime(0);timeRef.current=0;setPlaying(false);};
  const preset=(kind:string)=>{const data:Record<string,string[]>={circle:["x(t)=A*cos(omega*t)","y(t)=A*sin(omega*t)"],projectile:["x(t)=v0*cos(theta)*t","y(t)=v0*sin(theta)*t-0.5*g*t^2"],spring:["x(t)=A*cos(omega*t)","y(t)=0"],curve:["y=0.2x^2-2"]};const list=data[kind]||[];setRows(list.map((text,i)=>({id:i+1,text,enabled:true})));setNextId(list.length+1);if(kind==="circle"){setAmplitude(4);setAngularSpeed(1);}if(kind==="projectile"){setInitialSpeed(12);setPhase(Math.PI/4);setGravity(9.81);}if(kind==="spring"){setAmplitude(2);setAngularSpeed(2);}reset();};
  const updateBound=(key:"xmin"|"xmax"|"ymin"|"ymax",value:number)=>{

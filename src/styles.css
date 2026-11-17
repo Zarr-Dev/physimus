@@ -2115,3 +2115,51 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .equation-calc-result{
  margin-top:2px;
 }
+
+/* Mechanics parameter controls: numeric entry and Basic / Advanced selector. */
+.parameter-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:14px 0 8px;padding:4px;border:1px solid var(--line);border-radius:9px;background:var(--panel-soft,#f6f8fb)}
+.parameter-mode-switch button{min-height:36px;border:0;border-radius:6px;background:transparent;color:var(--muted,#718399);font-size:12px;font-weight:750;cursor:pointer}
+.parameter-mode-switch button.active{background:var(--panel,#fff);color:var(--blue,#347fd5);box-shadow:0 1px 5px #20364a16}
+.parameter-mode-help{margin:0 0 13px;color:var(--muted,#718399);font-size:11px;line-height:1.55}
+.parameter-entry-row{display:flex;align-items:center;justify-content:flex-end;margin:3px 0 1px}
+.parameter-number-input{width:104px;height:34px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface,#fff);color:var(--ink,#263d55);font-size:13px;font-weight:750;font-variant-numeric:tabular-nums;text-align:right}
+.parameter-number-input:focus{outline:2px solid color-mix(in srgb,var(--blue,#347fd5) 25%,transparent);border-color:var(--blue,#347fd5)}
+.slider-heading small{font-size:10px;color:var(--muted,#718399);font-weight:650}
+.model-assumption-card,.model-fact-card{margin:12px 0;padding:13px;border:1px solid var(--line);border-radius:10px;background:var(--panel-soft,#f7f9fc)}
+.model-assumption-card strong,.model-qa-section h3{display:block;margin:0 0 7px;color:var(--ink,#344b63);font-size:12px;font-weight:800}
+.model-assumption-card p,.model-qa-item p,.model-fact-card p{margin:0;color:var(--muted,#718399);font-size:11px;line-height:1.65}
+.model-qa-section{margin:17px 0}
+.model-qa-section h3{margin-bottom:9px}
+.model-qa-item{margin:7px 0;border:1px solid var(--line);border-radius:9px;background:var(--panel,#fff);overflow:hidden}
+.model-qa-item summary{padding:11px 12px;color:var(--ink,#344b63);font-size:11px;font-weight:750;line-height:1.45;cursor:pointer}
+.model-qa-item p{padding:0 12px 12px}
+.model-fact-card{border-color:color-mix(in srgb,var(--amber,#d99a46) 36%,var(--line));background:color-mix(in srgb,var(--amber,#d99a46) 8%,var(--panel,#fff))}
+.model-fact-card>span{display:flex;align-items:center;gap:6px;margin:0 0 8px;color:var(--amber,#b67b2d);font-size:9px;font-weight:850;letter-spacing:.09em}
+.lesson-intro-actions{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+.lesson-intro-actions>div{min-width:0}
+.lesson-page.is-focused{position:fixed;inset:0;z-index:120;max-width:none;width:100vw;height:100dvh;overflow-y:auto;padding:24px clamp(16px,3vw,52px);background:var(--app-bg,#f7f9fc)}
+.lesson-page.is-focused .secondary-intro{max-width:1640px;margin:0 auto 18px}
+.lesson-page.is-focused .lesson-layout{max-width:1640px;margin:18px auto;grid-template-columns:210px minmax(0,1fr) 280px;gap:14px}
+.lesson-page.is-focused .lesson-content{min-width:0}
+.lesson-page.is-focused .lesson-topic-nav,.lesson-page.is-focused .lesson-experiment{top:15px;max-height:calc(100dvh - 30px)}
+.lesson-page.is-focused .lesson-chapter-card{padding:clamp(18px,2vw,30px)}
+.sandbox-equation-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,.72fr);gap:7px;align-items:stretch;margin:8px 0 5px;padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--panel-soft,#f7f9fc)}
+.sandbox-equation-editor .sandbox-equation-row{min-width:0;align-self:start;margin:0}
+.sandbox-equation-editor .sandbox-equation-preview{min-width:0;min-height:43px;margin:0;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel,#fff);display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.sandbox-equation-editor .sandbox-equation-preview>span{font-size:8px}
+.sandbox-equation-editor .sandbox-equation-preview>div{width:100%;min-height:20px;font-size:15px}
+.sandbox-equation-editor .sandbox-equation-preview .katex{white-space:nowrap}
+.sandbox-equation-item .sandbox-equation-preview:empty{display:none}
+.app-root[data-theme="dark"] .parameter-number-input{background:#101d2b;color:#e3edf6}
+.app-root[data-theme="dark"] .parameter-mode-switch,.app-root[data-theme="dark"] .model-assumption-card,.app-root[data-theme="dark"] .model-qa-item{background:#101d2b}
+.app-root[data-theme="dark"] .model-fact-card{background:#2b251b}
+.app-root[data-theme="dark"] .sandbox-equation-editor{background:#101d2b}
+@media(max-width:760px){
+ .lesson-intro-actions{align-items:flex-start;flex-direction:column}
+ .lesson-page.is-focused{padding:14px}
+ .lesson-page.is-focused .lesson-layout{grid-template-columns:minmax(0,1fr)}
+ .lesson-page.is-focused .lesson-topic-nav{position:static;max-height:none}
+ .lesson-page.is-focused .lesson-experiment{position:static;grid-column:auto;max-height:none}
+ .sandbox-equation-editor{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){.parameter-mode-switch button,.lesson-page.is-focused *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

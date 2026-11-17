@@ -537,10 +537,12 @@ function Discover({language,onOpen}:{language:Language;onOpen:(id:LabId)=>void})
 
 function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:number)=>void}) {
   const digits=param.step<1?(String(param.step).split(".")[1]?.length??1):0;
-  const set=(raw:string)=>{if(raw.trim()==="")return;const parsed=Number(raw);if(Number.isFinite(parsed))onChange(Math.max(param.min,Math.min(param.max,parsed)));};
+  const [draft,setDraft]=useState(String(Number.isFinite(value)?Number(value.toFixed(Math.max(0,digits))):param.initial));
+  useEffect(()=>{setDraft(String(Number.isFinite(value)?Number(value.toFixed(Math.max(0,digits))):param.initial));},[value,param.initial,digits]);
+  const commit=()=>{if(draft.trim()===""){setDraft(String(value));return;}const parsed=Number(draft);if(!Number.isFinite(parsed)){setDraft(String(value));return;}const next=Math.max(param.min,Math.min(param.max,parsed));onChange(next);setDraft(String(next));};
   return <label className="slider-control">
     <span className="slider-heading"><span>{param.label}</span><strong><small>{param.unit}</small></strong></span>
-    <div className="parameter-entry-row"><input className="parameter-number-input" type="number" inputMode="decimal" min={param.min} max={param.max} step={param.step} value={Number.isFinite(value)?Number(value.toFixed(Math.max(0,digits))):param.initial} onChange={e=>set(e.currentTarget.value)} aria-label={param.label}/></div>
+    <div className="parameter-entry-row"><input className="parameter-number-input" type="number" inputMode="decimal" min={param.min} max={param.max} step={param.step} value={draft} onChange={e=>setDraft(e.currentTarget.value)} onBlur={commit} onKeyDown={e=>{if(e.key==="Enter")e.currentTarget.blur();}} aria-label={param.label}/></div>
     <input type="range" min={param.min} max={param.max} step={param.step} value={value} onChange={e=>onChange(Number(e.target.value))}/>
     <span className="slider-limits"><span>{param.min}</span><span>{param.max}</span></span>
   </label>;
@@ -788,8 +790,9 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
    formulaV2,
    "p_{total}=m_1u_1+m_2u_2=("+n(c.m1)+"\\,\\mathrm{kg})("+n(c.u1)+"\\,\\mathrm{m/s})+("+n(c.m2)+"\\,\\mathrm{kg})("+n(c.u2)+"\\,\\mathrm{m/s})="+n(c.initialMomentum)+"\\,\\mathrm{kg\\,m/s}",
    "K(t)=\\frac12m_1v_1(t)^2+\\frac12m_2v_2(t)^2=\\frac12("+qty(c.m1,"kg")+")("+qty(v1,"m/s")+")^2+\\frac12("+qty(c.m2,"kg")+")("+qty(v2,"m/s")+")^2="+qty(p.kinetic,"J"),
-   occurred?"J_1=m_1(v_1-u_1)=("+qty(c.m1,"kg")+")[("+qty(c.v1,"m/s")+")-("+qty(c.u1,"m/s")+")]="+qty(impulse,"N\\,s"):"J_1(t)=0\\,\\mathrm{N\\,s}\\quad(\\text{no impact yet})",
-   tExpression
+   occurred?"J_1(t)=m_1[v_1(t)-u_1]=("+qty(c.m1,"kg")+")[("+qty(v1,"m/s")+")-("+qty(c.u1,"m/s")+")]="+qty(impulse,"N\\,s"):"J_1(t)=0\\,\\mathrm{N\\,s}\\quad(\\text{no impact yet})",
+   tExpression,
+   "F_{\\mathrm{avg}}=\\frac{|J|}{\\Delta t_c}=\\frac{"+qty(c.impulseMagnitude,"N\\,s")+"}{"+qty(c.impactDuration,"s")+"}="+qty(c.meanContactForce,"N")
   ][index];
  }
  if(id==="energy"){

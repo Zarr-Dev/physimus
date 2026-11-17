@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import katex from "katex";
 const PhysicsSandbox = lazy(() => import("./PhysicsSandbox"));
@@ -69,10 +69,10 @@ const labs: Lab[] = [
     ], duration: 8, color:"#8b6bd6"
   },
   {
-    id: "energy", category: "DINAMIKA & ENERGI", title: "Kekekalan Energi Mekanik", subtitle: "Mechanical Energy",
-    description: "Ikuti perubahan energi potensial gravitasi menjadi energi kinetik saat benda meluncur menuruni bidang miring. Gesekan dapat diatur.",
-    formula: String.raw`E_m=E_k+E_p=\frac12mv^2+mgh`,
-    question: "Apakah energi mekanik tetap ketika ada gaya gesek? Ke mana energi mekanik berpindah?",
+    id: "energy", category: "DINAMIKA & ENERGI", title: "Usaha dan Energi", subtitle: "Work and Energy",
+    description: "Analisis usaha oleh gaya, perubahan energi kinetik, energi potensial, dan neraca energi ketika gesekan atau gaya nonkonservatif bekerja.",
+    formula: String.raw`W_{\mathrm{net}}=\Delta K,\quad E_{m,f}=E_{m,i}+W_{\mathrm{nc}}`,
+    question: "Bagaimana usaha total mengubah energi kinetik, dan ke mana energi mekanik berpindah ketika gesekan bekerja?",
     params: [
       {key:"mass",label:"Massa benda",min:.5,max:20,step:.5,unit:"kg",initial:2},
       {key:"height",label:"Ketinggian awal",min:1,max:20,step:.5,unit:"m",initial:8},
@@ -120,26 +120,38 @@ const labs: Lab[] = [
   }
 ];
 
+// Basic parameters are the high-impact controls. Advanced exposes all base values plus model-specific controls.
+const basicParamKeys:Record<LabId,string[]>={projectile:["speed","angle","height","gravity"],mru:["x0","speed"],mrua:["x0","speed","acceleration"],circular:["radius","omega","mass"],energy:["mass","height","friction","staticFriction"],incline:["mass","angle","friction","staticFriction"],collision:["mass1","mass2","velocity1","velocity2","restitution"],spring:["mass","spring","amplitude"]};
+const advancedParams:Record<LabId,Param[]>={
+ projectile:[{key:"x0",label:"Posisi horizontal awal",min:-50,max:50,step:.1,unit:"m",initial:0},{key:"dragBeta",label:"Koefisien hambatan linear per massa β",min:0,max:1,step:.01,unit:"s⁻¹",initial:0}],mru:[],mrua:[],
+ circular:[{key:"phaseDegrees",label:"Sudut fase awal",min:-360,max:360,step:1,unit:"°",initial:0}],
+ energy:[{key:"inclineAngle",label:"Sudut bidang miring",min:1,max:60,step:1,unit:"°",initial:30},{key:"initialSpeed",label:"Kelajuan awal sepanjang bidang",min:0,max:15,step:.1,unit:"m/s",initial:0},{key:"appliedWorkForce",label:"Gaya luar sejajar bidang (arah menuruni bidang)",min:0,max:100,step:.5,unit:"N",initial:0}],
+ incline:[{key:"appliedForce",label:"Gaya luar sejajar bidang (+ menuruni bidang)",min:-100,max:100,step:.5,unit:"N",initial:0}],
+ collision:[{key:"impactDuration",label:"Durasi kontak tumbukan",min:.005,max:.5,step:.005,unit:"s",initial:.05}],
+ spring:[{key:"phaseDegrees",label:"Fase awal",min:-360,max:360,step:1,unit:"°",initial:0},{key:"dampingRatio",label:"Rasio redaman ζ",min:0,max:.95,step:.01,unit:"—",initial:0}]
+};
+function allLabParams(lab:Lab):Param[]{return [...lab.params,...advancedParams[lab.id]];}
+
 type EquationEntry = { id:string; titleID:string; titleEN:string; formula:string; noteID:string; noteEN:string };
 const equationLibrary: Record<LabId, EquationEntry[]> = {
  projectile:[
   {id:"components",titleID:"Komponen kecepatan",titleEN:"Velocity components",formula:String.raw`v_x=v_0\cos\theta,\quad v_y=v_0\sin\theta-gt`,noteID:"Komponen horizontal tetap, sedangkan komponen vertikal berubah karena gravitasi.",noteEN:"The horizontal component stays constant while the vertical component changes under gravity."},
-  {id:"coordinates",titleID:"Persamaan posisi",titleEN:"Position equations",formula:String.raw`x(t)=x_0+v_0\cos\theta\,t,\quad y(t)=h_0+v_0\sin\theta\,t-\frac12gt^2`,noteID:"Posisi diperoleh dengan mengintegralkan komponen kecepatan terhadap waktu.",noteEN:"Position follows by integrating each velocity component over time."},
+  {id:"coordinates",titleID:"Posisi",titleEN:"Position",formula:String.raw`x(t)=x_0+v_0\cos\theta\,t,\quad y(t)=h_0+v_0\sin\theta\,t-\frac12gt^2`,noteID:"Posisi diperoleh dengan mengintegralkan komponen kecepatan terhadap waktu.",noteEN:"Position follows by integrating each velocity component over time."},
   {id:"flight",titleID:"Waktu hingga menyentuh tanah",titleEN:"Time to reach the ground",formula:String.raw`t_f=\frac{v_0\sin\theta+\sqrt{(v_0\sin\theta)^2+2gh_0}}{g}`,noteID:"Akar positif dipilih karena waktu fisik tidak negatif.",noteEN:"Choose the positive root because physical flight time cannot be negative."},
   {id:"peak",titleID:"Tinggi maksimum",titleEN:"Maximum height",formula:String.raw`H_{\max}=h_0+\frac{v_0^2\sin^2\theta}{2g}`,noteID:"Di titik tertinggi, kecepatan vertikal sesaat sama dengan nol.",noteEN:"At the apex, vertical velocity is momentarily zero."},
   {id:"range",titleID:"Jangkauan horizontal",titleEN:"Horizontal range",formula:String.raw`R=v_0\cos\theta\,t_f`,noteID:"Bentuk ini berlaku untuk ketinggian awal umum, termasuk h₀ bukan nol.",noteEN:"This form supports a nonzero launch height."}
 
  ],
  mru:[
-  {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw`x(t)=x_0+vt`,noteID:"Grafik x–t berupa garis lurus; gradiennya adalah kecepatan.",noteEN:"The x–t graph is a straight line whose slope is velocity."},
+  {id:"position",titleID:"Posisi",titleEN:"Position",formula:String.raw`x(t)=x_0+vt`,noteID:"Grafik x–t berupa garis lurus; gradiennya adalah kecepatan.",noteEN:"The x–t graph is a straight line whose slope is velocity."},
   {id:"velocity",titleID:"Kecepatan konstan",titleEN:"Constant velocity",formula:String.raw`v=\frac{\Delta x}{\Delta t}=\text{konstan}`,noteID:"Perpindahan per selang waktu selalu sama.",noteEN:"Displacement per time interval remains constant."},
   {id:"acceleration",titleID:"Percepatan",titleEN:"Acceleration",formula:String.raw`a=\frac{\Delta v}{\Delta t}=0`,noteID:"Karena kecepatan tidak berubah, percepatannya nol.",noteEN:"Since velocity does not change, acceleration is zero."}
 
  ],
  mrua:[
-  {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw`x=x_0+v_0t+\frac12at^2`,noteID:"Grafik posisi terhadap waktu berbentuk parabola jika percepatan tidak nol.",noteEN:"Position versus time is parabolic when acceleration is nonzero."},
-  {id:"velocity",titleID:"Persamaan kecepatan",titleEN:"Velocity equation",formula:String.raw`v=v_0+at`,noteID:"Gradien grafik v–t sama dengan percepatan.",noteEN:"The slope of a velocity–time graph equals acceleration."},
-  {id:"torricelli",titleID:"Persamaan tanpa waktu",titleEN:"Time-independent equation",formula:String.raw`v^2=v_0^2+2a(x-x_0)`,noteID:"Berguna ketika waktu tidak diketahui atau tidak diperlukan.",noteEN:"Useful when time is unknown or not needed."},
+  {id:"position",titleID:"Posisi",titleEN:"Position",formula:String.raw`x=x_0+v_0t+\frac12at^2`,noteID:"Grafik posisi terhadap waktu berbentuk parabola jika percepatan tidak nol.",noteEN:"Position versus time is parabolic when acceleration is nonzero."},
+  {id:"velocity",titleID:"Kecepatan",titleEN:"Velocity",formula:String.raw`v=v_0+at`,noteID:"Gradien grafik v–t sama dengan percepatan.",noteEN:"The slope of a velocity–time graph equals acceleration."},
+  {id:"torricelli",titleID:"Relasi tanpa waktu",titleEN:"Time-independent relation",formula:String.raw`v^2=v_0^2+2a(x-x_0)`,noteID:"Berguna ketika waktu tidak diketahui atau tidak diperlukan.",noteEN:"Useful when time is unknown or not needed."},
   {id:"displacement",titleID:"Kecepatan rata-rata",titleEN:"Average velocity",formula:String.raw`\Delta x=\frac{v_0+v}{2}\,t`,noteID:"Berlaku untuk percepatan konstan satu dimensi.",noteEN:"Valid for constant one-dimensional acceleration."}
 
  ],
@@ -175,7 +187,7 @@ const equationLibrary: Record<LabId, EquationEntry[]> = {
  ],
  spring:[
   {id:"hooke",titleID:"Hukum Hooke",titleEN:"Hooke's law",formula:String.raw`F=-kx`,noteID:"Tanda negatif menunjukkan gaya pegas mengarah menuju posisi setimbang.",noteEN:"The negative sign means spring force points toward equilibrium."},
-  {id:"motion",titleID:"Persamaan gerak",titleEN:"Motion equation",formula:String.raw`x(t)=A\cos(\omega t+\phi)`,noteID:"Fase awal φ menentukan posisi dan arah gerak pada t = 0.",noteEN:"Initial phase φ determines position and direction at t = 0."},
+  {id:"motion",titleID:"Gerak",titleEN:"Motion",formula:String.raw`x(t)=A\cos(\omega t+\phi)`,noteID:"Fase awal φ menentukan posisi dan arah gerak pada t = 0.",noteEN:"Initial phase φ determines position and direction at t = 0."},
   {id:"frequency",titleID:"Frekuensi sudut",titleEN:"Angular frequency",formula:String.raw`\omega=\sqrt{\frac{k}{m}}`,noteID:"Pegas lebih kaku meningkatkan frekuensi; massa lebih besar menurunkannya.",noteEN:"A stiffer spring increases frequency; a larger mass decreases it."},
   {id:"period",titleID:"Periode dan frekuensi",titleEN:"Period and frequency",formula:String.raw`T=2\pi\sqrt{\frac{m}{k}},\quad f=\frac1T`,noteID:"Periode adalah waktu satu osilasi penuh pada model pegas ideal.",noteEN:"The period is the time for one full oscillation in the ideal spring model."},
   {id:"energy",titleID:"Energi osilasi",titleEN:"Oscillation energy",formula:String.raw`E=\frac12mv^2+\frac12kx^2=\frac12kA^2`,noteID:"Tanpa redaman, energi mekanik total tetap.",noteEN:"Without damping, total mechanical energy remains constant."}
@@ -210,7 +222,9 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
  energy:[
   {id:"kinetic",titleID:"Energi kinetik",titleEN:"Kinetic energy",formula:"E_k=\\frac12mv^2",noteID:"Energi kinetik bergantung pada massa dan kuadrat kelajuan.",noteEN:"Kinetic energy depends on mass and the square of speed.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"v",labelID:"Kelajuan",labelEN:"Speed",unit:"m/s",initial:5,min:0,step:.1}],evaluate:v=>({substitution:"E_k = ½("+v.m.toFixed(2)+")("+v.v.toFixed(2)+")²",value:(.5*v.m*v.v*v.v).toFixed(3),unit:"J"})},
   {id:"potential",titleID:"Energi potensial gravitasi",titleEN:"Gravitational potential energy",formula:"E_p=mgh",noteID:"Tinggi diukur relatif terhadap titik acuan yang dipilih.",noteEN:"Height is measured relative to the chosen reference level.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"h",labelID:"Ketinggian",labelEN:"Height",unit:"m",initial:8,min:0,step:.1}],evaluate:v=>({substitution:"E_p = ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+")("+v.h.toFixed(2)+")",value:(v.m*v.g*v.h).toFixed(3),unit:"J"})}
-  ,{id:"mechanical",titleID:"Energi mekanik total",titleEN:"Total mechanical energy",formula:"E_m=\\frac12mv^2+mgh",noteID:"Jumlah energi kinetik dan potensial gravitasi terhadap titik acuan yang dipilih.",noteEN:"Sum of kinetic and gravitational potential energy relative to the chosen reference level.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"v",labelID:"Kelajuan",labelEN:"Speed",unit:"m/s",initial:5,min:0,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"h",labelID:"Ketinggian",labelEN:"Height",unit:"m",initial:8,min:0,step:.1}],evaluate:v=>({substitution:"E_m = ½("+v.m.toFixed(2)+")("+v.v.toFixed(2)+")² + ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+")("+v.h.toFixed(2)+")",value:(.5*v.m*v.v*v.v+v.m*v.g*v.h).toFixed(3),unit:"J"})}
+  ,{id:"mechanical",titleID:"Energi mekanik total",titleEN:"Total mechanical energy",formula:"E_m=\\frac12mv^2+mgh",noteID:"Jumlah energi kinetik dan potensial gravitasi terhadap titik acuan yang dipilih.",noteEN:"Sum of kinetic and gravitational potential energy relative to the chosen reference level.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"v",labelID:"Kelajuan",labelEN:"Speed",unit:"m/s",initial:5,min:0,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"h",labelID:"Ketinggian",labelEN:"Height",unit:"m",initial:8,min:0,step:.1}],evaluate:v=>({substitution:"E_m = ½("+v.m.toFixed(2)+")("+v.v.toFixed(2)+")² + ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+")("+v.h.toFixed(2)+")",value:(.5*v.m*v.v*v.v+v.m*v.g*v.h).toFixed(3),unit:"J"})},
+  {id:"work",titleID:"Usaha oleh gaya konstan",titleEN:"Work by a constant force",formula:"W=Fs\\cos\\phi",noteID:"Sudut φ diukur antara arah gaya dan perpindahan. Usaha positif jika komponen gaya searah perpindahan.",noteEN:"Angle φ is measured between force and displacement. Work is positive when the force component is along the displacement.",fields:[{key:"force",labelID:"Besar gaya",labelEN:"Force magnitude",unit:"N",initial:20,min:0,step:.5},{key:"distance",labelID:"Perpindahan",labelEN:"Displacement",unit:"m",initial:5,min:0,step:.1},{key:"phi",labelID:"Sudut antara gaya dan perpindahan",labelEN:"Angle between force and displacement",unit:"°",initial:30,min:0,max:180,step:1}],evaluate:v=>{const W=v.force*v.distance*Math.cos(v.phi*Math.PI/180);return{substitution:"W = ("+v.force.toFixed(2)+")("+v.distance.toFixed(2)+") cos("+v.phi.toFixed(1)+"°)",value:W.toFixed(3),unit:"J"};}},
+  {id:"workEnergy",titleID:"Kelajuan dari usaha total",titleEN:"Speed from net work",formula:"v_f=\\sqrt{v_i^2+\\frac{2W_{net}}{m}}",noteID:"Diperoleh dari W_net = ΔK untuk massa tetap. Nilai di dalam akar harus tidak negatif.",noteEN:"Derived from W_net = ΔK for constant mass. The radicand must be non-negative.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"vi",labelID:"Kelajuan awal",labelEN:"Initial speed",unit:"m/s",initial:3,min:0,step:.1},{key:"work",labelID:"Usaha total",labelEN:"Net work",unit:"J",initial:20,step:.5}],evaluate:v=>{const q=v.vi*v.vi+2*v.work/v.m;return{substitution:"v_f = √(("+v.vi.toFixed(2)+")² + 2("+v.work.toFixed(2)+") / "+v.m.toFixed(2)+")",value:q>=0?Math.sqrt(q).toFixed(3):"NaN",unit:"m/s"};}}
  ],
  incline:[
   {id:"normal",titleID:"Gaya normal",titleEN:"Normal force",formula:"N=mg\\cos\\theta",noteID:"Berlaku tanpa percepatan tegak lurus bidang dan tanpa gaya normal tambahan.",noteEN:"Applies with no perpendicular acceleration or additional normal force.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:5,min:.01,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"theta",labelID:"Sudut bidang",labelEN:"Incline angle",unit:"°",initial:30,min:0,max:89,step:1}],evaluate:v=>({substitution:"N = ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+") cos("+v.theta.toFixed(1)+"°)",value:(v.m*v.g*Math.cos(v.theta*Math.PI/180)).toFixed(3),unit:"N"})},
@@ -230,6 +244,40 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
  ]
 };
 
+const extraCalculatorDefinitions:Partial<Record<LabId,CalcDefinition[]>>={
+ projectile:[
+  {id:"verticalVelocity",titleID:"Kecepatan vertikal pada waktu t",titleEN:"Vertical velocity at time t",formula:"v_y=v_0\\sin\\theta-gt",noteID:"Komponen vertikal berubah karena percepatan gravitasi. Sudut dalam derajat dikonversi ke radian saat dihitung.",noteEN:"The vertical component changes under gravity. The angle is converted from degrees to radians for evaluation.",fields:[{key:"v0",labelID:"Kecepatan awal",labelEN:"Initial speed",unit:"m/s",initial:24,min:0,step:.1},{key:"theta",labelID:"Sudut",labelEN:"Angle",unit:"°",initial:52,min:0,max:90,step:1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"t",labelID:"Waktu",labelEN:"Time",unit:"s",initial:1,min:0,step:.1}],evaluate:v=>{const z=v.v0*Math.sin(v.theta*Math.PI/180)-v.g*v.t;return{substitution:"v_y = ("+v.v0.toFixed(2)+") sin("+v.theta.toFixed(1)+"°) − ("+v.g.toFixed(2)+")("+v.t.toFixed(2)+")",value:z.toFixed(3),unit:"m/s"};}},
+  {id:"verticalPosition",titleID:"Ketinggian pada waktu t",titleEN:"Height at time t",formula:"y=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2",noteID:"Model ideal tanpa hambatan udara. Hasil negatif berarti benda secara matematis berada di bawah bidang acuan tanah.",noteEN:"Ideal model without air resistance. A negative result means the mathematical trajectory lies below the ground reference.",fields:[{key:"h0",labelID:"Ketinggian awal",labelEN:"Initial height",unit:"m",initial:2,min:0,step:.1},{key:"v0",labelID:"Kecepatan awal",labelEN:"Initial speed",unit:"m/s",initial:24,min:0,step:.1},{key:"theta",labelID:"Sudut",labelEN:"Angle",unit:"°",initial:52,min:0,max:90,step:1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"t",labelID:"Waktu",labelEN:"Time",unit:"s",initial:1,min:0,step:.1}],evaluate:v=>{const z=v.h0+v.v0*Math.sin(v.theta*Math.PI/180)*v.t-.5*v.g*v.t*v.t;return{substitution:"y = "+v.h0.toFixed(2)+" + ("+v.v0.toFixed(2)+") sin("+v.theta.toFixed(1)+"°)("+v.t.toFixed(2)+") − ½("+v.g.toFixed(2)+")("+v.t.toFixed(2)+")²",value:z.toFixed(3),unit:"m"};}}
+ ],
+ mru:[
+  {id:"averageSpeed",titleID:"Kelajuan rata-rata",titleEN:"Average speed",formula:"\\bar v=\\frac{s}{\\Delta t}",noteID:"Gunakan jarak total yang ditempuh, bukan perpindahan bertanda. Waktu harus positif.",noteEN:"Use total path length, not signed displacement. The time interval must be positive.",fields:[{key:"distance",labelID:"Jarak total",labelEN:"Total distance",unit:"m",initial:60,min:0,step:.1},{key:"dt",labelID:"Selang waktu",labelEN:"Time interval",unit:"s",initial:5,min:.001,step:.1}],evaluate:v=>({substitution:"v̄ = "+v.distance.toFixed(2)+" / "+v.dt.toFixed(2),value:(v.distance/v.dt).toFixed(3),unit:"m/s"})},
+  {id:"positionAtTime",titleID:"Posisi pada waktu tertentu",titleEN:"Position at a given time",formula:"x(t)=x_0+vt",noteID:"Kecepatan bertanda; hasil posisi bergantung pada pilihan titik asal dan arah positif.",noteEN:"Velocity is signed; final position depends on the chosen origin and positive direction.",fields:[{key:"x0",labelID:"Posisi awal",labelEN:"Initial position",unit:"m",initial:5,step:.1},{key:"v",labelID:"Kecepatan",labelEN:"Velocity",unit:"m/s",initial:-3,step:.1},{key:"t",labelID:"Waktu",labelEN:"Time",unit:"s",initial:4,min:0,step:.1}],evaluate:v=>({substitution:"x = "+v.x0.toFixed(2)+" + ("+v.v.toFixed(2)+")("+v.t.toFixed(2)+")",value:(v.x0+v.v*v.t).toFixed(3),unit:"m"})}
+ ],
+ mrua:[
+  {id:"timeFromVelocity",titleID:"Waktu dari perubahan kecepatan",titleEN:"Time from velocity change",formula:"t=\\frac{v-v_0}{a}",noteID:"Berlaku untuk percepatan konstan dan a ≠ 0. Tanda waktu hasil harus sesuai interval gerak yang dimaksud.",noteEN:"Valid for constant acceleration and a ≠ 0. The sign of the result must match the physical time interval.",fields:[{key:"v0",labelID:"Kecepatan awal",labelEN:"Initial velocity",unit:"m/s",initial:3,step:.1},{key:"v",labelID:"Kecepatan akhir",labelEN:"Final velocity",unit:"m/s",initial:15,step:.1},{key:"a",labelID:"Percepatan",labelEN:"Acceleration",unit:"m/s²",initial:2,min:-10,max:10,step:.1}],evaluate:v=>({substitution:"t = ("+v.v.toFixed(2)+" − ("+v.v0.toFixed(2)+")) / ("+v.a.toFixed(2)+")",value:Math.abs(v.a)>1e-12?((v.v-v.v0)/v.a).toFixed(3):"NaN",unit:"s"})},
+  {id:"torricelli",titleID:"Kelajuan tanpa waktu (Torricelli)",titleEN:"Speed without time (Torricelli)",formula:"v^2=v_0^2+2a\\Delta x",noteID:"Menghasilkan kelajuan sebagai akar positif. Radikan harus tidak negatif dan percepatan harus konstan.",noteEN:"Returns speed as the positive root. The radicand must be non-negative and acceleration constant.",fields:[{key:"v0",labelID:"Kecepatan awal",labelEN:"Initial velocity",unit:"m/s",initial:4,step:.1},{key:"a",labelID:"Percepatan",labelEN:"Acceleration",unit:"m/s²",initial:2,step:.1},{key:"dx",labelID:"Perpindahan",labelEN:"Displacement",unit:"m",initial:20,step:.1}],evaluate:v=>{const q=v.v0*v.v0+2*v.a*v.dx;return{substitution:"v = √(("+v.v0.toFixed(2)+")² + 2("+v.a.toFixed(2)+")("+v.dx.toFixed(2)+"))",value:q>=0?Math.sqrt(q).toFixed(3):"NaN",unit:"m/s"};}}
+ ],
+ circular:[
+  {id:"centripetalForce",titleID:"Gaya sentripetal",titleEN:"Centripetal force",formula:"F_c=m\\omega^2r",noteID:"Ini adalah resultan gaya radial menuju pusat, bukan jenis gaya baru. Sumbernya bergantung pada sistem.",noteEN:"This is the net inward radial force, not a new type of force. Its physical source depends on the system.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"omega",labelID:"Kecepatan sudut",labelEN:"Angular speed",unit:"rad/s",initial:2,min:0,step:.1},{key:"r",labelID:"Jari-jari",labelEN:"Radius",unit:"m",initial:3,min:0,step:.1}],evaluate:v=>({substitution:"F_c = ("+v.m.toFixed(2)+")("+v.omega.toFixed(2)+")²("+v.r.toFixed(2)+")",value:(v.m*v.omega*v.omega*v.r).toFixed(3),unit:"N"})},
+  {id:"angularDisplacement",titleID:"Perpindahan sudut",titleEN:"Angular displacement",formula:"\\Delta\\theta=\\omega\\Delta t",noteID:"Kecepatan sudut konstan. Sudut dalam radian; konversi ke derajat dilakukan setelah perhitungan bila diperlukan.",noteEN:"Angular velocity is constant. The angle is in radians; convert to degrees after calculation if needed.",fields:[{key:"omega",labelID:"Kecepatan sudut",labelEN:"Angular speed",unit:"rad/s",initial:2,min:-10,max:10,step:.1},{key:"t",labelID:"Selang waktu",labelEN:"Time interval",unit:"s",initial:3,min:0,step:.1}],evaluate:v=>({substitution:"Δθ = ("+v.omega.toFixed(2)+" rad/s)("+v.t.toFixed(2)+" s)",value:(v.omega*v.t).toFixed(3),unit:"rad"})}
+ ],
+ energy:[
+  {id:"averagePower",titleID:"Daya rata-rata",titleEN:"Average power",formula:"P_{\\mathrm{avg}}=\\frac{W}{\\Delta t}",noteID:"Daya adalah laju transfer energi. Waktu harus positif; daya dapat bernilai negatif bila usaha total negatif.",noteEN:"Power is the rate of energy transfer. Time must be positive; power can be negative when net work is negative.",fields:[{key:"work",labelID:"Usaha",labelEN:"Work",unit:"J",initial:120,step:.5},{key:"dt",labelID:"Selang waktu",labelEN:"Time interval",unit:"s",initial:4,min:.001,step:.1}],evaluate:v=>({substitution:"P̄ = "+v.work.toFixed(2)+" / "+v.dt.toFixed(2),value:(v.work/v.dt).toFixed(3),unit:"W"})},
+  {id:"workFromEnergy",titleID:"Usaha total dari energi kinetik",titleEN:"Net work from kinetic energy",formula:"W_{\\mathrm{net}}=\\frac12m(v_f^2-v_i^2)",noteID:"Teorema usaha–energi untuk massa tetap. Kecepatan bertanda, tetapi energi kinetik memakai kuadrat kelajuan.",noteEN:"Work–energy theorem for constant mass. Velocity is signed, but kinetic energy depends on speed squared.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"vi",labelID:"Kelajuan awal",labelEN:"Initial speed",unit:"m/s",initial:3,min:0,step:.1},{key:"vf",labelID:"Kelajuan akhir",labelEN:"Final speed",unit:"m/s",initial:8,min:0,step:.1}],evaluate:v=>{const z=.5*v.m*(v.vf*v.vf-v.vi*v.vi);return{substitution:"W_net = ½("+v.m.toFixed(2)+")[("+v.vf.toFixed(2)+")² − ("+v.vi.toFixed(2)+")²]",value:z.toFixed(3),unit:"J"};}}
+ ],
+ incline:[
+  {id:"kineticFriction",titleID:"Gaya gesek kinetis",titleEN:"Kinetic friction force",formula:"f_k=\\mu_kN",noteID:"Berlaku saat dua permukaan meluncur relatif. Nilai N harus diperoleh dari keseimbangan pada arah tegak lurus bidang.",noteEN:"Applies while surfaces slide relative to one another. N must come from force balance perpendicular to the plane.",fields:[{key:"mu",labelID:"Koefisien gesek kinetis",labelEN:"Kinetic friction coefficient",unit:"—",initial:.2,min:0,max:2,step:.01},{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:5,min:.01,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"theta",labelID:"Sudut bidang",labelEN:"Incline angle",unit:"°",initial:30,min:0,max:89,step:1}],evaluate:v=>{const N=v.m*v.g*Math.cos(v.theta*Math.PI/180);return{substitution:"f_k = ("+v.mu.toFixed(2)+")("+N.toFixed(3)+" N)",value:(v.mu*N).toFixed(3),unit:"N"};}},
+  {id:"staticFrictionLimit",titleID:"Batas maksimum gesek statis",titleEN:"Maximum static friction",formula:"f_{s,\\max}=\\mu_sN",noteID:"Ini batas maksimum, bukan nilai gesek statis pada setiap keadaan. Gaya statis menyesuaikan sampai ambang slip.",noteEN:"This is the maximum limit, not the static-friction value in every situation. Static friction adjusts up to the slipping threshold.",fields:[{key:"mu",labelID:"Koefisien gesek statis",labelEN:"Static friction coefficient",unit:"—",initial:.4,min:0,max:2,step:.01},{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:5,min:.01,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"theta",labelID:"Sudut bidang",labelEN:"Incline angle",unit:"°",initial:30,min:0,max:89,step:1}],evaluate:v=>{const N=v.m*v.g*Math.cos(v.theta*Math.PI/180);return{substitution:"f_{s,max} = ("+v.mu.toFixed(2)+")("+N.toFixed(3)+" N)",value:(v.mu*N).toFixed(3),unit:"N"};}}
+ ],
+ collision:[
+  {id:"kineticLoss",titleID:"Energi kinetik yang berubah",titleEN:"Change in kinetic energy",formula:"\\Delta K=K_f-K_i",noteID:"Momentum tetap pada sistem terisolasi, tetapi energi kinetik berubah bila e < 1. Nilai negatif menunjukkan penurunan energi kinetik.",noteEN:"Momentum is conserved in an isolated system, but kinetic energy changes when e < 1. A negative value indicates a loss of kinetic energy.",fields:[{key:"m1",labelID:"Massa benda 1",labelEN:"Mass 1",unit:"kg",initial:2,min:.01,step:.1},{key:"m2",labelID:"Massa benda 2",labelEN:"Mass 2",unit:"kg",initial:2,min:.01,step:.1},{key:"u1",labelID:"Kecepatan awal 1",labelEN:"Initial velocity 1",unit:"m/s",initial:6,step:.1},{key:"u2",labelID:"Kecepatan awal 2",labelEN:"Initial velocity 2",unit:"m/s",initial:0,step:.1},{key:"e",labelID:"Koefisien restitusi",labelEN:"Coefficient of restitution",unit:"—",initial:.5,min:0,max:1,step:.05}],evaluate:v=>{const v1=((v.m1-v.e*v.m2)*v.u1+(1+v.e)*v.m2*v.u2)/(v.m1+v.m2),v2=((1+v.e)*v.m1*v.u1+(v.m2-v.e*v.m1)*v.u2)/(v.m1+v.m2),Ki=.5*v.m1*v.u1*v.u1+.5*v.m2*v.u2*v.u2,Kf=.5*v.m1*v1*v1+.5*v.m2*v2*v2;return{substitution:"ΔK = ½m₁v₁² + ½m₂v₂² − ½m₁u₁² − ½m₂u₂²",value:(Kf-Ki).toFixed(3),unit:"J"};}},
+  {id:"meanContactForce",titleID:"Gaya kontak rata-rata",titleEN:"Mean contact force",formula:"F_{\\mathrm{avg}}=\\frac{|J|}{\\Delta t_c}",noteID:"Model merata-ratakan impuls selama interval kontak. Ini bukan gaya puncak atau profil gaya sesaat.",noteEN:"This model averages impulse over the contact interval. It is not the peak force or instantaneous force profile.",fields:[{key:"m",labelID:"Massa benda 1",labelEN:"Mass of body 1",unit:"kg",initial:2,min:.01,step:.1},{key:"u",labelID:"Kecepatan awal benda 1",labelEN:"Initial velocity of body 1",unit:"m/s",initial:6,step:.1},{key:"v",labelID:"Kecepatan akhir benda 1",labelEN:"Final velocity of body 1",unit:"m/s",initial:1,step:.1},{key:"dt",labelID:"Durasi kontak",labelEN:"Contact duration",unit:"s",initial:.05,min:.001,step:.005}],evaluate:v=>({substitution:"F_avg = |("+v.m.toFixed(2)+")("+v.v.toFixed(2)+" − "+v.u.toFixed(2)+")| / "+v.dt.toFixed(3),value:(Math.abs(v.m*(v.v-v.u))/v.dt).toFixed(3),unit:"N"})}
+ ],
+ spring:[
+  {id:"elasticEnergy",titleID:"Energi potensial elastis",titleEN:"Elastic potential energy",formula:"U_s=\\frac12kx^2",noteID:"Berlaku untuk pegas linear yang masih berada pada rentang elastis. x diukur dari posisi setimbang.",noteEN:"Valid for a linear spring within its elastic regime. x is measured from equilibrium.",fields:[{key:"k",labelID:"Konstanta pegas",labelEN:"Spring constant",unit:"N/m",initial:25,min:.01,step:.1},{key:"x",labelID:"Simpangan",labelEN:"Displacement",unit:"m",initial:.2,step:.01}],evaluate:v=>({substitution:"U_s = ½("+v.k.toFixed(2)+")("+v.x.toFixed(3)+")²",value:(.5*v.k*v.x*v.x).toFixed(3),unit:"J"})},
+  {id:"dampedFrequency",titleID:"Frekuensi sudut teredam",titleEN:"Damped angular frequency",formula:"\\omega_d=\\omega_0\\sqrt{1-\\zeta^2}",noteID:"Rumus ini hanya untuk redaman kurang (0 ≤ ζ < 1). Untuk ζ ≥ 1 sistem tidak berosilasi sinusoidal.",noteEN:"This equation applies only to underdamping (0 ≤ ζ < 1). For ζ ≥ 1, motion is not sinusoidal oscillation.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:1,min:.01,step:.1},{key:"k",labelID:"Konstanta pegas",labelEN:"Spring constant",unit:"N/m",initial:25,min:.01,step:.1},{key:"zeta",labelID:"Rasio redaman",labelEN:"Damping ratio",unit:"—",initial:.2,min:0,max:.95,step:.01}],evaluate:v=>({substitution:"ω_d = √("+v.k.toFixed(2)+"/"+v.m.toFixed(2)+") √(1 − "+v.zeta.toFixed(2)+"²)",value:(Math.sqrt(v.k/v.m)*Math.sqrt(1-v.zeta*v.zeta)).toFixed(3),unit:"rad/s"})}
+ ]
+};
 function calcVariableSymbol(key:string) {
  const symbols:Record<string,string>={v0:"v_0",theta:"\\theta",h0:"h_0",g:"g",x0:"x_0",v:"v",t:"t",dx:"\\Delta x",dt:"\\Delta t",a:"a",omega:"\\omega",r:"r",m:"m",k:"k",mu:"\\mu_k",e:"e",m1:"m_1",m2:"m_2",u1:"u_1",u2:"u_2",x:"x"};
  return symbols[key]??key;
@@ -260,7 +308,7 @@ function calculatorMath(value:string) {
 }
 
 function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language}) {
- const definitions=calculatorDefinitions[labId];
+ const definitions=[...calculatorDefinitions[labId],...(extraCalculatorDefinitions[labId]??[])];
  const [selectedId,setSelectedId]=useState(definitions[0].id);
  const createInitialInputs=()=>Object.fromEntries(definitions.map(def=>[def.id,Object.fromEntries(def.fields.map(field=>[field.key,String(field.initial)]))]));
  const [inputs,setInputs]=useState<Record<string,Record<string,string>>>(createInitialInputs);
@@ -283,24 +331,24 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
     : `Check the allowed range for ${invalidField.labelEN} (${invalidField.min!==undefined?"min. "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?", ":""}${invalidField.max!==undefined?"max. "+invalidField.max:""}).`
   : calculationFailed?(language==="ID"?"Hasil tidak terdefinisi. Periksa kembali nilai variabel.":"Result is undefined. Check the variable values."):null;
  const reset=()=>setInputs(old=>({...old,[active.id]:Object.fromEntries(active.fields.map(field=>[field.key,String(field.initial)]))}));
- return <section className="equation-calculator-panel" aria-label={language==="ID"?"Kalkulator persamaan mekanika":"Mechanics equation calculator"}>
+ return <section className="equation-calculator-panel" aria-label={language==="ID"?"Kalkulator mekanika":"Mechanics calculator"}>
   <div className="equation-calculator-heading">
-   <div><span className="eyebrow">MECHANICS / FORMULA WORKBENCH</span><h2>{language==="ID"?"Kalkulator Persamaan":"Equation Calculator"}</h2></div>
-   <p>{language==="ID"?"Pilih satu persamaan. Variabel, substitusi, dan hasil akan menyesuaikan secara otomatis.":"Choose one equation. Its variables, substitution, and result update automatically."}</p>
+   <div><span className="eyebrow">MECHANICS / FORMULA WORKBENCH</span><h2>{language==="ID"?"Kalkulator Mekanika":"Mechanics Calculator"}</h2></div>
+   <p>{language==="ID"?"Pilih model dan ubah variabel. Perhitungan serta hasil akan diperbarui otomatis.":"Choose a model and adjust its variables. Calculations and results update automatically."}</p>
   </div>
   <div className="equation-calculator-workspace">
    <div className="equation-calc-selector">
-    <label htmlFor="mechanics-equation-select">{language==="ID"?"PILIH PERSAMAAN":"SELECT AN EQUATION"}</label>
+    <label htmlFor="mechanics-equation-select">{language==="ID"?"PILIH PERHITUNGAN":"SELECT A CALCULATION"}</label>
     <select id="mechanics-equation-select" value={active.id} onChange={event=>setSelectedId(event.target.value)}>
      {definitions.map((def,index)=><option key={def.id} value={def.id}>{String(index+1).padStart(2,"0")} · {language==="ID"?def.titleID:def.titleEN}</option>)}
     </select>
-    <span>{String(activeIndex+1).padStart(2,"0")} / {String(definitions.length).padStart(2,"0")} {language==="ID"?"PERSAMAAN":"EQUATIONS"}</span>
+    <span>{String(activeIndex+1).padStart(2,"0")} / {String(definitions.length).padStart(2,"0")}</span>
    </div>
    <article className="equation-calculator-card" key={active.id}>
-    <div className="equation-calculator-card-head"><div><span className="equation-calculator-index">{language==="ID"?"PERSAMAAN":"EQUATION"} {String(activeIndex+1).padStart(2,"0")}</span><h3>{language==="ID"?active.titleID:active.titleEN}</h3></div>
+    <div className="equation-calculator-card-head"><div><span className="equation-calculator-index">{String(activeIndex+1).padStart(2,"0")}</span><h3>{language==="ID"?active.titleID:active.titleEN}</h3></div>
      <button type="button" className="equation-calc-reset" onClick={reset} aria-label={language==="ID"?"Reset nilai":"Reset values"} title={language==="ID"?"Kembalikan nilai awal":"Restore defaults"}><RotateCcw size={15}/></button>
     </div>
-    <div className="equation-calc-formula"><span>{language==="ID"?"PERSAMAAN UMUM":"GENERAL EQUATION"}</span><div className="equation-calc-math"><Equation value={active.formula}/></div></div>
+    <div className="equation-calc-formula"><div className="equation-calc-math"><Equation value={active.formula}/></div></div>
     <div className="equation-calc-input-heading"><strong>{language==="ID"?"Variabel eksperimen":"Experiment variables"}</strong><span>{language==="ID"?"Hasil diperbarui otomatis":"Live calculation"}</span></div>
     <div className="equation-calc-fields">{active.fields.map(field=>{
      const value=raw[field.key]??String(field.initial);
@@ -311,14 +359,14 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
       {(field.min!==undefined||field.max!==undefined)&&<small className="equation-calc-range">{field.min!==undefined&&field.max!==undefined?`${field.min} – ${field.max}`:field.min!==undefined?`≥ ${field.min}`:`≤ ${field.max}`}</small>}
      </label>;
     })}</div>
-    <div className="equation-calc-substitution"><span>{language==="ID"?"SUBSTITUSI ANGKA":"NUMERIC SUBSTITUTION"}</span><div className="equation-calc-substitution-math">{result?<Equation value={calculatorMath(result.substitution)}/>:<span>{language==="ID"?"Lengkapi variabel untuk melihat substitusi.":"Complete the variables to see the substitution."}</span>}</div></div>
+    <div className="equation-calc-substitution"><div className="equation-calc-substitution-math">{result?<Equation value={calculatorMath(result.substitution)}/>:<span>{language==="ID"?"Lengkapi variabel untuk melihat perhitungan.":"Complete the variables to see the calculation."}</span>}</div></div>
     {errorText&&<p className="equation-calc-error" role="status">{errorText}</p>}
-    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span><strong>{result?<><Equation value={result.value}/>{" "}<small>{result.unit}</small></>:"—"}</strong></div>
-    <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p>{language==="ID"?active.noteID:active.noteEN}</p></div>
+    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL":"RESULT"}</span><strong>{result?<><Equation value={result.value}/>{" "}<small>{result.unit}</small></>:"—"}</strong></div>
+    <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p><PhysicsCopy value={language==="ID"?active.noteID:active.noteEN}/></p></div>
    </article>
    <div className="equation-calc-navigation">
     <button type="button" onClick={()=>setSelectedId(definitions[(activeIndex-1+definitions.length)%definitions.length].id)}><ArrowLeft size={15}/>{language==="ID"?"Sebelumnya":"Previous"}</button>
-    <span>{language==="ID"?"Ganti persamaan tanpa meninggalkan kalkulator":"Switch equations without leaving the calculator"}</span>
+    <span>{language==="ID"?"Ganti perhitungan tanpa meninggalkan kalkulator":"Switch calculations without leaving the calculator"}</span>
     <button type="button" onClick={()=>setSelectedId(definitions[(activeIndex+1)%definitions.length].id)}>{language==="ID"?"Berikutnya":"Next"}<ArrowRight size={15}/></button>
    </div>
   </div>
@@ -333,7 +381,7 @@ const words = {
     openLab:"Mulai bereksperimen", browse:"Jelajahi laboratorium", featured:"LABORATORIUM MEKANIKA",
     collection:"Eksplorasi Mekanika", collectionText:"Dari gerak sederhana hingga energi dan gaya. Setiap laboratorium memiliki parameter, simulasi, grafik, dan pengukuran yang saling terhubung.",
     experiments:"laboratorium tersedia", open:"Buka laboratorium", all:"Semua", kinematics:"Kinematika", dynamics:"Dinamika & Energi", oscillation:"Getaran",
-    expr:"Persamaan model", parameters:"Parameter eksperimen", graph:"Grafik eksperimen", play:"Mulai", pause:"Jeda", reset:"Reset",
+    expr:"Model matematis", parameters:"Parameter eksperimen", graph:"Grafik eksperimen", play:"Mulai", pause:"Jeda", reset:"Reset",
     time:"Waktu simulasi", values:"Pengukuran langsung", export:"Ekspor CSV", save:"Simpan eksperimen", load:"Buka eksperimen",
     grid:"Grid", vectors:"Vektor", trail:"Jejak", model:"MODEL FISIKA", assumptions:"Asumsi model",
     learnTitle:"Pahami sebelum menghitung", learnText:"Mulai dari fenomena, lanjutkan dengan persamaan, kemudian uji prediksi melalui simulasi.",
@@ -344,7 +392,7 @@ const words = {
     force:"Resultan gaya", normal:"Gaya normal", friction:"Gaya gesek", duration:"Durasi", current:"Saat ini",
     discoverMore:"Kembali ke beranda", projectSaved:"File eksperimen diunduh", projectLoaded:"Eksperimen dimuat", projectError:"File eksperimen tidak valid",
     resetView:"Atur ulang", graphHint:"Gunakan slider untuk mengubah kondisi awal. Grafik dan nilai akan diperbarui otomatis.",
-    concept:"Konsep inti", formula:"Persamaan utama", experiment:"Eksperimen", chooseLab:"Pilih laboratorium untuk memulai.",
+    concept:"Konsep inti", formula:"Model utama", experiment:"Eksperimen", chooseLab:"Pilih laboratorium untuk memulai.",
     language:"Bahasa", height:"Ketinggian", distance:"Jarak", velocity:"Kecepatan", energy:"Energi", graphTitle:"Grafik eksperimen"
   },
   EN: {
@@ -376,7 +424,7 @@ const englishLabText: Record<LabId,{description:string;question:string}> = {
   mru: {description:"Observe an object moving in a straight line at constant velocity and zero acceleration.",question:"If velocity stays constant, how does position change each second?"},
   mrua: {description:"Explore one-dimensional motion with constant acceleration. Try positive acceleration, negative acceleration, or an object starting from rest.",question:"How do position and velocity graphs change when acceleration changes sign?"},
   circular: {description:"Visualize circular motion, angular velocity, tangential speed, and centripetal acceleration.",question:"If radius increases while angular velocity stays constant, what happens to speed and centripetal acceleration?"},
-  energy: {description:"Track gravitational potential energy converting into kinetic energy as an object slides down an inclined plane. Friction is adjustable.",question:"Does mechanical energy stay constant when friction acts? Where does the mechanical energy go?"},
+  energy: {description:"Explore work, changes in kinetic energy, gravitational potential energy, and the energy balance when friction or other non-conservative forces act.",question:"How does net work change kinetic energy, and where does mechanical energy go when friction acts?"},
   incline: {description:"Analyze weight, normal force, friction, and the acceleration of a block on an inclined plane.",question:"At what angle and friction coefficient does the block begin to slide?"},
   spring: {description:"Explore a mass-spring oscillator and the relationship between restoring force, spring stiffness, mass, period, and frequency.",question:"How do mass and spring stiffness affect the oscillation period?"}
 };
@@ -384,8 +432,8 @@ const englishLabText: Record<LabId,{description:string;question:string}> = {
 function parameterText(language:Language,key:string,fallback:string) {
   if(language==="ID") return fallback;
   const en:Record<string,string> = {
-    speed:"Initial speed",x0:"Initial position",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
-    acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",
+    speed:"Initial speed",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
+    acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",x0:"Initial horizontal position",dragBeta:"Linear drag coefficient per unit mass β",phaseDegrees:"Initial phase angle",inclineAngle:"Incline angle",initialSpeed:"Initial speed along the plane",appliedForce:"External force along the plane (+ downhill)",impactDuration:"Collision contact duration",dampingRatio:"Damping ratio ζ",appliedWorkForce:"External force along the plane (+ downhill)",
     friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
   };
   return en[key]??fallback;
@@ -411,8 +459,8 @@ function MeasurementDerivation({formula,value,unit,language}:{formula:string;val
  const general=hasSubstitution?parts.slice(0,2).join("="):formula;
  const substitution=hasSubstitution?parts.slice(2,-1).join("="):"";
  return <div className="measurement-derivation">
-  <div className="measurement-derivation-row"><span>{language==="ID"?"Persamaan":"Equation"}</span><div><Equation value={general}/></div></div>
-  {substitution&&<div className="measurement-derivation-row"><span>{language==="ID"?"Substitusi":"Substitution"}</span><div><Equation value={substitution}/></div></div>}
+  <div className="measurement-derivation-row"><Equation value={general}/></div>
+  {substitution&&<div className="measurement-derivation-row"><Equation value={substitution}/></div>}
   <div className="measurement-derivation-result"><span>{language==="ID"?"Hasil":"Result"}</span><strong>{Number.isFinite(value)?<><Equation value={value.toFixed(3)}/>{" "}<small>{unit}</small></>:"—"}</strong></div>
  </div>;
 }
@@ -422,6 +470,59 @@ function Equation({ value, display = false }: { value: string; display?: boolean
   return <span className={display ? "math-display" : "math-inline"} dangerouslySetInnerHTML={{__html:html}} />;
 }
 
+type PhysicsSegment = { text: string; latex?: string };
+const physicsBase = String.raw`(?:[0-9]+(?:[.,][0-9]+)?|[½¼¾](?:[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ]*)?|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψΣ∑∫√][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ∥̈̇_]*(?:\([^()]*\)[A-Za-z0-9₀-₉⁰-⁹]*)?)(?:\([^()]*\)[A-Za-z0-9₀-₉⁰-⁹]*)?`;
+const physicsTrig = String.raw`(?:sin|cos|tan|sqrt|ln|log)\s*(?:\([^()]*\)|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹]*)`;
+const physicsTerm = String.raw`(?:${physicsTrig}|${physicsBase}|\([^()]*\)[A-Za-z0-9₀-₉⁰-⁹]*)(?:\s+${physicsTrig})?`;
+const physicsExpr = String.raw`${physicsTerm}(?:\s*(?:\+|−|-|×|·|/|\*|=|≤|≥|<|>|≈|≠|∝)\s*[+−-]?${physicsTerm})*`;
+const physicsEquation = String.raw`${physicsExpr}\s*(?:=|≤|≥|<|>|≈|≠|∝)\s*[+−-]?${physicsExpr}`;
+const physicsProduct = String.raw`${physicsTerm}\s*(?:·|×|/|\*)\s*${physicsTerm}`;
+const physicsDecorated = String.raw`(?:[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9]*[₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ]+|(?:[0-9]+)?π|[ẍẋ])`;
+const physicsPattern = new RegExp("(" + physicsEquation + "|" + physicsProduct + "|" + physicsTrig + "|" + physicsDecorated + ")", "g");
+
+function physicsLatex(source: string): string {
+  const greek: Record<string,string> = {
+    "θ":"\\theta","ω":"\\omega","α":"\\alpha","β":"\\beta","γ":"\\gamma","δ":"\\delta",
+    "ε":"\\epsilon","ζ":"\\zeta","η":"\\eta","κ":"\\kappa","λ":"\\lambda","μ":"\\mu",
+    "ν":"\\nu","ξ":"\\xi","π":"\\pi","ρ":"\\rho","σ":"\\sigma","τ":"\\tau",
+    "φ":"\\phi","χ":"\\chi","ψ":"\\psi","Δ":"\\Delta","Σ":"\\sum","∑":"\\sum","∫":"\\int"
+  };
+  const sub: Record<string,string> = {"₀":"0","₁":"1","₂":"2","₃":"3","₄":"4","₅":"5","₆":"6","₇":"7","₈":"8","₉":"9","ₖ":"k","ₛ":"s","ₓ":"x","ₘ":"m","ₚ":"p","ₜ":"t","ₐ":"a","ᵦ":"b","ᵢ":"i","ᵣ":"r","ᵥ":"v"};
+  const sup: Record<string,string> = {"⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5","⁶":"6","⁷":"7","⁸":"8","⁹":"9","⁺":"+","⁻":"-"};
+  return source
+    .replace(/ẍ/g, "\\ddot{x}").replace(/ẋ/g, "\\dot{x}")
+    .replace(/√\(([^()]*)\)/g, (_m,inner:string)=>"\\sqrt{"+inner+"}")
+    .replace(/√([A-Za-z0-9]+)/g, (_m,inner:string)=>"\\sqrt{"+inner+"}")
+    .replace(/\bsqrt\s*\(([^()]*)\)/g, (_m,inner:string)=>"\\sqrt{"+inner+"}")
+    .replace(/½/g, "\\frac{1}{2}").replace(/¼/g, "\\frac{1}{4}").replace(/¾/g, "\\frac{3}{4}")
+    .replace(/[θωαβγδεζηκλμνξπρστφχψΔΣ∑∫]/g, char=>greek[char]??char)
+    .replace(/[₀₁₂₃₄₅₆₇₈₉ₖₛₓₘₚₜₐᵦᵢᵣᵥ]+/g, chars=>"_{"+[...chars].map(char=>sub[char]??char).join("")+"}")
+    .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+/g, chars=>"^{"+[...chars].map(char=>sup[char]??char).join("")+"}")
+    .replace(/−/g,"-").replace(/·/g,"\\cdot ").replace(/×/g,"\\times ")
+    .replace(/≤/g,"\\leq ").replace(/≥/g,"\\geq ").replace(/≈/g,"\\approx ")
+    .replace(/≠/g,"\\ne ").replace(/∝/g,"\\propto ").replace(/∥/g,"\\parallel ")
+    .replace(/°/g,"^{\\circ}");
+}
+
+function PhysicsCopy({ value }: { value: string }) {
+  const segments = useMemo<PhysicsSegment[]>(() => {
+    const result: PhysicsSegment[] = [];
+    const pattern = new RegExp(physicsPattern.source, "g");
+    let cursor = 0;
+    for (const match of value.matchAll(pattern)) {
+      const token = match[0];
+      const index = match.index ?? 0;
+      if (index > cursor) result.push({ text: value.slice(cursor, index) });
+      result.push({ text: token, latex: physicsLatex(token) });
+      cursor = index + token.length;
+    }
+    if (cursor < value.length) result.push({ text: value.slice(cursor) });
+    return result.length ? result : [{ text: value }];
+  }, [value]);
+  return <span className="physics-copy">{segments.map((segment,index)=>segment.latex
+    ? <Equation key={index} value={segment.latex}/>
+    : <Fragment key={index}>{segment.text}</Fragment>)}</span>;
+}
 function Brand() {
   return <span className="brand"><span className="brand-mark"><Atom size={22}/></span><span>physimus<span>.</span></span></span>;
 }
@@ -522,9 +623,17 @@ function Discover({language,onOpen}:{language:Language;onOpen:(id:LabId)=>void})
 }
 
 function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:number)=>void}) {
-  const digits=param.step<1? (String(param.step).split(".")[1]?.length??1):0;
+  const digits=param.step<1?(String(param.step).split(".")[1]?.length??1):0;
+  const format=(number:number)=>String(Number.isFinite(number)?Number(number.toFixed(Math.max(0,digits))):param.initial);
+  const [draft,setDraft]=useState(format(value));
+  const inputRef=useRef<HTMLInputElement>(null);
+  const signed=param.min<0;
+  const validCharacters=signed?/^-?[0-9]*\.?[0-9]*$/:/^[0-9]*\.?[0-9]*$/;
+  useEffect(()=>{if(document.activeElement!==inputRef.current)setDraft(format(value));},[value,param.initial,digits]);
+  const commit=()=>{const parsed=Number(draft);if(!draft.trim()||draft==="-"||draft==="."||draft==="-."||!validCharacters.test(draft)||!Number.isFinite(parsed)){setDraft(format(value));return;}const next=Math.max(param.min,Math.min(param.max,parsed));onChange(next);setDraft(format(next));};
   return <label className="slider-control">
-    <span className="slider-heading"><span>{param.label}</span><strong>{value.toFixed(digits)} <small>{param.unit}</small></strong></span>
+    <span className="slider-heading"><span>{param.label}</span><strong><small>{param.unit}</small></strong></span>
+    <div className="parameter-entry-row"><input ref={inputRef} className="parameter-number-input" type="text" inputMode="decimal" value={draft} onChange={e=>{const raw=e.currentTarget.value;if(validCharacters.test(raw))setDraft(raw);}} onBlur={commit} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();e.currentTarget.blur();return;}if(e.key.length===1&&!/[0-9.-]/.test(e.key))e.preventDefault();if(e.key==="-"&&(!signed||e.currentTarget.selectionStart!==0||draft.includes("-")))e.preventDefault();if(e.key==="."&&draft.includes("."))e.preventDefault();}} aria-label={param.label} aria-invalid={!validCharacters.test(draft)|| (draft.trim()!==""&&draft!=="-"&&draft!=="."&&draft!=="-."&&(Number(draft)<param.min||Number(draft)>param.max))}/></div>
     <input type="range" min={param.min} max={param.max} step={param.step} value={value} onChange={e=>onChange(Number(e.target.value))}/>
     <span className="slider-limits"><span>{param.min}</span><span>{param.max}</span></span>
   </label>;
@@ -532,27 +641,46 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
 
 function collisionResults(v:Record<string,number>){
   const m1=v.mass1??2,m2=v.mass2??2,u1=v.velocity1??6,u2=v.velocity2??0,e=Math.max(0,Math.min(1,v.restitution??1));
-  const separation=v.separation??6,contactDistance=0.8;
+  const separation=v.separation??6,contactDistance=0.8,impactDuration=v.impactDuration??.05;
   const relative=u1-u2,collisionTime=relative>0?Math.max(0,separation-contactDistance)/relative:Infinity;
   const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2);
   const v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
-  return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,v1,v2,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
+  const impulseMagnitude=Math.abs(m1*(v1-u1));
+  return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,impactDuration,v1,v2,impulseMagnitude,meanContactForce:Number.isFinite(collisionTime)?impulseMagnitude/impactDuration:0,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
 }
 
+function projectileStateAt(time:number,values:Record<string,number>){
+  const v0=values.speed??0,theta=(values.angle??0)*Math.PI/180,g=values.gravity??9.81,h0=values.height??0,x0=values.x0??0,beta=Math.max(0,values.dragBeta??0);
+  if(beta<1e-8)return {x:x0+v0*Math.cos(theta)*time,y:h0+v0*Math.sin(theta)*time-.5*g*time*time,vx:v0*Math.cos(theta),vy:v0*Math.sin(theta)-g*time};
+  const decay=Math.exp(-beta*time),oneMinus=-Math.expm1(-beta*time);
+  return {x:x0+v0*Math.cos(theta)*oneMinus/beta,y:h0+(v0*Math.sin(theta)+g/beta)*oneMinus/beta-g*time/beta,vx:v0*Math.cos(theta)*decay,vy:(v0*Math.sin(theta)+g/beta)*decay-g/beta};
+}
+function projectileFlightTime(values:Record<string,number>){
+  const v0=values.speed??0,theta=(values.angle??0)*Math.PI/180,g=values.gravity??9.81,h0=values.height??0,beta=Math.max(0,values.dragBeta??0);
+  if(beta<1e-8){const vy=v0*Math.sin(theta);return Math.max(0,(vy+Math.sqrt(vy*vy+2*g*h0))/g);}
+  if(h0<=0&&v0*Math.sin(theta)<=0)return 0;
+  let lo=0,hi=Math.max(1,(v0*Math.sin(theta)+Math.sqrt((v0*Math.sin(theta))**2+2*g*h0))/g);
+  for(let i=0;i<40&&projectileStateAt(hi,values).y>0;i++)hi*=2;
+  if(!Number.isFinite(hi)||hi>1e6)return 0;
+  for(let i=0;i<80;i++){const mid=(lo+hi)/2;if(projectileStateAt(mid,values).y>0)lo=mid;else hi=mid;}
+  return (lo+hi)/2;
+}
 function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const p=(key:string)=>values[key]??0;
   const g=p("gravity")||9.81;
   let duration=lab.duration;
-  if(lab.id==="projectile") {
-    const a=p("angle")*Math.PI/180, vy=p("speed")*Math.sin(a);
-    duration=(vy+Math.sqrt(vy*vy+2*g*p("height")))/g;
+  if(lab.id==="projectile") duration=projectileFlightTime(values);
+  if(lab.id==="circular"&&p("omega")>0) duration=2*Math.PI/p("omega");
+  const energyAngle=(p("inclineAngle")??30)*Math.PI/180,energyParallel=g*Math.sin(energyAngle)+p("appliedWorkForce")/Math.max(p("mass"),1e-9);
+  const energyStaticHolds=p("initialSpeed")<=1e-9&&Math.abs(energyParallel)<=p("staticFriction")*g*Math.cos(energyAngle);
+  const energyAcceleration=energyStaticHolds?0:energyParallel-g*p("friction")*Math.cos(energyAngle);
+  if(lab.id==="energy"){
+    const distance=p("height")/Math.max(Math.sin(energyAngle),1e-6),u=p("initialSpeed"),a=energyAcceleration,discriminant=u*u+2*a*distance;
+    if(a>1e-9)duration=Math.max(.1,(-u+Math.sqrt(discriminant))/a);
+    else if(a< -1e-9)duration=Math.max(.1,discriminant>0?(-u+Math.sqrt(discriminant))/a:u/(-a));
+    else if(u>1e-9)duration=Math.max(.1,distance/u);
   }
-  if(lab.id==="circular") duration=2*Math.PI/p("omega");
-  const energyAngle=Math.PI/6;
-  const energyStaticHolds=Math.tan(energyAngle)<=p("staticFriction");
-  const energyAcceleration=energyStaticHolds?0:g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
-  if(lab.id==="energy"&&energyAcceleration>0) duration=Math.sqrt(2*(p("height")/Math.sin(energyAngle))/energyAcceleration);
-  if(lab.id==="spring") duration=2*Math.PI/Math.sqrt(p("spring")/p("mass"))*2;
+  if(lab.id==="spring") duration=4*Math.PI/Math.max(Math.sqrt(p("spring")/p("mass"))*Math.sqrt(1-Math.max(0,Math.min(.95,p("dampingRatio")))**2),.05);
   if(lab.id==="collision"){
     const collision=collisionResults(values);
     if(Number.isFinite(collision.collisionTime))duration=Math.max(duration,collision.collisionTime+Math.max(2,Math.min(8,1/Math.max(Math.abs(collision.v2-collision.v1),.5))));
@@ -561,50 +689,55 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const points:Point[]=[];
   const angle=p("angle")*Math.PI/180;
   const omega=lab.id==="spring"?Math.sqrt(p("spring")/p("mass")):p("omega");
-  const inclineAngle=lab.id==="energy"?Math.PI/6:angle;
-  const totalDistance=lab.id==="energy"?p("height")/Math.sin(inclineAngle):0;
-  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&Math.tan(inclineAngle)<=p("staticFriction");
-  const accel=lab.id==="incline"&&!staticHolds?Math.max(0,g*(Math.sin(angle)-p("friction")*Math.cos(angle))):0;
+  const inclineAngle=lab.id==="energy"?energyAngle:angle;
+  const totalDistance=lab.id==="energy"?p("height")/Math.max(Math.sin(inclineAngle),1e-6):0;
+  const parallelGravity=lab.id==="incline"?g*Math.sin(angle)+(p("appliedForce")/Math.max(p("mass"),1e-9)):0;
+  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&(lab.id==="energy"?energyStaticHolds:Math.abs(parallelGravity)<=p("staticFriction")*g*Math.cos(angle));
+  const accel=lab.id==="incline"&&!staticHolds?(parallelGravity-Math.sign(parallelGravity||1)*p("friction")*g*Math.cos(angle)):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
     let x=0,y=0,vx=0,vy=0,kinetic=0,potential=0,x2:number|undefined,vx2:number|undefined;
     const mass=p("mass")||1;
     if(lab.id==="projectile") {
-      const v=p("speed"),theta=angle;
-      vx=v*Math.cos(theta);vy=v*Math.sin(theta)-g*time;
-      x=v*Math.cos(theta)*time;
-      y=Math.max(0,p("height")+v*Math.sin(theta)*time-.5*g*time*time);
-      const h=p("height")+v*Math.sin(theta)*time-.5*g*time*time;
-      kinetic=.5*mass*(vx*vx+vy*vy);potential=mass*g*Math.max(0,h);
+      const state=projectileStateAt(time,values);
+      vx=state.vx;vy=state.vy;x=state.x;y=Math.max(0,state.y);
+      kinetic=.5*mass*(vx*vx+vy*vy);potential=mass*g*Math.max(0,state.y);
     } else if(lab.id==="mru") {
       vx=p("speed");x=p("x0")+vx*time;kinetic=.5*mass*vx*vx;
     } else if(lab.id==="mrua") {
       vx=p("speed")+p("acceleration")*time;x=p("x0")+p("speed")*time+.5*p("acceleration")*time*time;kinetic=.5*mass*vx*vx;
     } else if(lab.id==="circular") {
-      const theta=omega*time,r=p("radius");
+      const theta=omega*time+(p("phaseDegrees")*Math.PI/180),r=p("radius");
       x=r*Math.cos(theta);y=r*Math.sin(theta);
       vx=-r*omega*Math.sin(theta);vy=r*omega*Math.cos(theta);kinetic=.5*mass*(r*omega)**2;
     } else if(lab.id==="collision") {
-      const c=collisionResults(values),elapsed=Math.max(0,time-c.collisionTime),hasCollided=time>=c.collisionTime;
-      if(hasCollided&&Number.isFinite(c.collisionTime)){
-        const contactX1=-c.separation/2+c.u1*c.collisionTime,contactX2=c.separation/2+c.u2*c.collisionTime;
-        x=contactX1+c.v1*elapsed;x2=contactX2+c.v2*elapsed;vx=c.v1;vx2=c.v2;
+      const c=collisionResults(values),elapsed=time-c.collisionTime,hasContact=Number.isFinite(c.collisionTime)&&elapsed>=0;
+      if(hasContact){
+        const contactX1=-c.separation/2+c.u1*c.collisionTime,contactX2=c.separation/2+c.u2*c.collisionTime,tau=Math.min(elapsed,c.impactDuration);
+        if(elapsed<c.impactDuration){
+          x=contactX1+c.u1*tau+.5*(c.v1-c.u1)*tau*tau/c.impactDuration;
+          x2=contactX2+c.u2*tau+.5*(c.v2-c.u2)*tau*tau/c.impactDuration;
+          vx=c.u1+(c.v1-c.u1)*tau/c.impactDuration;vx2=c.u2+(c.v2-c.u2)*tau/c.impactDuration;
+        }else{
+          x=contactX1+.5*(c.u1+c.v1)*c.impactDuration+c.v1*(elapsed-c.impactDuration);
+          x2=contactX2+.5*(c.u2+c.v2)*c.impactDuration+c.v2*(elapsed-c.impactDuration);vx=c.v1;vx2=c.v2;
+        }
       }else{
         x=-(values.separation??6)/2+c.u1*time;x2=(values.separation??6)/2+c.u2*time;vx=c.u1;vx2=c.u2;
       }
       kinetic=.5*c.m1*vx*vx+.5*c.m2*(vx2??0)**2;
     } else if(lab.id==="energy") {
-      const s=Math.min(totalDistance,.5*Math.max(0,energyAcceleration)*time*time);
+      const u=p("initialSpeed"),a=energyAcceleration,stopTime=a< -1e-9?u/(-a):Infinity,activeTime=Math.min(time,stopTime),rawDistance=u*activeTime+.5*a*activeTime*activeTime,s=Math.min(totalDistance,Math.max(0,rawDistance));
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
-      const v=Math.max(0,energyAcceleration)*time;
+      const v=Math.max(0,u+a*activeTime);
       x=s*Math.cos(inclineAngle);y=h;vx=v*Math.cos(inclineAngle);vy=-v*Math.sin(inclineAngle);kinetic=.5*mass*v*v;potential=mass*g*h;
     } else if(lab.id==="incline") {
       const a=accel;
       const distance=.5*a*time*time;
-      x=distance*Math.cos(angle);y=-distance*Math.sin(angle);vx=a*time*Math.cos(angle);vy=-a*time*Math.sin(angle);kinetic=.5*mass*vx*vx/(Math.cos(angle)**2||1);potential=0;
+      x=distance*Math.cos(angle);y=-distance*Math.sin(angle);vx=a*time*Math.cos(angle);vy=-a*time*Math.sin(angle);kinetic=.5*mass*(vx*vx+vy*vy);potential=0;
     } else if(lab.id==="spring") {
-      const a=p("amplitude"),w=omega;
-      x=a*Math.cos(w*time);vx=-a*w*Math.sin(w*time);
+      const a=p("amplitude"),zeta=Math.max(0,Math.min(.95,p("dampingRatio"))),omega0=omega,omegaD=omega0*Math.sqrt(1-zeta*zeta),beta=zeta*omega0,phase=p("phaseDegrees")*Math.PI/180,argument=omegaD*time+phase,decay=Math.exp(-beta*time);
+      x=a*decay*Math.cos(argument);vx=a*decay*(-beta*Math.cos(argument)-omegaD*Math.sin(argument));
       y=0;kinetic=.5*mass*vx*vx;potential=.5*p("spring")*x*x;
     }
     points.push({x,y,t:time,vx,vy,speed:Math.hypot(vx,vy),kinetic,potential,...(lab.id==="collision"?{x2,vx2,collisionOccurred:Number.isFinite(collisionResults(values).collisionTime)&&time>=collisionResults(values).collisionTime}:{})});
@@ -612,18 +745,20 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   return points;
 }
 
+function energyAccelerationFor(values:Record<string,number>){const alpha=(values.inclineAngle??30)*Math.PI/180,g=values.gravity??9.81,mass=values.mass??1,drive=g*Math.sin(alpha)+(values.appliedWorkForce??0)/Math.max(mass,1e-9),staticHold=(values.initialSpeed??0)<=1e-9&&Math.abs(drive)<=(values.staticFriction??0)*g*Math.cos(alpha);return staticHold?0:drive-(values.friction??0)*g*Math.cos(alpha);}
+
 function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[],language:Language) {
   const labels=language==="ID"
     ? {x:"Posisi x",y:"Posisi y",speed:"Kelajuan",range:"Jangkauan",max:"Tinggi maksimum",flight:"Waktu terbang",position:"Posisi",velocity:"Kecepatan",acceleration:lab.id==="projectile"?"Percepatan vertikal":"Percepatan",time:"Waktu",period:"Periode",omega:"Kecepatan sudut",centripetal:"Percepatan sentripetal",kinetic:"Energi kinetik",potential:"Energi potensial",mechanical:"Energi mekanik",height:"Ketinggian",initial:"Energi awal",net:"Resultan gaya",distance:"Jarak",mass:"Massa"}
     : {x:"Position x",y:"Position y",speed:"Speed",range:"Range",max:"Maximum height",flight:"Flight time",position:"Position",velocity:"Velocity",acceleration:lab.id==="projectile"?"Vertical acceleration":"Acceleration",time:"Time",period:"Period",omega:"Angular velocity",centripetal:"Centripetal acceleration",kinetic:"Kinetic energy",potential:"Potential energy",mechanical:"Mechanical energy",height:"Height",initial:"Initial energy",net:"Net force",distance:"Distance",mass:"Mass"};
   const peak=points.reduce((best,p)=>p.y>best.y?p:best,points[0]);
-  const exactProjectilePeak=lab.id==="projectile"?(values.height??0)+((values.speed??0)*Math.sin((values.angle??0)*Math.PI/180))**2/(2*(values.gravity??9.81)):peak.y;
+  const projectileBeta=Math.max(0,values.dragBeta??0),projectileV0y=(values.speed??0)*Math.sin((values.angle??0)*Math.PI/180),projectileG=values.gravity??9.81,projectilePeakTime=projectileBeta>1e-8&&projectileV0y>0?Math.log(1+projectileBeta*projectileV0y/projectileG)/projectileBeta:projectileV0y/projectileG;const exactProjectilePeak=lab.id==="projectile"?(projectileBeta>1e-8?projectileStateAt(Math.max(0,projectilePeakTime),values).y:(values.height??0)+projectileV0y**2/(2*projectileG)):peak.y;
   const total=point.kinetic+point.potential;
   const mass=values.mass??1;
   const g=values.gravity??9.81;
   if(lab.id==="projectile") return [
     [labels.x,point.x,"m"],[labels.y,point.y,"m"],[labels.speed,point.speed,"m/s"],
-    [labels.range,points[points.length-1].x,"m"],[labels.max,exactProjectilePeak,"m"],[labels.flight,points[points.length-1].t,"s"]
+    [labels.range,points[points.length-1].x-(values.x0??0),"m"],[labels.max,exactProjectilePeak,"m"],[labels.flight,points[points.length-1].t,"s"]
   ] as [string,number,string][];
   if(lab.id==="mru"||lab.id==="mrua") return [
     [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,lab.id==="mrua"?values.acceleration:0,"m/s²"],
@@ -631,37 +766,44 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
   ] as [string,number,string][];
   if(lab.id==="circular") return [
     [labels.x,point.x,"m"],[labels.y,point.y,"m"],[labels.speed,point.speed,"m/s"],
-    [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"]
+    [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"],[language==="ID"?"Gaya sentripetal":"Centripetal force",mass*values.omega**2*values.radius,"N"]
   ] as [string,number,string][];
   if(lab.id==="collision"){
-    const c=collisionResults(values),occurred=point.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
+    const c=collisionResults(values),v1=point.vx,v2=point.vx2??c.u2;
     return [
       [language==="ID"?"Kecepatan benda 1":"Body 1 velocity",v1,"m/s"],
       [language==="ID"?"Kecepatan benda 2":"Body 2 velocity",v2,"m/s"],
       [language==="ID"?"Momentum total":"Total momentum",c.initialMomentum,"kg·m/s"],
       [language==="ID"?"Energi kinetik sistem":"System kinetic energy",point.kinetic,"J"],
       [language==="ID"?"Impuls benda 1":"Impulse on body 1",c.m1*(v1-c.u1),"N·s"],
-      [language==="ID"?"Waktu tumbukan":"Collision time",Number.isFinite(c.collisionTime)?c.collisionTime:NaN,"s"]
+      [language==="ID"?"Waktu tumbukan":"Collision time",Number.isFinite(c.collisionTime)?c.collisionTime:NaN,"s"],
+      [language==="ID"?"Gaya kontak rata-rata":"Mean contact force",c.meanContactForce,"N"]
     ] as [string,number,string][];
   }
-  if(lab.id==="energy") return [
-    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
-    [language==="ID"?"Energi terdisipasi":"Dissipated energy",Math.max(0,mass*g*values.height-total),"J"],
-    [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
-  ] as [string,number,string][];
+  if(lab.id==="energy") {
+    const alpha=(values.inclineAngle??30)*Math.PI/180,travel=Math.hypot(point.x,values.height-point.y),normal=mass*g*Math.cos(alpha),appliedWork=(values.appliedWorkForce??0)*travel,frictionWork=-values.friction*normal*travel,modelAcceleration=energyAccelerationFor(values),stopTime=modelAcceleration< -1e-9?(values.initialSpeed??0)/(-modelAcceleration):Infinity,instantAcceleration=point.t>=stopTime?0:modelAcceleration;
+    return [
+      [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
+      [language==="ID"?"Usaha nonkonservatif":"Non-conservative work",total-(mass*g*values.height+.5*mass*(values.initialSpeed??0)**2),"J"],
+      [language==="ID"?"Usaha gaya luar":"Applied-force work",appliedWork,"J"],[language==="ID"?"Usaha gesekan":"Friction work",frictionWork,"J"],
+      [language==="ID"?"Daya resultan":"Net power",mass*instantAcceleration*point.speed,"W"],[labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
+    ] as [string,number,string][];
+  }
   if(lab.id==="incline") {
     const angle=values.angle*Math.PI/180;
-    const acceleration=Math.tan(angle)<=values.staticFriction?0:Math.max(0,values.gravity*(Math.sin(angle)-values.friction*Math.cos(angle)));
+    const parallel=values.gravity*Math.sin(angle)+(values.appliedForce??0)/Math.max(mass,1e-9),normal=mass*values.gravity*Math.cos(angle);
+    const isStatic=Math.abs(parallel)<=values.staticFriction*values.gravity*Math.cos(angle);
+    const acceleration=isStatic?0:parallel-Math.sign(parallel||1)*values.friction*values.gravity*Math.cos(angle);
     return [
       [labels.acceleration,acceleration,"m/s²"],[labels.net,mass*acceleration,"N"],
       [language==="ID"?"Gaya normal":"Normal force",mass*values.gravity*Math.cos(angle),"N"],
-      [language==="ID"?"Gaya gesek":"Friction force",acceleration===0?mass*values.gravity*Math.sin(angle):values.friction*mass*values.gravity*Math.cos(angle),"N"],
+      [language==="ID"?"Gaya gesek":"Friction force",isStatic?Math.abs(mass*parallel):values.friction*normal,"N"],
       [labels.velocity,point.speed,"m/s"],[labels.distance,Math.hypot(point.x,point.y),"m"]
     ] as [string,number,string][];
   }
   return [
-    [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,-(values.spring/values.mass)*point.x,"m/s²"],
-    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.period,2*Math.PI*Math.sqrt(values.mass/values.spring),"s"]
+    [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,-(values.spring/values.mass)*point.x-2*(values.dampingRatio??0)*Math.sqrt(values.spring/values.mass)*point.vx,"m/s²"],
+    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.period,2*Math.PI/(Math.sqrt(values.spring/values.mass)*Math.sqrt(1-(values.dampingRatio??0)**2)),"s"]
   ] as [string,number,string][];
 }
 
@@ -672,16 +814,28 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  const qty=(x:number,unit:string)=>"("+n(x)+")\\,\\mathrm{"+unit+"}";
  const m=v.mass??1,g=v.gravity??9.81,theta=(v.angle??0)*Math.PI/180;
  if(id==="projectile"){
-  const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,range=v0*Math.cos(theta)*tf,peak=h0+(v0*Math.sin(theta))**2/(2*g);
+  const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,x0=v.x0??0,beta=Math.max(0,v.dragBeta??0),v0y=v0*Math.sin(theta);
+  const peakTime=beta>1e-8&&v0y>0?Math.log(1+beta*v0y/g)/beta:v0y/g;
+  const peak=beta>1e-8?projectileStateAt(Math.max(0,peakTime),v).y:h0+v0y*v0y/(2*g);
+  const range=p.x-x0;
+  if(beta>1e-8)return [
+   "x(t)=x_0+\\frac{v_0\\cos\\theta}{\\beta}(1-e^{-\\beta t})="+qty(x0,"m")+"+\\frac{("+n(v0)+"\\,\\mathrm{m/s})\\cos("+n(angle)+"^\\circ)}{"+n(beta)+"\\,\\mathrm{s^{-1}}}(1-e^{-("+n(beta)+"\\,\\mathrm{s^{-1}})("+n(time)+"\\,\\mathrm{s})})="+qty(p.x,"m"),
+   "y(t)=h_0+\\frac{v_0\\sin\\theta+g/\\beta}{\\beta}(1-e^{-\\beta t})-\\frac{gt}{\\beta}="+qty(p.y,"m"),
+   "v_x=v_0\\cos\\theta\\,e^{-\\beta t}="+qty(p.vx,"m/s")+"\\quad v_y=(v_0\\sin\\theta+g/\\beta)e^{-\\beta t}-g/\\beta="+qty(p.vy,"m/s"),
+   "R=x(t_f)-x_0="+qty(range,"m"),
+   "t_{\\max}=\\frac{1}{\\beta}\\ln(1+\\frac{\\beta v_0\\sin\\theta}{g})="+qty(Math.max(0,peakTime),"s")+"\\quad H_{\\max}="+qty(peak,"m"),
+   "y(t_f)=0\\quad\\text{(akar dicari numerik dengan bisection)}\\quad t_f="+qty(tf,"s")
+  ][index];
   return [
-   "x(t)=x_0+v_0\\cos\\theta\\,t=0+"+qty(v0,"m/s")+"\\cos("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})="+qty(p.x,"m"),
-   "y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2="+qty(h0,"m")+"+"+qty(v0,"m/s")+"\\sin("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})-\\frac12("+n(g)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})^2="+qty(p.y,"m"),
+   "x(t)=x_0+v_0\\cos\\theta\\,t="+qty(x0,"m")+"+("+qty(v0,"m/s")+")\\cos("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})="+qty(p.x,"m"),
+   "y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2="+qty(h0,"m")+"+("+qty(v0,"m/s")+")\\sin("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})-\\frac12("+n(g)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})^2="+qty(p.y,"m"),
    "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+n(p.vx)+"\\,\\mathrm{m/s})^2+("+n(p.vy)+"\\,\\mathrm{m/s})^2}="+qty(p.speed,"m/s"),
    "R=v_0\\cos\\theta\\,t_f=("+n(v0)+"\\,\\mathrm{m/s})\\cos("+n(angle)+"^\\circ)("+n(tf)+"\\,\\mathrm{s})="+qty(range,"m"),
-   "H_{\\max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+qty(h0,"m")+"+\\frac{("+n(v0)+"\\,\\mathrm{m/s})^2\\sin^2("+n(angle)+"^\\circ)}{2("+n(g)+"\\,\\mathrm{m/s^2})}="+qty(peak,"m"),
-   "t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}=\\frac{("+n(v0)+"\\,\\mathrm{m/s})\\sin("+n(angle)+"^\\circ)+\\sqrt{[("+n(v0)+"\\,\\mathrm{m/s})\\sin("+n(angle)+"^\\circ)]^2+2("+n(g)+"\\,\\mathrm{m/s^2})("+n(h0)+"\\,\\mathrm{m})}}{"+n(g)+"\\,\\mathrm{m/s^2}}="+qty(tf,"s")
+   "H_{\\max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+qty(peak,"m"),
+   "t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}="+qty(tf,"s")
   ][index];
  }
+
  if(id==="mru"){
   const x0=v.x0??0,speed=v.speed??0;
   return [
@@ -705,26 +859,29 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="circular"){
-  const r=v.radius??0,omega=v.omega??0;
+  const r=v.radius??0,omega=v.omega??0,phase=(v.phaseDegrees??0)*Math.PI/180;
   return [
-   "x=r\\cos(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.x,"m"),
-   "y=r\\sin(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.y,"m"),
+   "x=r\\cos(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.x,"m"),
+   "y=r\\sin(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.y,"m"),
    "v=\\omega r=("+n(omega)+"\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+qty(p.speed,"m/s"),
    omega>0?"T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/omega,"s"):"T=\\frac{2\\pi}{0}=\\text{undefined for }\\omega=0",
    "\\omega="+qty(omega,"rad/s"),
-   "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
+   "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2"),
+   "F_c=m\\omega^2r=("+qty(v.mass??1,"kg")+")("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty((v.mass??1)*omega*omega*r,"N")
   ][index];
  }
+
  if(id==="collision"){
-  const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
-  const impulse=occurred?c.m1*(c.v1-c.u1):0;
+  const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=p.vx,v2=p.vx2??c.u2;
+  const impulse=occurred?c.m1*(v1-c.u1):0;
+  const contactFraction=Number.isFinite(c.collisionTime)?Math.max(0,Math.min(1,(time-c.collisionTime)/c.impactDuration)):0;
   const tc=Number.isFinite(c.collisionTime)?c.collisionTime:NaN;
   const formulaV1=occurred
-   ?"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+qty(c.m1,"kg")+"-"+n(c.e)+"("+qty(c.m2,"kg")+"))("+qty(c.u1,"m/s")+")+(1+"+n(c.e)+")("+qty(c.m2,"kg")+")("+qty(c.u2,"m/s")+")}{"+qty(c.m1,"kg")+"+"+qty(c.m2,"kg")+"}="+qty(c.v1,"m/s")
-   :"v_1(t)=u_1=("+n(c.u1)+"\\,\\mathrm{m/s})="+qty(v1,"m/s")+"\\quad(\\text{before impact})";
+   ?"v_1(t)=u_1+(v_{1,f}-u_1)\\lambda=("+qty(c.u1,"m/s")+")+[("+qty(c.v1,"m/s")+")-("+qty(c.u1,"m/s")+")]("+n(contactFraction)+")="+qty(v1,"m/s")
+   :"v_1(t)=u_1="+qty(v1,"m/s")+"\\quad(\\text{before impact})";
   const formulaV2=occurred
-   ?"v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+qty(c.m1,"kg")+")("+qty(c.u1,"m/s")+")+("+qty(c.m2,"kg")+"-"+n(c.e)+"("+qty(c.m1,"kg")+"))("+qty(c.u2,"m/s")+")}{"+qty(c.m1,"kg")+"+"+qty(c.m2,"kg")+"}="+qty(c.v2,"m/s")
-   :"v_2(t)=u_2=("+n(c.u2)+"\\,\\mathrm{m/s})="+qty(v2,"m/s")+"\\quad(\\text{before impact})";
+   ?"v_2(t)=u_2+(v_{2,f}-u_2)\\lambda=("+qty(c.u2,"m/s")+")+[("+qty(c.v2,"m/s")+")-("+qty(c.u2,"m/s")+")]("+n(contactFraction)+")="+qty(v2,"m/s")
+   :"v_2(t)=u_2="+qty(v2,"m/s")+"\\quad(\\text{before impact})";
   const tExpression=Number.isFinite(tc)
    ?"t_c=\\frac{s-d}{u_1-u_2}=\\frac{("+n(c.separation)+"-"+n(c.contactDistance)+")\\,\\mathrm{m}}{("+n(c.u1)+"-("+n(c.u2)+"))\\,\\mathrm{m/s}}="+qty(tc,"s")
    :language==="ID"?"\\text{Tidak terjadi kontak: }u_1\\leq u_2":"\\text{No collision: }u_1\\leq u_2";
@@ -733,46 +890,49 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
    formulaV2,
    "p_{total}=m_1u_1+m_2u_2=("+n(c.m1)+"\\,\\mathrm{kg})("+n(c.u1)+"\\,\\mathrm{m/s})+("+n(c.m2)+"\\,\\mathrm{kg})("+n(c.u2)+"\\,\\mathrm{m/s})="+n(c.initialMomentum)+"\\,\\mathrm{kg\\,m/s}",
    "K(t)=\\frac12m_1v_1(t)^2+\\frac12m_2v_2(t)^2=\\frac12("+qty(c.m1,"kg")+")("+qty(v1,"m/s")+")^2+\\frac12("+qty(c.m2,"kg")+")("+qty(v2,"m/s")+")^2="+qty(p.kinetic,"J"),
-   occurred?"J_1=m_1(v_1-u_1)=("+qty(c.m1,"kg")+")[("+qty(c.v1,"m/s")+")-("+qty(c.u1,"m/s")+")]="+qty(impulse,"N\\,s"):"J_1(t)=0\\,\\mathrm{N\\,s}\\quad(\\text{no impact yet})",
-   tExpression
+   occurred?"J_1(t)=m_1[v_1(t)-u_1]=("+qty(c.m1,"kg")+")[("+qty(v1,"m/s")+")-("+qty(c.u1,"m/s")+")]="+qty(impulse,"N\\,s"):"J_1(t)=0\\,\\mathrm{N\\,s}\\quad(\\text{no impact yet})",
+   tExpression,
+   "F_{\\mathrm{avg}}=\\frac{|J|}{\\Delta t_c}=\\frac{"+qty(c.impulseMagnitude,"N\\,s")+"}{"+qty(c.impactDuration,"s")+"}="+qty(c.meanContactForce,"N")
   ][index];
  }
  if(id==="energy"){
-  const h0=v.height??0,mu=v.friction??0,alpha=Math.PI/6,staticHolds=Math.tan(alpha)<=(v.staticFriction??0),a=staticHolds?0:g*(Math.sin(alpha)-mu*Math.cos(alpha)),distance=Math.hypot(p.x,h0-p.y);
-  const dissipated=Math.max(0,m*g*h0-p.kinetic-p.potential);
-  return [
-   "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
-   "E_p=mgh=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})("+n(p.y)+"\\,\\mathrm{m})="+qty(p.potential,"J"),
-   "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
-   "E_{diss}=mgh_0-E_m=("+qty(m,"kg")+")("+qty(g,"m/s^2")+")("+qty(h0,"m")+")-("+qty(p.kinetic+p.potential,"J")+")="+qty(dissipated,"J"),
-   "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin(30^\\circ)="+qty(p.y,"m"),
-   "v=at=("+n(Math.max(0,a))+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
-  ][index];
- }
- if(id==="incline"){
-  const mu=v.friction??0,muS=v.staticFriction??0,staticHolds=Math.tan(theta)<=muS;
-  const a=staticHolds?0:Math.max(0,g*(Math.sin(theta)-mu*Math.cos(theta)));
-  const normal=m*g*Math.cos(theta),friction=staticHolds?m*g*Math.sin(theta):mu*normal;
+   const h0=v.height??0,mu=v.friction??0,alpha=(v.inclineAngle??30)*Math.PI/180,external=v.appliedWorkForce??0,parallel=g*Math.sin(alpha)+external/Math.max(m,1e-9),staticHolds=(v.initialSpeed??0)<=1e-9&&Math.abs(parallel)<=(v.staticFriction??0)*g*Math.cos(alpha),a=staticHolds?0:parallel-mu*g*Math.cos(alpha),stopTime=a< -1e-9?(v.initialSpeed??0)/(-a):Infinity,activeTime=Math.min(time,stopTime),distance=Math.hypot(p.x,h0-p.y),normal=m*g*Math.cos(alpha),nonConservativeWork=p.kinetic+p.potential-(.5*m*(v.initialSpeed??0)**2+m*g*h0),appliedWork=external*distance,frictionWork=-mu*normal*distance,activeAcceleration=time>=stopTime?0:a;
+   return [
+    "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
+    "E_p=mgh=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})("+n(p.y)+"\\,\\mathrm{m})="+qty(p.potential,"J"),
+    "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
+    "W_{\\mathrm{nc}}=E_{m,f}-E_{m,i}=W_{\\mathrm{applied}}+W_{\\mathrm{friction}}="+qty(appliedWork,"J")+"+("+qty(frictionWork,"J")+")="+qty(nonConservativeWork,"J"),
+    "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin("+n(v.inclineAngle??30)+"^\\circ)="+qty(p.y,"m"),
+    "v=v_0+at_{\\mathrm{active}}=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(a)+"\\,\\mathrm{m/s^2})("+n(activeTime)+"\\,\\mathrm{s})="+qty(p.speed,"m/s"),
+    "W_{\\mathrm{applied}}=F_{\\parallel}s=("+n(external)+"\\,\\mathrm{N})("+n(distance)+"\\,\\mathrm{m})="+qty(appliedWork,"J"),
+    "W_{\\mathrm{friction}}=-\\mu_kNs=-("+n(mu)+")("+qty(normal,"N")+")("+n(distance)+"\\,\\mathrm{m})="+qty(frictionWork,"J"),
+    "P_{\\mathrm{net}}=F_{\\mathrm{net}}v=ma v=("+n(m)+"\\,\\mathrm{kg})("+n(activeAcceleration)+"\\,\\mathrm{m/s^2})("+n(p.speed)+"\\,\\mathrm{m/s})="+qty(m*activeAcceleration*p.speed,"W")
+   ][index];
+  }
+  if(id==="incline"){
+  const mu=v.friction??0,muS=v.staticFriction??0,external=v.appliedForce??0,parallel=m*g*Math.sin(theta)+external,staticHolds=Math.abs(parallel)<=muS*m*g*Math.cos(theta)/Math.max(m,1e-9);
+  const a=staticHolds?0:parallel/m-Math.sign(parallel||1)*mu*g*Math.cos(theta);
+  const normal=m*g*Math.cos(theta),friction=staticHolds?Math.abs(parallel):mu*normal;
   const frictionFormula=staticHolds
-   ?"f_s=mg\\sin\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\sin("+n(v.angle??0)+"^\\circ)="+qty(friction,"N")
+   ?"f_s=|mg\\sin\\theta+F_{\\parallel}|="+qty(friction,"N")
    :"f_k=\\mu_kN=("+n(mu)+")("+n(normal)+"\\,\\mathrm{N})="+qty(friction,"N");
   return [
-   staticHolds?"a=0\\quad(\\tan\\theta\\leq\\mu_s)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=("+n(g)+")[\\sin("+n(v.angle??0)+"^\\circ)-("+n(mu)+")\\cos("+n(v.angle??0)+"^\\circ)]="+qty(a,"m/s^2"),
+   staticHolds?"a=0\\quad(\\text{static friction})":"a=\\frac{mg\\sin\\theta+F_{\\parallel}}{m}-\\operatorname{sgn}(mg\\sin\\theta+F_{\\parallel})\\mu_k g\\cos\\theta="+qty(a,"m/s^2"),
    "\\sum F_{\\parallel}=ma=("+n(m)+"\\,\\mathrm{kg})("+n(a)+"\\,\\mathrm{m/s^2})="+qty(m*a,"N"),
    "N=mg\\cos\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
    frictionFormula,
-   "v=at=("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s"),
+   "|v|=|a|t=|("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})|="+qty(p.speed,"m/s"),
    "s=\\frac12at^2=\\frac12("+qty(a,"m/s^2")+")("+qty(time,"s")+")^2="+qty(Math.hypot(p.x,p.y),"m")
   ][index];
  }
- const k=v.spring??0,A=v.amplitude??0,omega=Math.sqrt(k/Math.max(m,.01)),acceleration=-omega*omega*p.x;
+ const k=v.spring??0,A=v.amplitude??0,omega=Math.sqrt(k/Math.max(m,.01)),zeta=v.dampingRatio??0,beta=zeta*omega,phase=(v.phaseDegrees??0)*Math.PI/180,omegaD=omega*Math.sqrt(1-zeta*zeta),acceleration=-omega*omega*p.x-2*beta*p.vx;
  return [
-  "x(t)=A\\cos(\\omega t)=("+n(A)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.x,"m"),
-  "v(t)=-A\\omega\\sin(\\omega t)=-("+qty(A,"m")+")("+n(omega)+"\\,\\mathrm{rad/s})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+qty(time,"s")+"))="+qty(p.vx,"m/s"),
-  "a(t)=-\\omega^2x=-("+n(omega)+"\\,\\mathrm{rad/s})^2("+qty(p.x,"m")+")="+qty(acceleration,"m/s^2"),
+  "x(t)=Ae^{-\\beta t}\\cos(\\omega_d t+\\phi)=("+n(A)+"\\,\\mathrm{m})e^{-("+n(beta)+"\\,\\mathrm{s^{-1}})("+n(time)+"\\,\\mathrm{s})}\\cos(("+n(omegaD)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.x,"m"),
+  "v(t)=Ae^{-\\beta t}[-\\beta\\cos(\\omega_dt+\\phi)-\\omega_d\\sin(\\omega_dt+\\phi)]="+qty(p.vx,"m/s"),
+  "a(t)=-\\omega_0^2x-2\\beta v="+qty(acceleration,"m/s^2"),
   "E_k=\\frac12mv^2=\\frac12("+qty(m,"kg")+")("+qty(p.speed,"m/s")+")^2="+qty(p.kinetic,"J"),
   "E_p=\\frac12kx^2=\\frac12("+qty(k,"N/m")+")("+qty(p.x,"m")+")^2="+qty(p.potential,"J"),
-  k>0?"T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+qty(m,"kg")+"}{"+qty(k,"N/m")+"}}="+qty(2*Math.PI*Math.sqrt(m/k),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0"
+  k>0?"T_d=\\frac{2\\pi}{\\omega_d}=\\frac{2\\pi}{"+n(omegaD)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/Math.max(omegaD,1e-12),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0"
  ][index];
 }
 function objectOptionsFor(id:LabId,language:Language):{value:string;label:string}[] {
@@ -851,11 +1011,11 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
   if(id==="projectile"){
     const g=9.81;
     if(variant){
-      const v=r(14,28,1),a=r(25,65,1),rad=a*Math.PI/180,answer=v*v*Math.sin(2*rad)/g;
-      return {prompt:en?"A projectile lands at the same height from which it was launched. Calculate its horizontal range.":"Sebuah benda ditembakkan dan mendarat pada ketinggian yang sama. Hitung jangkauan horizontalnya.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"R=\\frac{v_0^2\\sin(2\\theta)}{g}",answer,unit:"m",resultLabel:en?"Horizontal range":"Jangkauan horizontal",steps:["R=\\frac{("+v+")^2\\sin(2\\times"+a+"^\\circ)}{9.81}","R="+f(answer)+"\\;\\mathrm{m}"]};
+      const v=r(14,28,1),angle=r(25,65,1),rad=angle*Math.PI/180,answer=v*v*Math.sin(2*rad)/g;
+      return {prompt:en?"A projectile lands at the same height from which it was launched. Calculate its horizontal range.":"Sebuah benda ditembakkan dan mendarat pada ketinggian yang sama. Hitung jangkauan horizontalnya.",given:"v₀ = "+v+" m/s, θ = "+angle+"°, g = 9.81 m/s²",formula:"R=\\frac{v_0^2\\sin(2\\theta)}{g}",answer,unit:"m",resultLabel:en?"Horizontal range":"Jangkauan horizontal",steps:["R=\\frac{("+v+")^2\\sin(2\\times"+angle+"^\\circ)}{9.81}","R="+f(answer)+"\\;\\mathrm{m}"]};
     }
-    const v=r(14,28,1),a=r(25,65,1),rad=a*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
-    return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"\\Delta h_{max}=\\frac{v_0^2\\sin^2\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\Delta h=\\frac{("+v+")^2\\sin^2("+a+"^\\circ)}{2(9.81)}","\\Delta h="+f(answer)+"\\;\\mathrm{m}"]};
+    const v=r(14,28,1),angle=r(25,65,1),rad=angle*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
+    return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+angle+"°, g = 9.81 m/s²",formula:"\\Delta h_{max}=\\frac{v_0^2\\sin^2\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\Delta h=\\frac{("+v+")^2\\sin^2("+angle+"^\\circ)}{2(9.81)}","\\Delta h="+f(answer)+"\\;\\mathrm{m}"]};
   }
   if(id==="mru"){
     const v=r(3,18,1),t=r(2,12,1);
@@ -884,23 +1044,6 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
     const answer=omega*omega*radius;
     return {prompt:en?"Calculate the centripetal acceleration.":"Hitung percepatan sentripetal benda.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"a_c=\\omega^2r",answer,unit:"m/s²",resultLabel:en?"Centripetal acceleration":"Percepatan sentripetal",steps:["a_c=("+omega+")^2("+radius+")","a_c="+f(answer)+"\\;\\mathrm{m/s^2}"]};
   }
-  if(id==="energy"){
-    const g=9.81;
-    if(variant){
-      const m=r(1,5,.5),h=r(1,12,.5),answer=m*g*h;
-      return {prompt:en?"Calculate the gravitational potential energy relative to the ground.":"Hitung energi potensial gravitasi benda terhadap permukaan tanah.",given:"m = "+m+" kg, h = "+h+" m, g = 9.81 m/s²",formula:"E_p=mgh",answer,unit:"J",resultLabel:en?"Gravitational potential energy":"Energi potensial gravitasi",steps:["E_p=("+m+")("+g+")("+h+")","E_p="+f(answer)+"\\;\\mathrm{J}"]};
-    }
-    const h=r(1,15,.5),answer=Math.sqrt(2*g*h);
-    return {prompt:en?"Find the speed after a frictionless drop from rest.":"Tentukan kelajuan setelah benda turun tanpa gesekan dari keadaan diam.",given:"Δh = "+h+" m, v₀ = 0, g = 9.81 m/s²",formula:"v=\\sqrt{2g\\Delta h}",answer,unit:"m/s",resultLabel:en?"Speed":"Kelajuan",steps:["\\frac12mv^2=mg\\Delta h","v=\\sqrt{2(9.81)("+h+")}","v="+f(answer)+"\\;\\mathrm{m/s}"]};
-  }
-  if(id==="incline"){
-    if(variant){
-      const mu=r(.15,.65,.01),answer=Math.atan(mu)*180/Math.PI;
-      return {prompt:en?"Find the critical incline angle at which a block is just about to slide from rest.":"Tentukan sudut kritis bidang miring saat balok tepat akan mulai meluncur dari diam.",given:"μₛ = "+mu.toFixed(2),formula:"\\tan\\theta_c=\\mu_s",answer,unit:"°",resultLabel:en?"Critical angle":"Sudut kritis",steps:["\\theta_c=\\arctan("+mu.toFixed(2)+")","\\theta_c="+f(answer)+"^\\circ"]};
-    }
-    const angle=r(28,55,1),mu=r(.05,.2,.01),g=9.81,rad=angle*Math.PI/180,answer=g*(Math.sin(rad)-mu*Math.cos(rad));
-    return {prompt:en?"A block is already sliding downhill. Find its acceleration.":"Balok sudah meluncur menuruni bidang. Hitung percepatannya.",given:"θ = "+angle+"°, μₖ = "+mu.toFixed(2)+", g = 9.81 m/s²",formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta)",answer,unit:"m/s²",resultLabel:en?"Down-slope acceleration":"Percepatan turun bidang",steps:["a=9.81(\\sin "+angle+"^\\circ-"+mu.toFixed(2)+"\\cos "+angle+"^\\circ)","a="+f(answer)+"\\;\\mathrm{m/s^2}"]};
-  }
   if(id==="collision"){
     const m1=r(1,4,.5),m2=r(1,4,.5),u1=r(5,10,.5),u2=r(-2,2,.5),e=r(0,1,.1);
     const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2),v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
@@ -919,6 +1062,10 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
   const answer=2*Math.PI*Math.sqrt(m/k);
   return {prompt:en?"Calculate the period of an ideal mass–spring oscillator.":"Hitung periode osilasi sistem massa–pegas ideal.",given:"m = "+m+" kg, k = "+k+" N/m",formula:"T=2\\pi\\sqrt{\\frac{m}{k}}",answer,unit:"s",resultLabel:en?"Oscillation period":"Periode osilasi",steps:["T=2\\pi\\sqrt{\\frac{"+m+"}{"+k+"}}","T="+f(answer)+"\\;\\mathrm{s}"]};
 }
+function practiceGivenLatex(given:string){
+ return given.replace(/m₁/g,"m_1").replace(/m₂/g,"m_2").replace(/u₁/g,"u_1").replace(/u₂/g,"u_2").replace(/v₀/g,"v_0").replace(/x₀/g,"x_0").replace(/μₛ/g,"\\mu_s").replace(/μₖ/g,"\\mu_k").replace(/Δh/g,"\\Delta h").replace(/ω/g,"\\omega").replace(/θ/g,"\\theta").replace(/\s*=\s*/g,"=").replace(/,\s*/g,"\\quad ").replace(/([0-9]+(?:\.[0-9]+)?)\s*kg/g,"$1\\,\\mathrm{kg}").replace(/([0-9]+(?:\.[0-9]+)?)\s*m\/s²/g,"$1\\,\\mathrm{m/s^2}").replace(/([0-9]+(?:\.[0-9]+)?)\s*m\/s/g,"$1\\,\\mathrm{m/s}").replace(/([0-9]+(?:\.[0-9]+)?)\s*N\/m/g,"$1\\,\\mathrm{N/m}").replace(/([0-9]+(?:\.[0-9]+)?)\s*rad\/s/g,"$1\\,\\mathrm{rad/s}").replace(/([0-9]+(?:\.[0-9]+)?)\s*Hz/g,"$1\\,\\mathrm{Hz}").replace(/([0-9]+(?:\.[0-9]+)?)\s*°/g,"$1^\\circ").replace(/([0-9]+(?:\.[0-9]+)?)\s*N·s/g,"$1\\,\\mathrm{N\\,s}");
+}
+function practiceUnitLatex(unit:string){return unit==="m/s²"?"\\mathrm{m/s^2}":unit==="m/s"?"\\mathrm{m/s}":unit==="N·s"?"\\mathrm{N\\,s}":unit==="kg"?"\\mathrm{kg}":unit==="Hz"?"\\mathrm{Hz}":unit==="°"?"^\\circ":unit==="J"?"\\mathrm{J}":unit==="N"?"\\mathrm{N}":"\\mathrm{"+unit+"}";}
 function PracticePanel({labId,language,variant="lab"}:{labId:LabId;language:Language;variant?:"lab"|"lesson"}) {
   const en=language==="EN";
   const [question,setQuestion]=useState(()=>makePracticeQuestion(labId,language));
@@ -929,12 +1076,12 @@ function PracticePanel({labId,language,variant="lab"}:{labId:LabId;language:Lang
   const replace=()=>{setQuestion(makePracticeQuestion(labId,language));setAnswer("");setChecked(false);setShowSolution(false);};
   return <section className="practice-panel">
     <div className="practice-top"><div><span className="eyebrow">{variant==="lesson"?(en?"LEARNING MODULE PRACTICE":"LATIHAN MODUL BELAJAR"):(en?"PRACTICE LAB":"LATIHAN LABORATORIUM")}</span><h2>{variant==="lesson"?(en?"Topic exercises":"Latihan materi"):(en?"Random challenge":"Tantangan acak")}</h2><p>{variant==="lesson"?(en?"Check your understanding without leaving this lesson.":"Uji pemahaman tanpa meninggalkan materi yang sedang dipelajari."):(en?"Solve a short problem using the active topic.":"Selesaikan soal singkat sesuai materi laboratorium yang sedang dibuka.")}</p></div><button className="secondary-button" onClick={replace}><RotateCcw size={15}/>{en?"New question":"Soal baru"}</button></div>
-    <div className="practice-content"><div className="practice-question"><strong>{question.prompt}</strong><p>{question.given}</p><div className="practice-formula"><Equation value={question.formula} display/></div></div>
+    <div className="practice-content"><div className="practice-question"><strong>{question.prompt}</strong><div className="practice-given"><Equation value={practiceGivenLatex(question.given)} display/></div><div className="practice-formula"><Equation value={question.formula} display/></div></div>
       <div className="practice-answer"><label>{en?"Your answer":"Jawabanmu"} ({question.unit})<input type="number" value={answer} onChange={e=>{setAnswer(e.target.value);setChecked(false);}} placeholder={en?"Enter a number":"Masukkan angka"}/></label><button className="primary-button" onClick={()=>setChecked(true)} disabled={!answer.trim()}>{en?"Check answer":"Periksa jawaban"}</button>
-      {checked&&<p className={correct?"practice-correct":"practice-incorrect"}>{correct?(en?"Correct — well done!":"Benar — perhitungannya tepat!"):(en?"Not quite. Recheck the substitution and units.":"Belum tepat. Periksa kembali substitusi angka dan satuannya.")}</p>}
+      {checked&&<p className={correct?"practice-correct":"practice-incorrect"}>{correct?(en?"Correct — well done!":"Benar — perhitungannya tepat!"):(en?"Not quite. Recheck the substitution and units.":"Belum tepat. Periksa kembali langkah hitung dan satuannya.")}</p>}
       <button className="practice-solution-button" onClick={()=>setShowSolution(v=>!v)}>{showSolution?(en?"Hide solution":"Sembunyikan pembahasan"):(en?"Show worked solution":"Lihat pembahasan")}</button></div>
     </div>
-    {showSolution&&<div className="practice-solution"><strong>{question.resultLabel}: {question.answer.toFixed(2)} {question.unit}</strong>{question.steps.map((step,i)=><div key={i}><span>{i+1}</span><Equation value={step} display/></div>)}</div>}
+    {showSolution&&<div className="practice-solution"><strong>{question.resultLabel}: <Equation value={question.answer.toFixed(2)+"\\,"+practiceUnitLatex(question.unit)}/></strong>{question.steps.map((step,i)=><div key={i}><span>{i+1}</span><Equation value={step} display/></div>)}</div>}
   </section>;
 }
 
@@ -954,7 +1101,7 @@ function downloadFile(name:string,data:string,mime:string) {
 function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode}:{labId:LabId;language:Language;onBack:()=>void;onChoose:(id:LabId)=>void;theme:Theme;motionLevel:MotionLevel;renderMode:RenderMode}) {
   const lab=labs.find(item=>item.id===labId)??labs[0];
   const w=words[language];
-  const [values,setValues]=useState<Record<string,number>>(()=>Object.fromEntries(lab.params.map(p=>[p.key,p.initial])));
+  const [values,setValues]=useState<Record<string,number>>(()=>Object.fromEntries(allLabParams(lab).map(p=>[p.key,p.initial])));
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [speedFactor,setSpeedFactor]=useState(1);const [focusMode,setFocusMode]=useState(false);const [expandedMetric,setExpandedMetric]=useState<string|null>(null);const [graphPan,setGraphPan]=useState({x:0,y:0});const [graphZoom,setGraphZoom]=useState(1);
@@ -964,6 +1111,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const [showTrail,setShowTrail]=useState(true);
   const [notice,setNotice]=useState("");
   const [drawerTab,setDrawerTab]=useState<"model"|"parameters"|"equations"|"tools">("parameters");
+  const [parameterLevel,setParameterLevel]=useState<"basic"|"advanced">("basic");
   const [showRuler,setShowRuler]=useState(false);
   const [showTangent,setShowTangent]=useState(false);
   const [graphMode,setGraphMode]=useState<"trajectory"|"position-time"|"velocity-time"|"acceleration-time">("trajectory");
@@ -979,13 +1127,13 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const metrics=useMemo(()=>metricsFor(lab,values,current,points,language),[lab,values,current,points,language]);
   const plottedPoints=useMemo(()=>graphMode==="trajectory"?points:points.map((p,i)=>{
     const angle=(values.angle??0)*Math.PI/180;
-    const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan(angle)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin(angle)-(values.friction??0)*Math.cos(angle)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
-    return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
+    const inclineNormal=(values.gravity??9.81)*Math.cos(angle),inclineParallel=(values.gravity??9.81)*Math.sin(angle)+(values.appliedForce??0)/Math.max(values.mass??1,.01),inclineStatic=Math.abs(inclineParallel)<= (values.staticFriction??0)*inclineNormal;const energyAngle=(values.inclineAngle??30)*Math.PI/180,energyParallel=(values.gravity??9.81)*Math.sin(energyAngle)+(values.appliedWorkForce??0)/Math.max(values.mass??1,.01),energyStatic=(values.initialSpeed??0)<=1e-9&&Math.abs(energyParallel)<=(values.staticFriction??0)*(values.gravity??9.81)*Math.cos(energyAngle),energyAccel=energyStatic?0:energyParallel-(values.friction??0)*(values.gravity??9.81)*Math.cos(energyAngle);const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springBeta=(values.dampingRatio??0)*springOmega0;const energyStopTime=energyAccel< -1e-9&&(values.initialSpeed??0)>0?(values.initialSpeed??0)/(-energyAccel):Infinity;const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(inclineStatic?0:inclineParallel-Math.sign(inclineParallel||1)*(values.friction??0)*inclineNormal):lab.id==="spring"?-(springOmega0**2)*p.x-2*springBeta*p.vx:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(p.t>=energyStopTime?0:energyAccel):lab.id==="projectile"?-(values.gravity??9.81)-(values.dragBeta??0)*p.vy:lab.id==="collision"?(()=>{const c=collisionResults(values),elapsed=p.t-c.collisionTime;return Number.isFinite(elapsed)&&elapsed>=0&&elapsed<=c.impactDuration?(c.v1-c.u1)/c.impactDuration:0;})():(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
+    return graphMode==="position-time"?{...p,x:p.t,y:lab.id==="energy"?p.x*Math.cos(energyAngle)+((values.height??0)-p.y)*Math.sin(energyAngle):lab.id==="incline"?p.x*Math.cos(angle)-p.y*Math.sin(angle):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:lab.id==="energy"?p.vx*Math.cos(energyAngle)-p.vy*Math.sin(energyAngle):lab.id==="incline"?p.vx*Math.cos(angle)-p.vy*Math.sin(angle):p.vx}:{...p,x:p.t,y:acceleration};
   }),[graphMode,points,lab,values]);
-  const objectOrientation=lab.id==="energy"?Math.PI/6:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
+  const objectOrientation=lab.id==="energy"?(values.inclineAngle??30)*Math.PI/180:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
 
   useEffect(()=>{
-    const initial=Object.fromEntries(lab.params.map(p=>[p.key,p.initial]));
+    const initial=Object.fromEntries(allLabParams(lab).map(p=>[p.key,p.initial]));
     setValues(initial);setSelectedObject(objectOptionsFor(lab.id,language)[0].value);setSelectedObject2(objectOptionsFor(lab.id,language)[1]?.value??objectOptionsFor(lab.id,language)[0].value);setTime(0);timeRef.current=0;setPlaying(false);setNotice("");
   },[lab.id]);
 
@@ -994,7 +1142,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     let frame=0,last=0,lastUi=0;
     const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;
     const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);
-    const fps=reduced?8:constrainedDevice&&motionLevel==="high"?28:motionLevel==="low"?14:motionLevel==="medium"?28:44;
+    const fps=reduced?8:constrainedDevice&&motionLevel==="high"?24:motionLevel==="low"?18:motionLevel==="medium"?30:36;
     const interval=1000/fps;
     const tick=(now:number)=>{
       if(!last)last=now;
@@ -1250,9 +1398,12 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         const data=JSON.parse(String(reader.result)) as {format?:string;labId?:string;values?:Record<string,number>};
         if(data.format!=="physimus-lab-v1"||data.labId!==lab.id||!data.values)throw new Error("Invalid");
         const next:Record<string,number>={};
-        for(const param of lab.params){
+        for(const param of allLabParams(lab)){
           const n=data.values[param.key];
-          if(typeof n!=="number"||!Number.isFinite(n))throw new Error("Invalid parameter");
+          if(typeof n!=="number"||!Number.isFinite(n)){
+            if(advancedParams[lab.id].some(extra=>extra.key===param.key)){next[param.key]=param.initial;continue;}
+            throw new Error("Invalid parameter");
+          }
           next[param.key]=Math.max(param.min,Math.min(param.max,n));
         }
         if((lab.id==="incline"||lab.id==="energy")&&typeof next.friction==="number"&&typeof next.staticFriction==="number"&&next.friction>next.staticFriction)next.friction=next.staticFriction;
@@ -1263,15 +1414,63 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     reader.readAsText(file);
   };
   const activeLabLabel=tLabel(language,lab);
+  const springZeta=values.dampingRatio??0;
+  const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\beta t},\quad v_y=(v_{0y}+g/\beta)e^{-\beta t}-g/\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\zeta\omega_0t}\cos(\omega_dt+\phi),\quad \omega_d=\omega_0\sqrt{1-\zeta^2}`:lab.id==="circular"&&(values.phaseDegrees??0)!==0?String.raw`\theta(t)=\theta_0+\omega t,\quad \theta_0=${((values.phaseDegrees??0)*Math.PI/180).toFixed(3)}\,\mathrm{rad}`:((lab.id==="incline"&&(values.appliedForce??0)!==0)||(lab.id==="energy"&&(values.appliedWorkForce??0)!==0))?String.raw`a=g\sin\theta+\frac{F_{\parallel}}{m}-\operatorname{sgn}(mg\sin\theta+F_{\parallel})\mu_k g\cos\theta`:lab.formula;
   const assumptions:Record<LabId,{id:string;en:string}> = {
-    projectile:{id:"Lintasan 2D ideal tanpa hambatan udara; gravitasi konstan dan permukaan tanah datar.",en:"Ideal 2D trajectory without air drag; gravity is constant and the ground is level."},
+    projectile:{id:"Gravitasi konstan dan permukaan tanah datar. "+((values.dragBeta??0)>0?"Model hambatan linear F_d=−mβv aktif; ini bukan model hambatan kuadratik yang lengkap.":"Hambatan udara diabaikan."),en:"Gravity is constant and the ground is level. "+((values.dragBeta??0)>0?"Linear drag F_d=−mβv is active; this is not a full quadratic drag model.":"Air resistance is neglected.")},
     mru:{id:"Gerak satu dimensi pada lintasan lurus; kecepatan konstan dan resultan gaya nol.",en:"One-dimensional straight-line motion; velocity is constant and net force is zero."},
     mrua:{id:"Gerak satu dimensi dengan percepatan konstan; gaya resultan konstan.",en:"One-dimensional motion with constant acceleration; net force is constant."},
     circular:{id:"Gerak melingkar beraturan: jari-jari dan kecepatan sudut konstan; percepatan sentripetal menuju pusat.",en:"Uniform circular motion: fixed radius and angular speed; centripetal acceleration points inward."},
-    energy:{id:"Bidang miring 30°; benda mulai diam. Gesekan statis menentukan apakah benda mulai bergerak, lalu gesekan kinetis berlaku saat meluncur. Hambatan udara diabaikan.",en:"A 30° incline; the object starts from rest. Static friction determines whether it starts moving, then kinetic friction applies while sliding. Air drag is ignored."},
+    energy:{id:"Balok bergerak pada bidang miring dengan sudut, kelajuan awal, gesekan, dan gaya luar sejajar bidang yang dapat diatur. Gesekan statis menentukan ambang mulai bergerak; selama meluncur, gesekan kinetis bekerja. Hambatan udara dan rotasi diabaikan.",en:"A block moves on an incline with adjustable angle, initial speed, friction, and external force parallel to the plane. Static friction sets the start threshold; kinetic friction acts while sliding. Air drag and rotation are omitted."},
     incline:{id:"Balok pada bidang miring; gesekan statis menentukan ambang gerak, gesekan kinetis berlaku selama meluncur. Hambatan udara diabaikan.",en:"A block on an inclined plane; static friction sets the motion threshold, and kinetic friction applies while sliding. Air drag is ignored."},
-    collision:{id:"Tumbukan satu dimensi terisolasi: impuls eksternal diabaikan dan kontak dimodelkan seketika. Grafik percepatan menandai waktu tumbukan; gaya puncak selama kontak tidak dimodelkan.",en:"Isolated one-dimensional collision: external impulse is neglected and contact is modeled as instantaneous. The acceleration plot marks impact time; peak contact force is not modeled."},
-    spring:{id:"Osilator massa–pegas ideal: pegas linear, tanpa redaman, dan tanpa gaya luar.",en:"Ideal mass–spring oscillator: linear spring, no damping, and no external driving force."}
+    collision:{id:"Tumbukan satu dimensi; impuls eksternal selama kontak diabaikan. Kecepatan akhir dihitung dari momentum dan koefisien restitusi. Gaya kontak yang ditampilkan adalah gaya rata-rata selama durasi kontak, bukan gaya puncak.",en:"One-dimensional collision; external impulse during contact is neglected. Final velocities follow from momentum and restitution. Contact force is the mean over contact duration, not peak force."},
+    spring:{id:"Pegas dianggap linear dengan redaman viskos linier. Model dibatasi pada redaman kurang (ζ < 1), tanpa gesekan kering, histeresis, atau gaya luar periodik.",en:"The spring is linear with viscous damping. The model is restricted to the underdamped regime (ζ < 1), with no dry friction, hysteresis, or periodic driving force."}
+  };
+
+  const modelKnowledge:Record<LabId,{qID:string;aID:string;qEN:string;aEN:string;factID:string;factEN:string}>={
+    projectile:{qID:"Mengapa lintasan menjadi parabola?",aID:"Tanpa hambatan udara, komponen horizontal berkecepatan konstan dan komponen vertikal memiliki percepatan −g. Gabungannya menghasilkan lintasan kuadratik.",qEN:"Why is the trajectory parabolic?",aEN:"Without drag, horizontal velocity is constant while vertical acceleration is −g. Their combination produces a quadratic path.",factID:"Pada ketinggian awal nol tanpa hambatan, sudut komplementer θ dan 90°−θ menghasilkan jangkauan sama.",factEN:"From zero launch height without drag, complementary angles θ and 90°−θ give the same range."},
+    mru:{qID:"Apakah percepatan nol berarti benda diam?",aID:"Tidak. Benda dapat diam atau bergerak dengan kecepatan tetap; yang penting kecepatannya tidak berubah.",qEN:"Does zero acceleration mean an object is at rest?",aEN:"No. It may be at rest or move at constant velocity; its velocity simply does not change.",factID:"Dua benda dapat melewati posisi yang sama pada waktu yang sama walau kecepatan dan arah geraknya berbeda.",factEN:"Two objects may occupy the same position at the same instant while moving at different velocities and directions."},
+    mrua:{qID:"Apakah percepatan negatif selalu berarti melambat?",aID:"Tidak. Tanda negatif hanya menyatakan arah terhadap sumbu pilihan. Benda melambat ketika percepatan berlawanan arah dengan kecepatan.",qEN:"Does negative acceleration always mean slowing down?",aEN:"No. The sign indicates direction relative to the chosen axis. An object slows when acceleration opposes its velocity.",factID:"Di titik tertinggi lemparan vertikal, kecepatan sesaat nol tetapi percepatan gravitasi tetap mengarah ke bawah.",factEN:"At the top of a vertical throw, velocity is momentarily zero but gravitational acceleration still points downward."},
+    circular:{qID:"Mengapa gerak melingkar berkelajuan tetap tetap dipercepat?",aID:"Arah vektor kecepatan terus berubah. Percepatan sentripetal mengubah arah tersebut menuju pusat lingkaran.",qEN:"Why is uniform circular motion still accelerated?",aEN:"The velocity direction continually changes. Centripetal acceleration turns it toward the circle's center.",factID:"Gaya sentripetal bukan gaya baru; itu resultan gaya radial yang dapat berasal dari tegangan, gravitasi, gesekan, atau gaya normal.",factEN:"Centripetal force is not a new force; it is the net radial force supplied by tension, gravity, friction, or a normal force."},
+    energy:{qID:"Apakah energi mekanik selalu kekal?",aID:"Tidak. Usaha oleh gaya nonkonservatif dapat mengubah energi mekanik sistem. Energi total tetap jika transfer ke lingkungan ikut diperhitungkan.",qEN:"Is mechanical energy always conserved?",aEN:"No. Non-conservative work can change a system's mechanical energy. Total energy remains conserved when transfers to the surroundings are included.",factID:"Gaya yang tegak lurus perpindahan dapat melakukan usaha nol meskipun gayanya tidak nol, seperti gaya sentripetal pada gerak melingkar beraturan.",factEN:"A force perpendicular to displacement does zero work even when nonzero, such as centripetal force in uniform circular motion."},
+    incline:{qID:"Apakah gaya gesek statis selalu μₛN?",aID:"Tidak. Gesekan statis menyesuaikan kebutuhan hingga batas maksimum μₛN. Batas maksimum tercapai saat tepat akan slip.",qEN:"Is static friction always μₛN?",aEN:"No. Static friction adjusts as needed up to μₛN, reaching its maximum only at the threshold of slipping.",factID:"Gaya normal tidak selalu sama dengan berat; pada bidang miring sederhana N = mg cos θ.",factEN:"The normal force is not always equal to weight; on a simple incline N = mg cos θ."},
+    collision:{qID:"Apakah momentum dan energi kinetik sama-sama kekal?",aID:"Momentum sistem kekal jika impuls eksternal dapat diabaikan. Energi kinetik hanya kekal pada tumbukan lenting sempurna.",qEN:"Are momentum and kinetic energy both conserved?",aEN:"System momentum is conserved when external impulse is negligible. Kinetic energy is conserved only in elastic collisions.",factID:"Gaya kontak kedua benda sama besar dan berlawanan arah, tetapi perubahan kecepatannya dapat berbeda karena massanya berbeda.",factEN:"The contact forces on two bodies are equal and opposite, but their velocity changes can differ because their masses differ."},
+    spring:{qID:"Apa pengaruh redaman pada osilasi?",aID:"Redaman mengurangi amplitudo dan energi osilasi dari waktu ke waktu. Pada redaman kurang, frekuensi teredam lebih kecil daripada frekuensi alami.",qEN:"How does damping affect oscillation?",aEN:"Damping reduces amplitude and oscillation energy over time. In an underdamped system, damped frequency is below natural frequency.",factID:"Periode pegas ideal tidak bergantung pada amplitudo selama pegas tetap dalam daerah linear.",factEN:"The ideal spring period is independent of amplitude while the spring remains in its linear regime."}
+  };
+
+  const modelKnowledgeExtra:Record<LabId,{qID:string;aID:string;qEN:string;aEN:string}[]> = {
+    projectile:[
+      {qID:"Mengapa sudut 45° tidak selalu menghasilkan jangkauan maksimum?",aID:"Sudut 45° optimum hanya pada model tanpa hambatan dengan titik luncur dan mendarat setinggi sama. Ketinggian awal dan hambatan udara mengubah sudut optimum.",qEN:"Why does 45° not always give the maximum range?",aEN:"45° is optimal only without drag when launch and landing heights are equal. Launch height and air resistance change the optimum angle."},
+      {qID:"Apa arti koefisien β pada model lanjutan?",aID:"β menyatakan rasio koefisien hambatan linear terhadap massa. Model memakai F_d = −mβv, sehingga percepatan hambat berbanding lurus dengan kecepatan dan berlawanan arah.",qEN:"What does β mean in the advanced model?",aEN:"β is the linear-drag coefficient per unit mass. The model uses F_d = −mβv, so drag acceleration is proportional to velocity and opposite its direction."}
+    ],
+    mru:[
+      {qID:"Apakah jarak selalu sama dengan perpindahan?",aID:"Tidak. Jarak adalah panjang lintasan dan tidak negatif, sedangkan perpindahan adalah perubahan posisi bertanda. Keduanya sama besar hanya untuk gerak satu arah tanpa berbalik.",qEN:"Are distance and displacement always equal?",aEN:"No. Distance is path length and non-negative; displacement is signed change in position. They match only for one-way motion without reversing."},
+      {qID:"Mengapa kerangka acuan penting?",aID:"Posisi dan kecepatan diukur relatif terhadap kerangka acuan. Dua pengamat yang bergerak relatif dapat mengukur kecepatan berbeda untuk benda yang sama.",qEN:"Why does the reference frame matter?",aEN:"Position and velocity are measured relative to a reference frame. Observers moving relative to one another can measure different velocities for the same object."}
+    ],
+    mrua:[
+      {qID:"Apa beda kelajuan dan kecepatan?",aID:"Kelajuan adalah besar skalar dari kecepatan dan tidak memiliki arah. Kecepatan adalah vektor; tandanya menunjukkan arah pada sumbu yang dipilih.",qEN:"What is the difference between speed and velocity?",aEN:"Speed is the scalar magnitude of velocity and has no direction. Velocity is a vector; its sign indicates direction on the chosen axis."},
+      {qID:"Apakah benda berhenti ketika v = 0?",aID:"Pada saat itu benda berhenti sesaat, tetapi belum tentu tetap diam. Jika percepatan tidak nol, benda dapat mulai bergerak ke arah sebaliknya.",qEN:"Is an object at rest whenever v = 0?",aEN:"It is momentarily at rest, but not necessarily stationary. If acceleration is nonzero, it may begin moving in the opposite direction."}
+    ],
+    circular:[
+      {qID:"Apa beda kecepatan sudut dan kelajuan tangensial?",aID:"Kecepatan sudut menyatakan perubahan sudut per waktu dan satuannya rad/s. Kelajuan tangensial adalah laju linear lintasan, v = ωr.",qEN:"How do angular speed and tangential speed differ?",aEN:"Angular speed is angular change per time in rad/s. Tangential speed is the linear path speed, v = ωr."},
+      {qID:"Mengapa percepatan sentripetal tidak menaikkan kelajuan pada GMB?",aID:"Dalam GMB, percepatan sentripetal tegak lurus terhadap kecepatan sesaat. Karena tidak ada komponen gaya searah gerak, besar kelajuan tetap sementara arahnya berubah.",qEN:"Why does centripetal acceleration not increase speed in uniform circular motion?",aEN:"It is perpendicular to instantaneous velocity. With no force component along the motion, speed stays constant while direction changes."}
+    ],
+    energy:[
+      {qID:"Apakah usaha bergantung pada lintasan?",aID:"Usaha oleh gaya umum dapat bergantung pada lintasan. Untuk gaya konservatif, usaha hanya bergantung pada posisi awal dan akhir; itulah sebabnya energi potensial dapat didefinisikan.",qEN:"Does work depend on the path?",aEN:"Work by a general force can depend on the path. For a conservative force, work depends only on initial and final positions, allowing a potential energy function."},
+      {qID:"Apa beda usaha dan daya?",aID:"Usaha mengukur transfer energi oleh gaya selama perpindahan. Daya mengukur laju transfer energi, P = dW/dt; untuk gaya konstan P = F·v.",qEN:"What is the difference between work and power?",aEN:"Work measures energy transferred by a force through displacement. Power is the rate of energy transfer, P = dW/dt; for a constant force P = F·v."}
+    ],
+    incline:[
+      {qID:"Apakah gaya normal selalu tegak lurus gravitasi?",aID:"Tidak. Gaya normal selalu tegak lurus permukaan kontak. Arah gravitasi selalu vertikal ke bawah; keduanya hanya tegak lurus pada kondisi geometri tertentu.",qEN:"Is the normal force always perpendicular to gravity?",aEN:"No. The normal force is perpendicular to the contact surface. Gravity is vertical; their directions are perpendicular only in particular geometries."},
+      {qID:"Mengapa μₛ dan μₖ tidak boleh dipertukarkan?",aID:"μₛ membatasi gaya gesek sebelum terjadi slip, sedangkan μₖ menentukan besar gesek ketika permukaan sudah meluncur. Keduanya mewakili kondisi kontak berbeda.",qEN:"Why can't μₛ and μₖ be interchanged?",aEN:"μₛ sets the maximum friction before slipping; μₖ sets friction while surfaces slide. They describe different contact states."}
+    ],
+    collision:[
+      {qID:"Mengapa energi kinetik dapat berkurang tetapi momentum tetap?",aID:"Energi kinetik dapat berpindah menjadi deformasi, panas, atau bunyi. Momentum sistem tetap jika impuls eksternal selama tumbukan dapat diabaikan.",qEN:"How can kinetic energy decrease while momentum stays conserved?",aEN:"Kinetic energy can transfer into deformation, heat, or sound. System momentum remains conserved when external impulse during impact is negligible."},
+      {qID:"Apa batas model tumbukan satu dimensi ini?",aID:"Model hanya menangani gerak sepanjang satu sumbu, impuls eksternal diabaikan, dan gaya kontak dirata-ratakan selama durasi kontak. Rotasi, bentuk benda, dan deformasi rinci tidak diselesaikan.",qEN:"What are the limits of this one-dimensional collision model?",aEN:"It handles motion along one axis, neglects external impulse, and averages contact force over the contact duration. Rotation, body shape, and detailed deformation are not solved."}
+    ],
+    spring:[
+      {qID:"Mengapa model redaman dibatasi pada ζ < 1?",aID:"Bentuk lintasan osilasi teredam yang digunakan adalah solusi redaman kurang. Pada ζ = 1 sistem kritis dan pada ζ > 1 sistem tidak berosilasi; keduanya membutuhkan model respons yang berbeda.",qEN:"Why is the damping model limited to ζ < 1?",aEN:"The displayed damped oscillation is the underdamped solution. At ζ = 1 the system is critically damped; above 1 it is overdamped and requires a different response model."},
+      {qID:"Apakah energi pegas tetap saat ada redaman?",aID:"Tidak. Energi mekanik osilator berkurang karena gaya redaman melakukan usaha negatif. Energi berpindah ke lingkungan, misalnya sebagai energi termal.",qEN:"Does spring energy stay constant when damping is present?",aEN:"No. Mechanical energy decreases because damping does negative work. Energy transfers to the surroundings, for example as thermal energy."}
+    ]
   };
   return <main className="workspace-page">
     <div className="workspace-heading">
@@ -1302,10 +1501,10 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
           <button className={drawerTab==="model"?"selected":""} onClick={()=>setDrawerTab("model")} title={w.question}><CircleHelp/><span>{language==="ID"?"Model":"Model"}</span></button>
         </nav>
         <div className="drawer-content">
-          {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
-          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"PERSAMAAN UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={lab.formula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
+          {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-mode-switch" role="group" aria-label={language==="ID"?"Tingkat parameter":"Parameter level"}><button type="button" className={parameterLevel==="basic"?"active":""} aria-pressed={parameterLevel==="basic"} onClick={()=>setParameterLevel("basic")}>{language==="ID"?"Dasar":"Basic"}</button><button type="button" className={parameterLevel==="advanced"?"active":""} aria-pressed={parameterLevel==="advanced"} onClick={()=>setParameterLevel("advanced")}>{language==="ID"?"Lanjutan":"Advanced"}</button></div><p className="parameter-mode-help">{parameterLevel==="basic"?(language==="ID"?"Variabel utama untuk memahami pengaruh dasar pada eksperimen.":"Core variables for exploring the main effects."):(language==="ID"?"Seluruh parameter, termasuk kondisi awal dan model spesifik yang mengubah perhitungan serta grafik.":"All parameters, including initial conditions and model-specific settings that change calculations and graphs.")}</p><div className="parameter-list">{(parameterLevel==="basic"?lab.params.filter(param=>basicParamKeys[lab.id].includes(param.key)):allLabParams(lab)).map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]??param.initial} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
+          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"MODEL UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={activeMainFormula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p><PhysicsCopy value={language==="ID"?eq.noteID:eq.noteEN}/></p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
           {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button disabled={graphMode==="trajectory"} className={showTangent?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTangent(v=>!v)}>{language==="ID"?"Garis singgung & gradien":"Tangent & slope"}<span>{showTangent?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
-          {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><p className="drawer-help">{language==="ID"?assumptions[lab.id].id:assumptions[lab.id].en}</p></>}
+          {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><div className="model-assumption-card"><strong>{language==="ID"?"Batas dan asumsi model":"Model assumptions and limits"}</strong><p><PhysicsCopy value={language==="ID"?assumptions[lab.id].id:assumptions[lab.id].en}/></p></div><section className="model-qa-section"><h3>{language==="ID"?"Pertanyaan umum":"Common questions"}</h3><details className="model-qa-item" open><summary><PhysicsCopy value={language==="ID"?modelKnowledge[lab.id].qID:modelKnowledge[lab.id].qEN}/></summary><p><PhysicsCopy value={language==="ID"?modelKnowledge[lab.id].aID:modelKnowledge[lab.id].aEN}/></p></details>{modelKnowledgeExtra[lab.id].map((item,index)=><details className="model-qa-item" key={index}><summary><PhysicsCopy value={language==="ID"?item.qID:item.qEN}/></summary><p><PhysicsCopy value={language==="ID"?item.aID:item.aEN}/></p></details>)}</section><aside className="model-fact-card"><span><Sparkles size={14}/>{language==="ID"?"FAKTA FISIKA":"PHYSICS FACT"}</span><p><PhysicsCopy value={language==="ID"?modelKnowledge[lab.id].factID:modelKnowledge[lab.id].factEN}/></p></aside></>}
         </div>
       </aside>
       <section className="graph-panel">
@@ -1341,7 +1540,8 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Memahami dua komponen gerak",en:"Understanding the two components"},idea:{id:"Bayangkan bola dilempar miring. Secara horizontal, tidak ada percepatan jika hambatan udara diabaikan. Secara vertikal, gravitasi selalu menarik benda ke bawah. Karena itu lintasan gabungannya melengkung.",en:"Imagine a ball thrown at an angle. Horizontally there is no acceleration when air resistance is neglected. Vertically, gravity continuously pulls downward, so the combined path is curved."},steps:[{id:"Pilih sumbu x mendatar dan sumbu y vertikal ke atas.",en:"Choose x as horizontal and y as vertically upward."},{id:"Uraikan vektor kecepatan awal v₀ dengan trigonometri: komponen mendatar memakai cosinus, komponen vertikal memakai sinus.",en:"Resolve the initial velocity vector using trigonometry: the horizontal component uses cosine and the vertical component uses sine."},{id:"Tetapkan percepatan aₓ = 0 dan aᵧ = −g. Tanda minus menunjukkan arah gravitasi berlawanan dengan sumbu y positif.",en:"Set aₓ = 0 and aᵧ = −g. The minus sign indicates gravity points opposite to positive y."}],formula:"v_{0x}=v_0\\cos\\theta,\\quad v_{0y}=v_0\\sin\\theta,\\quad a_x=0,\\quad a_y=-g",takeaway:{id:"Pisahkan komponen terlebih dahulu. Menggabungkannya terlalu cepat sering menyebabkan tanda dan arah kecepatan keliru.",en:"Separate the components first. Combining them too early often causes sign and direction errors."}},
    {title:{id:"Menurunkan persamaan posisi",en:"Deriving the position equations"},idea:{id:"Posisi diperoleh dari kecepatan melalui integrasi waktu. Pada arah x, kecepatan tetap. Pada arah y, kecepatan berubah secara linear karena percepatan konstan.",en:"Position follows from velocity by integration over time. Along x, velocity is constant. Along y, velocity changes linearly because acceleration is constant."},steps:[{id:"Mulai dari vₓ = v₀ cos θ. Integralkan terhadap waktu untuk mendapatkan perpindahan horizontal.",en:"Start with vₓ = v₀ cos θ. Integrate with respect to time to obtain horizontal displacement."},{id:"Mulai dari vᵧ = v₀ sin θ − gt. Integralkan untuk memperoleh posisi vertikal.",en:"Start with vᵧ = v₀ sin θ − gt. Integrate to obtain vertical position."},{id:"Tambahkan posisi awal x₀ dan ketinggian awal h₀ sebagai konstanta integrasi.",en:"Add initial position x₀ and initial height h₀ as integration constants."}],formula:"x(t)=x_0+v_0\\cos\\theta\\,t,\\quad y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2",takeaway:{id:"Persamaan horizontal linear terhadap waktu, sedangkan persamaan vertikal kuadratik. Inilah alasan lintasan berbentuk parabola.",en:"The horizontal equation is linear in time, while the vertical equation is quadratic. This is why the trajectory is parabolic."}},
-   {title:{id:"Waktu terbang dan jangkauan",en:"Flight time and range"},idea:{id:"Di titik tertinggi, komponen kecepatan vertikal bernilai nol, tetapi komponen horizontal tetap ada. Saat benda kembali ke tanah, posisi vertikal sama dengan nol relatif terhadap permukaan tanah.",en:"At the highest point, vertical velocity is zero while horizontal velocity remains. When the projectile returns to the ground, its vertical position relative to the ground is zero."},steps:[{id:"Gunakan vᵧ = 0 untuk mencari waktu menuju puncak.",en:"Use vᵧ = 0 to find the time to the apex."},{id:"Substitusikan y = 0 ke persamaan posisi vertikal dan pilih akar waktu yang positif.",en:"Substitute y = 0 into the vertical position equation and choose the positive time root."},{id:"Masukkan waktu terbang ke x(t) untuk mendapatkan jangkauan horizontal.",en:"Substitute the flight time into x(t) to obtain the horizontal range."}],formula:"t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g},\\quad R=v_0\\cos\\theta\\,t_f",takeaway:{id:"Rumus jangkauan v₀² sin(2θ)/g hanya berlaku ketika ketinggian awal dan akhir sama.",en:"The range formula v₀² sin(2θ)/g applies only when launch and landing heights are equal."}}
+   {title:{id:"Waktu terbang dan jangkauan",en:"Flight time and range"},idea:{id:"Di titik tertinggi, komponen kecepatan vertikal bernilai nol, tetapi komponen horizontal tetap ada. Saat benda kembali ke tanah, posisi vertikal sama dengan nol relatif terhadap permukaan tanah.",en:"At the highest point, vertical velocity is zero while horizontal velocity remains. When the projectile returns to the ground, its vertical position relative to the ground is zero."},steps:[{id:"Gunakan vᵧ = 0 untuk mencari waktu menuju puncak.",en:"Use vᵧ = 0 to find the time to the apex."},{id:"Masukkan y = 0 ke model posisi vertikal dan pilih akar waktu yang positif.",en:"Substitute y = 0 into the vertical position equation and choose the positive time root."},{id:"Masukkan waktu terbang ke x(t) untuk mendapatkan jangkauan horizontal.",en:"Substitute the flight time into x(t) to obtain the horizontal range."}],formula:"t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g},\\quad R=v_0\\cos\\theta\\,t_f",takeaway:{id:"Rumus jangkauan v₀² sin(2θ)/g hanya berlaku ketika ketinggian awal dan akhir sama.",en:"The range formula v₀² sin(2θ)/g applies only when launch and landing heights are equal."}},
+   {title:{"id":"Hambatan udara dan batas model","en":"Air resistance and model limits"},"idea":{"id":"Model dasar menganggap hambatan udara nol. Pada mode lanjutan Physimus, hambatan linear per massa β menambahkan gaya F_d = −mβv. Model ini berguna untuk memahami efek redaman, tetapi bukan pengganti lengkap hambatan kuadratik yang umum pada aliran udara berkecepatan tinggi.","en":"The basic model neglects air resistance. In Physimus Advanced mode, linear drag per unit mass β adds F_d = −mβv. This helps illustrate damping, but it is not a full replacement for quadratic drag commonly used for higher-speed airflow."},"steps":[{"id":"Pada arah x: dvₓ/dt = −βvₓ. Solusinya menunjukkan komponen kecepatan mendatar meluruh eksponensial.","en":"Along x: dvₓ/dt = −βvₓ. Its solution shows horizontal velocity decaying exponentially."},{"id":"Pada arah y: dvᵧ/dt = −g − βvᵧ. Gravitasi tetap bekerja ke bawah, sementara hambatan melawan arah kecepatan.","en":"Along y: dvᵧ/dt = −g − βvᵧ. Gravity still acts downward while drag opposes velocity."},{"id":"Bandingkan β = 0 dengan β > 0. Perubahan lintasan dan waktu terbang muncul dari persamaan diferensial yang berbeda.","en":"Compare β = 0 with β > 0. The trajectory and flight time change because the governing differential equations differ."}],"formula":"\\\\frac{dv_x}{dt}=-\\\\beta v_x,\\\\quad \\\\frac{dv_y}{dt}=-g-\\\\beta v_y","takeaway":{"id":"β memiliki satuan s⁻¹. Semakin besar β, semakin cepat komponen kecepatan mengalami peluruhan pada model linear.","en":"β has units s⁻¹. A larger β causes faster velocity-component decay in the linear model."}},
   ]
  },
  mru:{
@@ -1350,7 +1550,8 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Posisi dan perpindahan",en:"Position and displacement"},idea:{id:"Posisi selalu diukur terhadap titik acuan. Jarak adalah panjang lintasan yang ditempuh, sedangkan perpindahan adalah perubahan posisi yang memiliki arah.",en:"Position is measured relative to a reference point. Distance is the path length travelled, while displacement is the directional change in position."},steps:[{id:"Tentukan titik asal dan arah positif.",en:"Choose an origin and positive direction."},{id:"Catat posisi awal x₀ dan posisi akhir x.",en:"Record initial position x₀ and final position x."},{id:"Hitung perpindahan sebagai x − x₀. Jangan menyamakan perpindahan dengan jarak untuk lintasan berbalik arah.",en:"Calculate displacement as x − x₀. Do not equate displacement with distance when the path reverses."}],formula:"\\Delta x=x-x_0",takeaway:{id:"Perpindahan dapat bernilai negatif; jarak tidak pernah negatif.",en:"Displacement can be negative; distance cannot."}},
    {title:{id:"Kecepatan konstan",en:"Constant velocity"},idea:{id:"Kecepatan adalah laju perubahan posisi terhadap waktu. Pada GLB, besar dan arah kecepatan tetap sehingga percepatan sama dengan nol.",en:"Velocity is the rate of change of position with time. In uniform motion, both its magnitude and direction remain constant, so acceleration is zero."},steps:[{id:"Hitung v = Δx/Δt untuk setiap selang waktu.",en:"Calculate v = Δx/Δt for each time interval."},{id:"Jika semua nilai v sama, model GLB konsisten.",en:"If all velocity values are equal, the uniform-motion model is consistent."},{id:"Gunakan x = x₀ + vt untuk memprediksi posisi pada waktu tertentu.",en:"Use x = x₀ + vt to predict position at a given time."}],formula:"v=\\frac{\\Delta x}{\\Delta t}=\\text{konstan},\\quad x(t)=x_0+vt",takeaway:{id:"Kecepatan negatif menunjukkan arah gerak negatif, bukan benda bergerak lebih lambat.",en:"Negative velocity indicates motion in the negative direction, not slower motion."}},
-   {title:{id:"Membaca grafik GLB",en:"Reading uniform-motion graphs"},idea:{id:"Grafik posisi–waktu berupa garis lurus. Gradiennya menyatakan kecepatan. Grafik kecepatan–waktu berupa garis horizontal, dan luas bertanda di bawahnya menyatakan perpindahan.",en:"A position–time graph is a straight line whose slope is velocity. A velocity–time graph is horizontal, and its signed area gives displacement."},steps:[{id:"Pilih dua titik pada grafik x–t.",en:"Choose two points on the x–t graph."},{id:"Hitung gradien Δx/Δt.",en:"Calculate the slope Δx/Δt."},{id:"Periksa grafik v–t: garis horizontal menunjukkan kecepatan konstan.",en:"Check the v–t graph: a horizontal line indicates constant velocity."}],formula:"\\text{gradien grafik }x-t=\\frac{\\Delta x}{\\Delta t}=v,\\quad \\Delta x=\\text{luas bertanda grafik }v-t",takeaway:{id:"Grafik adalah cara lain menyatakan hukum gerak, bukan sekadar gambar pelengkap.",en:"A graph is another representation of the motion law, not merely a decorative picture."}}
+   {title:{id:"Membaca grafik GLB",en:"Reading uniform-motion graphs"},idea:{id:"Grafik posisi–waktu berupa garis lurus. Gradiennya menyatakan kecepatan. Grafik kecepatan–waktu berupa garis horizontal, dan luas bertanda di bawahnya menyatakan perpindahan.",en:"A position–time graph is a straight line whose slope is velocity. A velocity–time graph is horizontal, and its signed area gives displacement."},steps:[{id:"Pilih dua titik pada grafik x–t.",en:"Choose two points on the x–t graph."},{id:"Hitung gradien Δx/Δt.",en:"Calculate the slope Δx/Δt."},{id:"Periksa grafik v–t: garis horizontal menunjukkan kecepatan konstan.",en:"Check the v–t graph: a horizontal line indicates constant velocity."}],formula:"\\text{gradien grafik }x-t=\\frac{\\Delta x}{\\Delta t}=v,\\quad \\Delta x=\\text{luas bertanda grafik }v-t",takeaway:{id:"Grafik adalah cara lain menyatakan hukum gerak, bukan sekadar gambar pelengkap.",en:"A graph is another representation of the motion law, not merely a decorative picture."}},
+   {title:{"id":"Gerak relatif dan kerangka acuan","en":"Relative motion and reference frames"},"idea":{"id":"Kecepatan selalu diukur relatif terhadap pengamat. Penumpang yang berjalan di dalam kereta memiliki kecepatan relatif terhadap kereta dan kecepatan berbeda relatif terhadap tanah.","en":"Velocity is always measured relative to an observer. A passenger walking inside a train has one velocity relative to the train and another relative to the ground."},"steps":[{"id":"Tetapkan kerangka acuan, misalnya tanah atau kendaraan.","en":"Choose a reference frame, such as the ground or a vehicle."},{"id":"Pilih satu arah positif dan gunakan tanda kecepatan secara konsisten.","en":"Choose a positive direction and use signed velocities consistently."},{"id":"Untuk gerak satu dimensi, kecepatan A relatif terhadap B adalah v_AB = v_A − v_B.","en":"For one-dimensional motion, the velocity of A relative to B is v_AB = v_A − v_B."}],"formula":"v_{A/B}=v_A-v_B,\\\\quad x(t)=x_0+vt","takeaway":{"id":"Kecepatan relatif dapat bernilai nol meskipun kedua benda bergerak, jika keduanya memiliki kecepatan sama dalam kerangka yang sama.","en":"Relative velocity can be zero even while both objects move, if they share the same velocity in the same frame."}},
   ]
  },
  mrua:{
@@ -1359,7 +1560,8 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Konsep percepatan",en:"The concept of acceleration"},idea:{id:"Percepatan menjelaskan seberapa cepat kecepatan berubah, termasuk perubahan arah. Nilainya dapat positif atau negatif bergantung pada sumbu dan perubahan kecepatan.",en:"Acceleration describes how quickly velocity changes, including changes in direction. Its sign depends on the coordinate direction and velocity change."},steps:[{id:"Tentukan kecepatan awal dan akhir pada selang waktu.",en:"Identify initial and final velocities over a time interval."},{id:"Hitung a = (v − v₀)/Δt.",en:"Calculate a = (v − v₀)/Δt."},{id:"Tetapkan tanda berdasarkan arah sumbu positif yang dipilih.",en:"Assign the sign according to the chosen positive axis."}],formula:"a=\\frac{\\Delta v}{\\Delta t}=\\frac{v-v_0}{t}",takeaway:{id:"Percepatan negatif tidak selalu berarti benda melambat; periksa arah kecepatan juga.",en:"Negative acceleration does not always mean slowing down; check the velocity direction too."}},
    {title:{id:"Menurunkan v(t) dan x(t)",en:"Deriving v(t) and x(t)"},idea:{id:"Karena percepatan konstan, integral percepatan menghasilkan perubahan kecepatan linear. Integrasi kecepatan menghasilkan posisi kuadratik.",en:"Because acceleration is constant, integrating it gives a linear velocity change. Integrating velocity gives a quadratic position function."},steps:[{id:"Dari a = dv/dt, integralkan untuk memperoleh v = v₀ + at.",en:"Integrate a = dv/dt to obtain v = v₀ + at."},{id:"Masukkan v(t) ke dx/dt lalu integralkan kembali.",en:"Substitute v(t) into dx/dt and integrate again."},{id:"Gunakan syarat awal x(0)=x₀ untuk menentukan konstanta.",en:"Use the initial condition x(0)=x₀ to determine the constant."}],formula:"v(t)=v_0+at,\\quad x(t)=x_0+v_0t+\\frac12at^2",takeaway:{id:"Persamaan posisi mengandung t² karena kecepatan sendiri berubah terhadap waktu.",en:"The position equation contains t² because velocity itself changes with time."}},
-   {title:{id:"Persamaan Torricelli dan jatuh bebas",en:"Torricelli equation and free fall"},idea:{id:"Jika waktu tidak diketahui, eliminasi t dari persamaan kecepatan dan posisi menghasilkan persamaan tanpa waktu. Jatuh bebas adalah kasus khusus GLBB dengan percepatan gravitasi.",en:"When time is unknown, eliminating t from the velocity and position equations gives a time-independent relation. Free fall is a special case with gravitational acceleration."},steps:[{id:"Pilih persamaan v = v₀ + at dan Δx = (v₀+v)t/2.",en:"Start from v = v₀ + at and Δx = (v₀+v)t/2."},{id:"Eliminasi waktu untuk memperoleh v² = v₀² + 2aΔx.",en:"Eliminate time to obtain v² = v₀² + 2aΔx."},{id:"Untuk jatuh bebas, gunakan a = −g jika sumbu positif ke atas.",en:"For free fall, use a = −g when the positive axis points upward."}],formula:"v^2=v_0^2+2a(x-x_0),\\quad a_y=-g",takeaway:{id:"Gunakan satu konvensi tanda dari awal sampai akhir agar hasil tidak berubah arah secara keliru.",en:"Keep one sign convention throughout the solution to avoid incorrect direction changes."}}
+   {title:{id:"Persamaan Torricelli dan jatuh bebas",en:"Torricelli equation and free fall"},idea:{id:"Jika waktu tidak diketahui, eliminasi t dari persamaan kecepatan dan posisi menghasilkan persamaan tanpa waktu. Jatuh bebas adalah kasus khusus GLBB dengan percepatan gravitasi.",en:"When time is unknown, eliminating t from the velocity and position equations gives a time-independent relation. Free fall is a special case with gravitational acceleration."},steps:[{id:"Pilih persamaan v = v₀ + at dan Δx = (v₀+v)t/2.",en:"Start from v = v₀ + at and Δx = (v₀+v)t/2."},{id:"Eliminasi waktu untuk memperoleh v² = v₀² + 2aΔx.",en:"Eliminate time to obtain v² = v₀² + 2aΔx."},{id:"Untuk jatuh bebas, gunakan a = −g jika sumbu positif ke atas.",en:"For free fall, use a = −g when the positive axis points upward."}],formula:"v^2=v_0^2+2a(x-x_0),\\quad a_y=-g",takeaway:{id:"Gunakan satu konvensi tanda dari awal sampai akhir agar hasil tidak berubah arah secara keliru.",en:"Keep one sign convention throughout the solution to avoid incorrect direction changes."}},
+   {title:{"id":"Gerak vertikal dan jatuh bebas","en":"Vertical motion and free fall"},"idea":{"id":"Gerak vertikal adalah GLBB dengan percepatan gravitasi. Jika sumbu positif ke atas, percepatan selalu −g baik benda sedang naik maupun turun.","en":"Vertical motion is constant-acceleration motion under gravity. With upward chosen as positive, acceleration is always −g whether the object rises or falls."},"steps":[{"id":"Tentukan titik acuan dan ambil arah ke atas sebagai positif.","en":"Choose a reference level and define upward as positive."},{"id":"Gunakan v(t) = v₀ − gt untuk komponen kecepatan vertikal.","en":"Use v(t) = v₀ − gt for vertical velocity."},{"id":"Gunakan y(t) = y₀ + v₀t − ½gt². Di titik tertinggi v = 0, tetapi a = −g tetap berlaku.","en":"Use y(t) = y₀ + v₀t − ½gt². At the apex v = 0, but a = −g still applies."}],"formula":"v_y(t)=v_{0y}-gt,\\\\quad y(t)=y_0+v_{0y}t-\\\\frac12gt^2,\\\\quad a_y=-g","takeaway":{"id":"Jangan mengubah tanda percepatan saat benda mulai turun. Arah gravitasi tidak berubah selama gerak.","en":"Do not change the acceleration sign when the object begins descending. Gravity does not reverse direction."}},
   ]
  },
  circular:{
@@ -1368,7 +1570,8 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Sudut dan radian",en:"Angles and radians"},idea:{id:"Radian membandingkan panjang busur dengan jari-jari. Satu putaran penuh adalah 2π radian. Satuan ini membuat hubungan sudut dan panjang busur sederhana.",en:"A radian compares arc length with radius. One full revolution is 2π radians. This unit makes angular–linear relations simple."},steps:[{id:"Ukur panjang busur s dan jari-jari r.",en:"Measure arc length s and radius r."},{id:"Hitung θ = s/r.",en:"Calculate θ = s/r."},{id:"Konversikan 360° menjadi 2π rad jika diperlukan.",en:"Convert 360° to 2π rad when needed."}],formula:"\\theta=\\frac{s}{r},\\quad 1\\text{ putaran}=2\\pi\\,\\mathrm{rad}",takeaway:{id:"Rumus v=ωr memakai ω dalam rad/s, bukan derajat per sekon.",en:"The relation v=ωr requires ω in rad/s, not degrees per second."}},
    {title:{id:"Periode, frekuensi, dan kecepatan tangensial",en:"Period, frequency and tangential speed"},idea:{id:"Periode adalah waktu satu putaran, frekuensi adalah jumlah putaran per sekon. Kecepatan tangensial mengukur laju sepanjang keliling.",en:"Period is the time for one revolution; frequency is revolutions per second. Tangential speed measures motion along the circumference."},steps:[{id:"Tentukan T dari waktu putaran penuh.",en:"Determine T from the time for one full revolution."},{id:"Gunakan f = 1/T dan ω = 2πf.",en:"Use f = 1/T and ω = 2πf."},{id:"Hitung kelajuan linear v = ωr.",en:"Calculate linear speed v = ωr."}],formula:"f=\\frac1T,\\quad \\omega=2\\pi f=\\frac{2\\pi}{T},\\quad v=\\omega r",takeaway:{id:"Pada ω yang sama, titik yang lebih jauh dari pusat memiliki kelajuan linear lebih besar.",en:"At the same ω, a point farther from the centre has greater linear speed."}},
-   {title:{id:"Percepatan sentripetal",en:"Centripetal acceleration"},idea:{id:"Walaupun kelajuan tetap, arah v berubah setiap saat. Vektor percepatan muncul karena perubahan v dan mengarah ke pusat lintasan.",en:"Even at constant speed, the direction of v changes continuously. Acceleration arises from this change and points toward the centre."},steps:[{id:"Bandingkan dua vektor kecepatan yang berdekatan pada lingkaran.",en:"Compare two nearby velocity vectors on the circle."},{id:"Perubahan arah menghasilkan percepatan radial ke pusat.",en:"The change in direction produces radial acceleration toward the centre."},{id:"Gunakan a_c = v²/r atau a_c = ω²r.",en:"Use a_c = v²/r or a_c = ω²r."}],formula:"a_c=\\frac{v^2}{r}=\\omega^2r,\\quad F_c=ma_c",takeaway:{id:"Gaya sentripetal bukan jenis gaya baru; ia adalah resultan gaya yang mengarah ke pusat.",en:"Centripetal force is not a new kind of force; it is the net inward force."}}
+   {title:{id:"Percepatan sentripetal",en:"Centripetal acceleration"},idea:{id:"Walaupun kelajuan tetap, arah v berubah setiap saat. Vektor percepatan muncul karena perubahan v dan mengarah ke pusat lintasan.",en:"Even at constant speed, the direction of v changes continuously. Acceleration arises from this change and points toward the centre."},steps:[{id:"Bandingkan dua vektor kecepatan yang berdekatan pada lingkaran.",en:"Compare two nearby velocity vectors on the circle."},{id:"Perubahan arah menghasilkan percepatan radial ke pusat.",en:"The change in direction produces radial acceleration toward the centre."},{id:"Gunakan a_c = v²/r atau a_c = ω²r.",en:"Use a_c = v²/r or a_c = ω²r."}],formula:"a_c=\\frac{v^2}{r}=\\omega^2r,\\quad F_c=ma_c",takeaway:{id:"Gaya sentripetal bukan jenis gaya baru; ia adalah resultan gaya yang mengarah ke pusat.",en:"Centripetal force is not a new kind of force; it is the net inward force."}},
+   {title:{"id":"Gaya sentripetal dan sumbernya","en":"Centripetal force and its physical source"},"idea":{"id":"Gerak melingkar membutuhkan resultan gaya radial menuju pusat. Istilah gaya sentripetal menyebut peran resultan tersebut; sumber fisiknya dapat berupa tegangan, gravitasi, gaya normal, atau gesekan.","en":"Circular motion requires a net radial force toward the centre. 'Centripetal force' names the role of that resultant; its physical source may be tension, gravity, normal force, or friction."},"steps":[{"id":"Tentukan pusat lintasan dan arah radial ke dalam.","en":"Identify the path centre and the inward radial direction."},{"id":"Hitung percepatan radial a_c = v²/r = ω²r.","en":"Calculate radial acceleration a_c = v²/r = ω²r."},{"id":"Terapkan Hukum II Newton pada arah radial: ΣF_r = ma_c.","en":"Apply Newton's second law radially: ΣF_r = ma_c."}],"formula":"\\\\sum F_r=ma_c=m\\\\frac{v^2}{r}=m\\\\omega^2r","takeaway":{"id":"Jangan menambahkan gaya sentripetal sebagai gaya ekstra pada diagram benda bebas. Uraikan gaya nyata, lalu jumlahkan komponen radialnya.","en":"Do not add centripetal force as an extra force on a free-body diagram. Resolve the real forces and sum their radial components."}},
   ]
  },
  energy:{
@@ -1377,7 +1580,9 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Usaha dan energi kinetik",en:"Work and kinetic energy"},idea:{id:"Usaha adalah transfer energi oleh gaya sepanjang perpindahan. Gaya searah perpindahan melakukan usaha positif, sedangkan gaya berlawanan arah melakukan usaha negatif.",en:"Work is energy transferred by a force along a displacement. A force along displacement does positive work; an opposing force does negative work."},steps:[{id:"Identifikasi gaya dan perpindahan.",en:"Identify the force and displacement."},{id:"Hitung W = Fs cos φ untuk gaya konstan.",en:"Calculate W = Fs cos φ for a constant force."},{id:"Hubungkan usaha total dengan perubahan energi kinetik.",en:"Relate net work to the change in kinetic energy."}],formula:"W_{net}=\\Delta E_k=\\frac12mv^2-\\frac12mv_0^2",takeaway:{id:"Usaha total positif meningkatkan energi kinetik; usaha total negatif menurunkannya.",en:"Positive net work increases kinetic energy; negative net work decreases it."}},
    {title:{id:"Energi potensial dan energi mekanik",en:"Potential and mechanical energy"},idea:{id:"Energi potensial gravitasi bergantung pada posisi terhadap acuan ketinggian. Energi kinetik bergantung pada kelajuan. Keduanya dapat saling berubah.",en:"Gravitational potential energy depends on height relative to a reference. Kinetic energy depends on speed. They can transform into one another."},steps:[{id:"Pilih tingkat acuan h=0.",en:"Choose a reference level h=0."},{id:"Hitung E_p = mgh dan E_k = ½mv².",en:"Calculate E_p = mgh and E_k = ½mv²."},{id:"Jumlahkan untuk memperoleh energi mekanik E_m.",en:"Add them to obtain mechanical energy E_m."}],formula:"E_m=E_k+E_p=\\frac12mv^2+mgh",takeaway:{id:"Nilai energi potensial dapat berubah jika acuan ketinggian dipilih berbeda, tetapi perubahan energi fisiknya konsisten.",en:"Potential-energy values depend on the chosen height reference, while physical energy changes remain consistent."}},
-   {title:{id:"Gesekan dan kekekalan energi",en:"Friction and energy accounting"},idea:{id:"Gesekan kinetis melakukan usaha negatif terhadap gerak. Energi mekanik berkurang, tetapi energi total sistem yang lebih luas tetap terjaga ketika energi termal ikut dihitung.",en:"Kinetic friction does negative work on motion. Mechanical energy decreases, but total energy of a broader system remains conserved when thermal energy is included."},steps:[{id:"Hitung gaya gesek fₖ = μₖN.",en:"Calculate friction fₖ = μₖN."},{id:"Hitung usaha gesekan W_f = −fₖs.",en:"Calculate friction work W_f = −fₖs."},{id:"Gunakan E_m,akhir = E_m,awal + W_f.",en:"Use E_m,final = E_m,initial + W_f."}],formula:"E_{m,f}=E_{m,i}+W_f,\\quad W_f=-\\mu_kNs",takeaway:{id:"Jangan menyatakan energi hilang; energi mekanik berubah bentuk menjadi energi internal.",en:"Do not say energy disappears; mechanical energy is transformed into internal energy."}}
+   {title:{id:"Gesekan dan kekekalan energi",en:"Friction and energy accounting"},idea:{id:"Gesekan kinetis melakukan usaha negatif terhadap gerak. Energi mekanik berkurang, tetapi energi total sistem yang lebih luas tetap terjaga ketika energi termal ikut dihitung.",en:"Kinetic friction does negative work on motion. Mechanical energy decreases, but total energy of a broader system remains conserved when thermal energy is included."},steps:[{id:"Hitung gaya gesek fₖ = μₖN.",en:"Calculate friction fₖ = μₖN."},{id:"Hitung usaha gesekan W_f = −fₖs.",en:"Calculate friction work W_f = −fₖs."},{id:"Gunakan E_m,akhir = E_m,awal + W_f.",en:"Use E_m,final = E_m,initial + W_f."}],formula:"E_{m,f}=E_{m,i}+W_f,\\quad W_f=-\\mu_kNs",takeaway:{id:"Jangan menyatakan energi hilang; energi mekanik berubah bentuk menjadi energi internal.",en:"Do not say energy disappears; mechanical energy is transformed into internal energy."}},
+   {title:{id:"Daya dan laju transfer energi",en:"Power and the rate of energy transfer"},idea:{id:"Daya menyatakan seberapa cepat usaha dilakukan atau energi ditransfer. Dua gaya dapat melakukan usaha sama tetapi memiliki daya berbeda jika waktu yang dibutuhkan berbeda.",en:"Power measures how quickly work is done or energy is transferred. Two forces can do the same work but deliver different power if the time differs."},steps:[{id:"Hitung daya rata-rata dengan P = W/Δt.",en:"Calculate average power using P = W/Δt."},{id:"Untuk gaya konstan dan kecepatan sesaat, gunakan P = F·v.",en:"For a constant force and instantaneous velocity, use P = F·v."},{id:"Periksa satuan: watt setara joule per sekon.",en:"Check the unit: one watt equals one joule per second."}],formula:"P_{\\mathrm{avg}}=\\frac{W}{\\Delta t},\\quad P=\\vec F\\cdot\\vec v",takeaway:{id:"Daya besar berarti transfer energi berlangsung cepat, bukan berarti energi total pasti lebih besar.",en:"High power means energy is transferred quickly, not necessarily that the total energy is larger."}},
+   {title:{id:"Usaha oleh gaya berubah",en:"Work done by a variable force"},idea:{id:"Jika gaya berubah terhadap posisi, usaha tidak selalu dapat dihitung dengan satu perkalian F·s. Usaha menjadi integral komponen gaya sepanjang lintasan.",en:"When force varies with position, work cannot always be found by one multiplication of F·s. Work becomes the integral of the force component along the path."},steps:[{id:"Gambarkan grafik Fₓ terhadap posisi x.",en:"Plot the x-component of force against position x."},{id:"Hitung usaha sebagai luas bertanda di bawah kurva Fₓ(x).",en:"Calculate work as the signed area under the Fₓ(x) curve."},{id:"Untuk pegas ideal, perubahan energi potensial elastis adalah ΔU = ½k(x_f²−x_i²).",en:"For an ideal spring, the change in elastic potential energy is ΔU = ½k(x_f²−x_i²)."}],formula:"W=\\int_{x_i}^{x_f}F_x(x)\\,dx,\\quad W_{\\mathrm{spring}}=-\\Delta U_s",takeaway:{id:"Integral menjumlahkan kontribusi usaha kecil sepanjang perpindahan; luas di bawah grafik dapat bernilai positif atau negatif.",en:"The integral sums small work contributions along the displacement; area under the graph can be positive or negative."}}
   ]
  },
  incline:{
@@ -1386,7 +1591,8 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Diagram benda bebas",en:"Free-body diagrams"},idea:{id:"Diagram benda bebas menggambar semua gaya yang bekerja pada satu benda. Pada bidang miring, pilih sumbu sejajar bidang dan tegak lurus bidang agar persamaan lebih sederhana.",en:"A free-body diagram shows all forces acting on one body. On an incline, choose axes parallel and perpendicular to the surface to simplify the equations."},steps:[{id:"Gambarkan balok terpisah dari bidang.",en:"Draw the block isolated from the surface."},{id:"Gambarkan berat mg vertikal ke bawah dan gaya normal tegak lurus bidang.",en:"Draw weight mg vertically downward and the normal force perpendicular to the plane."},{id:"Tambahkan gaya gesek sejajar bidang, berlawanan dengan kecenderungan gerak relatif.",en:"Add friction parallel to the plane, opposing relative motion or its tendency."}],formula:"w=mg,\\quad w_{\\parallel}=mg\\sin\\theta,\\quad w_{\\perp}=mg\\cos\\theta",takeaway:{id:"Gaya normal tidak selalu sama dengan berat; pada bidang miring N=mg cos θ jika tidak ada percepatan tegak lurus bidang.",en:"The normal force is not always equal to weight; on an incline N=mg cos θ when there is no perpendicular acceleration."}},
    {title:{id:"Gaya normal dan gesekan",en:"Normal force and friction"},idea:{id:"Gaya normal menyesuaikan kontak permukaan. Gesekan statis mencegah gerak relatif sampai batas maksimum, sedangkan gesekan kinetis bekerja saat permukaan sudah meluncur.",en:"The normal force adjusts to maintain contact. Static friction prevents relative motion up to a maximum; kinetic friction acts once surfaces slide."},steps:[{id:"Untuk tidak ada percepatan tegak lurus bidang, N=mg cos θ.",en:"With no perpendicular acceleration, N=mg cos θ."},{id:"Gesekan statis memenuhi 0 ≤ fₛ ≤ μₛN.",en:"Static friction satisfies 0 ≤ fₛ ≤ μₛN."},{id:"Saat meluncur, besar gesekan kinetis fₖ=μₖN.",en:"During sliding, kinetic friction has magnitude fₖ=μₖN."}],formula:"0\\leq f_s\\leq\\mu_sN,\\quad f_k=\\mu_kN",takeaway:{id:"Gesekan statis bukan selalu μₛN; nilai itu hanya batas maksimumnya.",en:"Static friction is not always μₛN; that is only its maximum value."}},
-   {title:{id:"Hukum II Newton pada bidang",en:"Newton's second law on the plane"},idea:{id:"Komponen gaya sepanjang bidang menentukan percepatan. Benda mulai meluncur dari diam jika komponen berat sepanjang bidang melampaui gesekan statis maksimum.",en:"The net force along the plane determines acceleration. A block starts sliding from rest when the downslope component of weight exceeds maximum static friction."},steps:[{id:"Tulis ΣF∥ = ma∥.",en:"Write ΣF∥ = ma∥."},{id:"Saat meluncur turun, mg sin θ − μₖmg cos θ = ma.",en:"When sliding downhill, mg sin θ − μₖmg cos θ = ma."},{id:"Sebelum meluncur, bandingkan tan θ dengan μₛ untuk kondisi ambang.",en:"Before sliding, compare tan θ with μₛ for the threshold condition."}],formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta),\\quad \\tan\\theta_c=\\mu_s",takeaway:{id:"Gunakan gesekan statis untuk memutuskan apakah benda mulai bergerak; gunakan gesekan kinetis setelah benda meluncur.",en:"Use static friction to determine whether motion starts; use kinetic friction once sliding occurs."}}
+   {title:{id:"Hukum II Newton pada bidang",en:"Newton's second law on the plane"},idea:{id:"Komponen gaya sepanjang bidang menentukan percepatan. Benda mulai meluncur dari diam jika komponen berat sepanjang bidang melampaui gesekan statis maksimum.",en:"The net force along the plane determines acceleration. A block starts sliding from rest when the downslope component of weight exceeds maximum static friction."},steps:[{id:"Tulis ΣF∥ = ma∥.",en:"Write ΣF∥ = ma∥."},{id:"Saat meluncur turun, mg sin θ − μₖmg cos θ = ma.",en:"When sliding downhill, mg sin θ − μₖmg cos θ = ma."},{id:"Sebelum meluncur, bandingkan tan θ dengan μₛ untuk kondisi ambang.",en:"Before sliding, compare tan θ with μₛ for the threshold condition."}],formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta),\\quad \\tan\\theta_c=\\mu_s",takeaway:{id:"Gunakan gesekan statis untuk memutuskan apakah benda mulai bergerak; gunakan gesekan kinetis setelah benda meluncur.",en:"Use static friction to determine whether motion starts; use kinetic friction once sliding occurs."}},
+   {title:{"id":"Gaya luar dan arah gesekan","en":"Applied forces and the direction of friction"},"idea":{"id":"Gaya luar dapat membantu atau melawan kecenderungan gerak. Gesekan statis menyesuaikan arah dan besar untuk mencegah slip; gesekan kinetis berlawanan dengan kecepatan relatif ketika permukaan meluncur.","en":"An applied force can assist or oppose the tendency to move. Static friction adjusts its direction and magnitude to prevent slipping; kinetic friction opposes relative velocity during sliding."},"steps":[{"id":"Tetapkan arah positif, misalnya menuruni bidang.","en":"Choose a positive direction, for example down the incline."},{"id":"Jumlahkan komponen gaya sepanjang bidang termasuk berat, gaya luar, dan gesekan.","en":"Sum forces along the plane, including weight, applied force, and friction."},{"id":"Saat meluncur turun: ma = mg sin θ + F_∥ − μₖmg cos θ. Jika benda diam, periksa batas |f_s| ≤ μₛN terlebih dahulu.","en":"During downhill sliding: ma = mg sin θ + F_∥ − μₖmg cos θ. If the block is at rest, first check the bound |f_s| ≤ μₛN."}],"formula":"\\\\sum F_{\\\\parallel}=ma,\\\\quad a=g(\\\\sin\\\\theta-\\\\mu_k\\\\cos\\\\theta)+\\\\frac{F_{\\\\parallel}}{m}","takeaway":{"id":"Rumus percepatan di atas mengasumsikan benda benar-benar meluncur turun. Untuk arah gerak lain, tanda gaya gesek harus mengikuti arah kecepatan relatif.","en":"The acceleration equation assumes the block is actually sliding downhill. For other directions of motion, friction's sign must oppose the relative velocity."}},
   ]
  },
  collision:{
@@ -1395,7 +1601,8 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Momentum dan sistem",en:"Momentum and the system"},idea:{id:"Momentum adalah hasil kali massa dan kecepatan. Kekekalan momentum berlaku untuk sistem terisolasi atau ketika impuls eksternal selama tumbukan dapat diabaikan.",en:"Momentum is mass multiplied by velocity. Momentum conservation applies to an isolated system or when external impulse during the collision is negligible."},steps:[{id:"Tentukan batas sistem dan arah positif.",en:"Define the system boundary and positive direction."},{id:"Hitung momentum sebelum tumbukan setiap benda.",en:"Calculate each object's momentum before impact."},{id:"Samakan momentum total sebelum dan sesudah tumbukan.",en:"Set total momentum before impact equal to total momentum after impact."}],formula:"m_1u_1+m_2u_2=m_1v_1+m_2v_2",takeaway:{id:"Kecepatan bertanda. Dua benda yang bergerak berlawanan arah harus memakai tanda yang konsisten.",en:"Velocity is signed. Objects moving in opposite directions must use consistent signs."}},
    {title:{id:"Impuls dan gaya rata-rata",en:"Impulse and average force"},idea:{id:"Impuls adalah perubahan momentum selama interaksi. Gaya rata-rata dapat besar meskipun waktu kontak singkat.",en:"Impulse is the change in momentum during an interaction. Average force can be large even when contact time is short."},steps:[{id:"Tentukan momentum awal dan akhir benda.",en:"Determine the object's initial and final momentum."},{id:"Hitung J = Δp = m(v−u).",en:"Calculate J = Δp = m(v−u)."},{"id":"Jika waktu kontak diketahui, gaya rata-rata adalah J/Δt.",en:"If contact time is known, average force is J/Δt."}],formula:"J=\\Delta p=m(v-u)=F_{avg}\\Delta t",takeaway:{id:"Impuls memiliki satuan N·s yang setara dengan kg·m/s.",en:"Impulse has units N·s, equivalent to kg·m/s."}},
-   {title:{id:"Koefisien restitusi dan jenis tumbukan",en:"Coefficient of restitution and collision types"},idea:{id:"Koefisien restitusi membandingkan kelajuan relatif saat saling menjauh dengan saat saling mendekat pada satu garis tumbukan.",en:"The coefficient of restitution compares relative separation speed with relative approach speed along the line of impact."},steps:[{id:"Tuliskan kecepatan relatif sebelum dan sesudah tumbukan.",en:"Write relative velocities before and after impact."},{id:"Hitung e = (v₂−v₁)/(u₁−u₂) dengan arah yang konsisten.",en:"Calculate e = (v₂−v₁)/(u₁−u₂) using a consistent direction convention."},{id:"Interpretasikan: e=1 lenting sempurna, 0<e<1 lenting sebagian, e=0 tidak lenting sama sekali.",en:"Interpret: e=1 perfectly elastic, 0<e<1 partially elastic, e=0 perfectly inelastic."}],formula:"e=\\frac{v_2-v_1}{u_1-u_2},\\quad 0\\leq e\\leq1",takeaway:{id:"Momentum dapat tetap pada semua tumbukan dalam sistem terisolasi, tetapi energi kinetik hanya tetap pada tumbukan lenting sempurna.",en:"Momentum can remain conserved in all isolated collisions, but kinetic energy is conserved only in perfectly elastic collisions."}}
+   {title:{id:"Koefisien restitusi dan jenis tumbukan",en:"Coefficient of restitution and collision types"},idea:{id:"Koefisien restitusi membandingkan kelajuan relatif saat saling menjauh dengan saat saling mendekat pada satu garis tumbukan.",en:"The coefficient of restitution compares relative separation speed with relative approach speed along the line of impact."},steps:[{id:"Tuliskan kecepatan relatif sebelum dan sesudah tumbukan.",en:"Write relative velocities before and after impact."},{id:"Hitung e = (v₂−v₁)/(u₁−u₂) dengan arah yang konsisten.",en:"Calculate e = (v₂−v₁)/(u₁−u₂) using a consistent direction convention."},{id:"Interpretasikan: e=1 lenting sempurna, 0<e<1 lenting sebagian, e=0 tidak lenting sama sekali.",en:"Interpret: e=1 perfectly elastic, 0<e<1 partially elastic, e=0 perfectly inelastic."}],formula:"e=\\frac{v_2-v_1}{u_1-u_2},\\quad 0\\leq e\\leq1",takeaway:{id:"Momentum dapat tetap pada semua tumbukan dalam sistem terisolasi, tetapi energi kinetik hanya tetap pada tumbukan lenting sempurna.",en:"Momentum can remain conserved in all isolated collisions, but kinetic energy is conserved only in perfectly elastic collisions."}},
+   {title:{"id":"Energi kinetik dan restitusi","en":"Kinetic energy and restitution"},"idea":{"id":"Koefisien restitusi menghubungkan kecepatan relatif sebelum dan sesudah tumbukan. Pada tumbukan satu dimensi terisolasi, momentum kekal; perubahan energi kinetik ditentukan oleh e.","en":"The coefficient of restitution relates relative velocities before and after impact. In an isolated one-dimensional collision, momentum is conserved; the change in kinetic energy is determined by e."},"steps":[{"id":"Hitung momentum total awal sistem.","en":"Calculate the system's initial total momentum."},{"id":"Gunakan persamaan momentum dan koefisien restitusi untuk memperoleh kedua kecepatan akhir.","en":"Use momentum and restitution equations to obtain both final velocities."},{"id":"Bandingkan energi kinetik awal dan akhir. Untuk 0 ≤ e ≤ 1, energi kinetik relatif yang hilang sebanding dengan (1 − e²).","en":"Compare initial and final kinetic energies. For 0 ≤ e ≤ 1, the lost relative kinetic energy is proportional to (1 − e²)."}],"formula":"K_f-K_i=-\\\\frac12\\\\frac{m_1m_2}{m_1+m_2}(1-e^2)(u_1-u_2)^2","takeaway":{"id":"e = 1 berarti energi kinetik translasi kekal pada model tumbukan ini; e < 1 berarti sebagian energi berpindah ke deformasi, panas, bunyi, atau bentuk lain.","en":"e = 1 means translational kinetic energy is conserved in this collision model; e < 1 means some energy transfers into deformation, heat, sound, or other forms."}},
   ]
  },
  spring:{
@@ -1404,7 +1611,8 @@ const lessonModules:Record<LabId,LessonModule>={
   chapters:[
    {title:{id:"Hukum Hooke",en:"Hooke's law"},idea:{id:"Pegas ideal memberikan gaya yang berlawanan arah dengan simpangan dari panjang alami. Semakin jauh ditarik atau ditekan, semakin besar gaya pemulihnya.",en:"An ideal spring exerts a force opposite to displacement from its natural length. The farther it is stretched or compressed, the stronger the restoring force."},steps:[{id:"Tentukan titik keseimbangan x=0.",en:"Define the equilibrium position x=0."},{id:"Ukur simpangan x dari titik tersebut.",en:"Measure displacement x from equilibrium."},{id:"Gunakan F = −kx. Tanda minus menyatakan arah kembali ke keseimbangan.",en:"Use F = −kx. The minus sign indicates a force directed back toward equilibrium."}],formula:"F=-kx",takeaway:{id:"Gaya pegas bukan selalu ke kiri atau ke kanan; arahnya selalu melawan simpangan.",en:"Spring force is not always left or right; it always opposes the displacement."}},
    {title:{id:"Menurunkan persamaan GHS",en:"Deriving the SHM equation"},idea:{id:"Gabungkan hukum Hooke dengan Hukum II Newton. Persamaan diferensial yang dihasilkan memiliki solusi sinusoidal.",en:"Combine Hooke's law with Newton's second law. The resulting differential equation has sinusoidal solutions."},steps:[{id:"Mulai dari ΣF=ma dan F=−kx.",en:"Start from ΣF=ma and F=−kx."},{id:"Diperoleh m x¨ = −kx atau x¨ + (k/m)x = 0.",en:"Obtain m x¨ = −kx or x¨ + (k/m)x = 0."},{id:"Definisikan ω=√(k/m); solusi x=A cos(ωt+φ).",en:"Define ω=√(k/m); the solution is x=A cos(ωt+φ)."}],formula:"\\ddot x+\\frac{k}{m}x=0,\\quad x(t)=A\\cos(\\omega t+\\phi),\\quad\\omega=\\sqrt{\\frac{k}{m}}",takeaway:{id:"Frekuensi sudut alami ditentukan oleh rasio k/m, bukan oleh amplitudo pada model ideal.",en:"Natural angular frequency depends on k/m, not amplitude in the ideal model."}},
-   {title:{id:"Periode dan energi osilasi",en:"Oscillation period and energy"},idea:{id:"Pada pegas ideal, energi terus bertukar antara energi potensial elastis dan energi kinetik. Jumlah keduanya konstan.",en:"In an ideal spring, energy continually exchanges between elastic potential and kinetic energy. Their sum is constant."},steps:[{id:"Di simpangan maksimum, kecepatan sesaat nol dan energi potensial maksimum.",en:"At maximum displacement, instantaneous speed is zero and potential energy is maximum."},{id:"Di titik keseimbangan, kelajuan maksimum dan energi kinetik maksimum.",en:"At equilibrium, speed and kinetic energy are maximum."},{id:"Gunakan T=2π√(m/k) dan f=1/T.",en:"Use T=2π√(m/k) and f=1/T."}],formula:"E=\\frac12mv^2+\\frac12kx^2=\\text{konstan},\\quad T=2\\pi\\sqrt{\\frac{m}{k}}",takeaway:{id:"Massa lebih besar memperpanjang periode; pegas lebih kaku memperpendek periode.",en:"A larger mass increases the period; a stiffer spring decreases it."}}
+   {title:{id:"Periode dan energi osilasi",en:"Oscillation period and energy"},idea:{id:"Pada pegas ideal, energi terus bertukar antara energi potensial elastis dan energi kinetik. Jumlah keduanya konstan.",en:"In an ideal spring, energy continually exchanges between elastic potential and kinetic energy. Their sum is constant."},steps:[{id:"Di simpangan maksimum, kecepatan sesaat nol dan energi potensial maksimum.",en:"At maximum displacement, instantaneous speed is zero and potential energy is maximum."},{id:"Di titik keseimbangan, kelajuan maksimum dan energi kinetik maksimum.",en:"At equilibrium, speed and kinetic energy are maximum."},{id:"Gunakan T=2π√(m/k) dan f=1/T.",en:"Use T=2π√(m/k) and f=1/T."}],formula:"E=\\frac12mv^2+\\frac12kx^2=\\text{konstan},\\quad T=2\\pi\\sqrt{\\frac{m}{k}}",takeaway:{id:"Massa lebih besar memperpanjang periode; pegas lebih kaku memperpendek periode.",en:"A larger mass increases the period; a stiffer spring decreases it."}},
+   {title:{"id":"Redaman dan respons osilator","en":"Damping and oscillator response"},"idea":{"id":"Redaman viskos linier menghasilkan gaya yang berlawanan arah dengan kecepatan. Untuk rasio redaman ζ < 1, massa tetap berosilasi tetapi amplitudonya meluruh.","en":"Linear viscous damping creates a force opposite velocity. For damping ratio ζ < 1, the mass continues to oscillate while its amplitude decays."},"steps":[{"id":"Mulai dari mẍ + cẋ + kx = 0.","en":"Start from mẍ + cẋ + kx = 0."},{"id":"Definisikan ω₀ = √(k/m), β = c/(2m), dan ζ = β/ω₀.","en":"Define ω₀ = √(k/m), β = c/(2m), and ζ = β/ω₀."},{"id":"Untuk ζ < 1, frekuensi teredam ω_d = ω₀√(1−ζ²) dan amplitudo meluruh seperti e^(−βt).","en":"For ζ < 1, the damped frequency is ω_d = ω₀√(1−ζ²), and the amplitude decays as e^(−βt)."}],"formula":"m\\\\ddot x+c\\\\dot x+kx=0,\\\\quad \\\\omega_d=\\\\omega_0\\\\sqrt{1-\\\\zeta^2}","takeaway":{"id":"Rumus sinusoidal teredam ini hanya berlaku pada redaman kurang. Redaman kritis dan lebih memerlukan bentuk solusi berbeda.","en":"This damped sinusoidal response applies only to the underdamped case. Critical and overdamped systems require different solution forms."}},
   ]
  }
 };
@@ -1655,6 +1863,8 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
  </svg>;
 }
 function Learn({language}:{language:Language}) {
+ const [learnFocus,setLearnFocus]=useState(false);
+ useEffect(()=>{if(!learnFocus)return;const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")setLearnFocus(false);};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);},[learnFocus]);
  const [selectedTopic,setSelectedTopic]=useState<LabId>("projectile");
  const [selectedChapter,setSelectedChapter]=useState(0);const [activeLessonStep,setActiveLessonStep]=useState(0);
  const control=lessonExperimentControl(selectedTopic);
@@ -1662,21 +1872,21 @@ function Learn({language}:{language:Language}) {
  const lesson=lessonModules[selectedTopic],chapter=lesson.chapters[selectedChapter],experiment=calculateLessonExperiment(selectedTopic,experimentValue,language);
  const en=language==="EN";
  const chooseTopic=(id:LabId)=>{setSelectedTopic(id);setSelectedChapter(0);setActiveLessonStep(0);setExperimentValue(lessonExperimentControl(id).initial);};
- return <main className="secondary-page lesson-page">
-  <div className="secondary-intro"><span className="eyebrow">PHYSIMUS ACADEMY / LEARNING PATH</span><h1>{en?"Physics learning modules":"Modul belajar Fisika"}</h1><p>{en?"A structured high-school physics course: understand the phenomenon, derive the model, experiment, then practise.":"Materi Fisika SMA yang tersusun: pahami fenomena, turunkan model, bereksperimen, lalu berlatih."}</p></div>
+ return <main className={learnFocus?"secondary-page lesson-page is-focused":"secondary-page lesson-page"}>
+  <div className="secondary-intro"><span className="eyebrow">PHYSIMUS ACADEMY / LEARNING PATH</span><div className="lesson-intro-actions"><div><h1>{en?"Physics learning modules":"Modul belajar Fisika"}</h1><p>{en?"A structured high-school physics course: understand the phenomenon, derive the model, experiment, then practise.":"Materi Fisika SMA yang tersusun: pahami fenomena, turunkan model, bereksperimen, lalu berlatih."}</p></div><button className="secondary-button" type="button" onClick={()=>setLearnFocus(v=>!v)}>{learnFocus?<Minimize2 size={16}/>:<Maximize2 size={16}/>}{learnFocus?(en?"Exit focus":"Keluar fokus"):(en?"Focus view":"Mode fokus")}</button></div></div>
   <div className="lesson-layout">
    <aside className="lesson-topic-nav"><div className="lesson-nav-heading">{en?"COURSE CONTENT":"DAFTAR MATERI"}</div>{labs.map((item,index)=><button key={item.id} className={selectedTopic===item.id?"active":""} onClick={()=>chooseTopic(item.id)}><span>{String(index+1).padStart(2,"0")}</span><strong>{en?item.subtitle:item.title}</strong></button>)}</aside>
    <article className="lesson-content">
-    <div className="lesson-topic-heading"><span className="eyebrow">{en?labs.find(x=>x.id===selectedTopic)?.category:"MATERI SMA · "+labs.find(x=>x.id===selectedTopic)?.category}</span><h2>{en?labs.find(x=>x.id===selectedTopic)?.subtitle:labs.find(x=>x.id===selectedTopic)?.title}</h2><p>{lessonText(lesson.overview,language)}</p></div>
-    <div className="lesson-goals"><strong>{en?"Learning objectives":"Tujuan pembelajaran"}</strong><ul>{lesson.goals.map((goal,i)=><li key={i}>{lessonText(goal,language)}</li>)}</ul></div>
+    <div className="lesson-topic-heading"><span className="eyebrow">{en?labs.find(x=>x.id===selectedTopic)?.category:"MATERI SMA · "+labs.find(x=>x.id===selectedTopic)?.category}</span><h2>{en?labs.find(x=>x.id===selectedTopic)?.subtitle:labs.find(x=>x.id===selectedTopic)?.title}</h2><p><PhysicsCopy value={lessonText(lesson.overview,language)}/></p></div>
+    <div className="lesson-goals"><strong>{en?"Learning objectives":"Tujuan pembelajaran"}</strong><ul>{lesson.goals.map((goal,i)=><li key={i}><PhysicsCopy value={lessonText(goal,language)}/></li>)}</ul></div>
     <div className="lesson-chapter-tabs" role="tablist">{lesson.chapters.map((item,i)=><button key={i} role="tab" aria-selected={selectedChapter===i} className={selectedChapter===i?"active":""} onClick={()=>{setSelectedChapter(i);setActiveLessonStep(0);}}><span>{String(i+1).padStart(2,"0")}</span>{lessonText(item.title,language)}</button>)}</div>
     <section className="lesson-chapter-card">
      <div className="lesson-chapter-title"><span>{en?"SUBCHAPTER":"SUBBAB"} {selectedChapter+1} / {lesson.chapters.length}</span><h3>{lessonText(chapter.title,language)}</h3></div>
-     <p className="lesson-intro-text">{lessonText(chapter.idea,language)}</p>
+     <p className="lesson-intro-text"><PhysicsCopy value={lessonText(chapter.idea,language)}/></p>
      <LessonDiagram id={selectedTopic} value={experimentValue} stage={activeLessonStep} language={language}/>
-     <div className="lesson-steps"><strong>{en?"Step-by-step explanation":"Penjelasan langkah demi langkah"}</strong><p className="lesson-step-hint">{en?"Select a step to focus the experiment diagram on that part of the explanation.":"Pilih langkah untuk mengarahkan visual eksperimen ke bagian penjelasan tersebut."}</p>{chapter.steps.map((step,i)=><button type="button" className={activeLessonStep===i?"lesson-step active":"lesson-step"} key={i} onClick={()=>setActiveLessonStep(i)} aria-pressed={activeLessonStep===i} title={en?"Show experiment state for step "+(i+1):"Tampilkan eksperimen untuk langkah "+(i+1)}><span>{i+1}</span><p>{lessonText(step,language)}</p><small>{activeLessonStep===i?(en?"Visual active":"Visual aktif"):(en?"View experiment":"Lihat eksperimen")}</small></button>)}</div>
+     <div className="lesson-steps"><strong>{en?"Step-by-step explanation":"Penjelasan langkah demi langkah"}</strong><p className="lesson-step-hint">{en?"Select a step to focus the experiment diagram on that part of the explanation.":"Pilih langkah untuk mengarahkan visual eksperimen ke bagian penjelasan tersebut."}</p>{chapter.steps.map((step,i)=><button type="button" className={activeLessonStep===i?"lesson-step active":"lesson-step"} key={i} onClick={()=>setActiveLessonStep(i)} aria-pressed={activeLessonStep===i} title={en?"Show experiment state for step "+(i+1):"Tampilkan eksperimen untuk langkah "+(i+1)}><span>{i+1}</span><p><PhysicsCopy value={lessonText(step,language)}/></p><small>{activeLessonStep===i?(en?"Visual active":"Visual aktif"):(en?"View experiment":"Lihat eksperimen")}</small></button>)}</div>
      <div className="lesson-formula-block"><span>{en?"MATHEMATICAL MODEL":"MODEL MATEMATIKA"}</span><Equation value={chapter.formula} display/></div>
-     <div className="lesson-takeaway"><strong>{en?"Key idea":"Inti pemahaman"}</strong><p>{lessonText(chapter.takeaway,language)}</p></div>
+     <div className="lesson-takeaway"><strong>{en?"Key idea":"Inti pemahaman"}</strong><p><PhysicsCopy value={lessonText(chapter.takeaway,language)}/></p></div>
     </section>
     <div className="lesson-chapter-nav"><button className="secondary-button" disabled={selectedChapter===0} onClick={()=>{setSelectedChapter(v=>Math.max(0,v-1));setActiveLessonStep(0);}}><ArrowLeft size={15}/>{en?"Previous subchapter":"Subbab sebelumnya"}</button><button className="primary-button" disabled={selectedChapter===lesson.chapters.length-1} onClick={()=>{setSelectedChapter(v=>Math.min(lesson.chapters.length-1,v+1));setActiveLessonStep(0);}}>{en?"Next subchapter":"Subbab berikutnya"}<ArrowRight size={15}/></button></div>
     <div className="lesson-practice-intro"><span className="eyebrow">{en?"CHECK YOUR UNDERSTANDING":"UJI PEMAHAMAN"}</span><h3>{en?"Practice this topic":"Latihan soal materi ini"}</h3><p>{en?"A separate practice set is provided for this lesson. Generate a new question and reveal the worked solution when ready.":"Latihan ini berdiri sendiri untuk materi yang sedang dipelajari. Buat soal baru dan buka pembahasan langkah demi langkah."}</p></div>

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import katex from "katex";
 import { AlertTriangle, Download, Eye, EyeOff, Minus, Pause, Play, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 
 type Language = "ID" | "EN";
 type Row = { id:number; text:string; enabled:boolean };
+type MathfieldLike = HTMLElement & {value:string;getValue:(format?:"ascii-math"|"latex")=>string;insert:(value:string,options?:unknown)=>boolean;position:number;lastOffset:number};
+type EquationInput = HTMLInputElement | MathfieldLike;
 type Vars = Record<string,number>;
 type EditorTab = "equations" | "objects" | "examples" | "graph";
 type ObjectKind = "box" | "circle" | "spring" | "rope" | "pulley" | "wheel" | "beam" | "ramp" | "pendulum" | "mass";
@@ -14,8 +16,8 @@ type Motion = { x:number;y:number;vx:number;vy:number;ax:number;ay:number;speed:
 
 const allowedFunctions = new Set(["sin","cos","tan","asin","acos","atan","atan2","sec","csc","cot","sinh","cosh","tanh","sqrt","cbrt","abs","exp","ln","log","log2","log10","min","max","floor","ceil","round","sign","mod","clamp","hypot","int","sum","prod","diff","frac"]);
 const copy = {
- ID:{title:"Physimus Sandbox",subtitle:"Ruang eksperimen persamaan mekanika",hint:"Buat persamaan sendiri. Bentuk kurva atau lintasan benda, jalankan waktu, dan amati besaran fisik yang muncul.",math:"Ekspresi matematika",delete:"Hapus",hide:"Sembunyikan",show:"Tampilkan",gravity:"Gravitasi",amplitude:"Amplitudo A",initialSpeed:"Kecepatan awal v₀",angularSpeed:"Kecepatan sudut ω",stiffness:"Konstanta pegas k",phase:"Sudut/fase θ (rad)",add:"Tambah persamaan",play:"Jalankan",pause:"Jeda",reset:"Reset",time:"Waktu",duration:"Durasi (s)",mass:"Massa (kg)",object:"Objek",grid:"Grid",axes:"Sumbu",trail:"Jejak",velocity:"Vektor kecepatan",acceleration:"Vektor percepatan",force:"Vektor gaya",energy:"Besaran energi",labels:"Label",view:"Rentang grafik",xmin:"x minimum",xmax:"x maksimum",ymin:"y minimum",ymax:"y maksimum",examples:"Contoh cepat",syntax:"Sintaks",syntaxText:"+, −, ×, ÷, pangkat, kurung; sin, cos, tan, asin, acos, atan; sqrt, cbrt, abs, exp, ln, log, log2, floor, ceil, round, min, max, clamp, hypot; int(f,x) = integral akumulasi 0→x; int(f,x,a,b) = integral tentu; sum(f,i,a,b); prod(f,i,a,b) = produk berindeks; diff(f,x); θ, ω, α, β, γ, δ, ε, φ, ψ, μ, σ, ρ, λ, τ, π. LaTeX langsung: \\frac{a}{b}, \\sqrt{x}, x^{2}, v_{x}, \\sin(x). Sudut dalam radian.",status:"Validasi model",ok:"Persamaan lolos uji sintaks dan kestabilan pada titik sampel. Ini belum membuktikan kesesuaian dimensi atau semua hukum fisika; pastikan model dan satuan SI konsisten.",bad:"Persamaan salah sintaks atau menghasilkan nilai tidak hingga/tidak stabil. Grafik dapat terputus.",empty:"Tambahkan persamaan di panel kiri untuk mulai menggambar.",inspector:"Arahkan kursor ke grafik untuk membaca koordinat.",motion:"Analisis gerak langsung",notMotion:"Tambahkan x(t) dan/atau y(t) untuk membentuk objek bergerak.",parametric:"Lintasan parametrik",function:"Kurva y = f(x)",particle:"Partikel",ball:"Bola",cart:"Kereta",satellite:"Satelit",rocket:"Roket",export:"Ekspor CSV",zoom:"Zoom",noBackend:"Berjalan lokal di browser; tidak ada data yang dikirim ke backend.",warning:"Turunan dihitung dengan beda hingga pusat. Pemeriksaan dimensi dan penegakan semua hukum fisika belum otomatis; periksa konsistensi satuan dan model.",tabEquations:"Persamaan",tabObjects:"Objek mekanika",tabExamples:"Contoh",tabGraph:"Grafik",variables:"Variabel persamaan",noVariables:"Variabel yang digunakan persamaan akan muncul di sini.",addObject:"Tambah objek",objectPosition:"Posisi objek",objectMass:"Massa",objectRadius:"Jari-jari / ukuran",objectSpring:"Konstanta pegas",objectAngle:"Sudut",enabled:"Tampil",objectNames:{box:"Kotak / balok",circle:"Lingkaran",spring:"Pegas",rope:"Tali",pulley:"Katrol",wheel:"Roda",beam:"Batang",ramp:"Bidang miring",pendulum:"Bandul",mass:"Balok massa"},panHint:"Seret grafik untuk menggeser. Gunakan roda mouse untuk zoom."},
- EN:{title:"Physimus Sandbox",subtitle:"A mechanics equation playground",hint:"Create your own equations. Shape a curve or an object's trajectory, run time, and inspect the physical quantities that emerge.",math:"Mathematical expressions",delete:"Delete",hide:"Hide",show:"Show",gravity:"Gravity g",amplitude:"Amplitude A",initialSpeed:"Initial speed v₀",angularSpeed:"Angular speed ω",stiffness:"Spring constant k",phase:"Angle/phase θ (rad)",add:"Add equation",play:"Run",pause:"Pause",reset:"Reset",time:"Time",duration:"Duration (s)",mass:"Mass (kg)",object:"Object",grid:"Grid",axes:"Axes",trail:"Trail",velocity:"Velocity vector",acceleration:"Acceleration vector",force:"Force vector",energy:"Energy quantities",labels:"Labels",view:"Graph range",xmin:"x minimum",xmax:"x maximum",ymin:"y minimum",ymax:"y maximum",examples:"Quick examples",syntax:"Syntax",syntaxText:"+, −, ×, ÷, powers, parentheses; sin, cos, tan, asin, acos, atan; sqrt, cbrt, abs, exp, ln, log, log2, floor, ceil, round, min, max, clamp, hypot; int(f,x) = accumulation from 0 to x; int(f,x,a,b) = definite integral; sum(f,i,a,b); prod(f,i,a,b) = indexed product; diff(f,x); θ, ω, α, β, γ, δ, ε, φ, ψ, μ, σ, ρ, λ, τ, π. Direct LaTeX input: \\frac{a}{b}, \\sqrt{x}, x^{2}, v_{x}, \\sin(x). Angles are in radians.",status:"Model validation",ok:"Expressions pass syntax and numerical-stability checks at sampled points. This does not prove dimensional consistency or compliance with every physics law; check the model and SI units.",bad:"Invalid syntax or non-finite/unstable values were found. Curves may break.",empty:"Add an equation in the left panel to start plotting.",inspector:"Move the pointer over the graph to inspect coordinates.",motion:"Live motion analysis",notMotion:"Add x(t) and/or y(t) to create a moving object.",parametric:"Parametric trajectory",function:"Curve y = f(x)",particle:"Particle",ball:"Ball",cart:"Cart",satellite:"Satellite",rocket:"Rocket",export:"Export CSV",zoom:"Zoom",noBackend:"Runs locally in your browser; no data is sent to a backend.",warning:"Derivatives use central finite differences. Dimensional analysis and enforcement of all physics laws are not automatic; check model and unit consistency.",tabEquations:"Equations",tabObjects:"Mechanics objects",tabExamples:"Examples",tabGraph:"Graph",variables:"Equation variables",noVariables:"Variables used in the equations will appear here.",addObject:"Add object",objectPosition:"Object position",objectMass:"Mass",objectRadius:"Radius / size",objectSpring:"Spring constant",objectAngle:"Angle",enabled:"Visible",objectNames:{box:"Box / block",circle:"Circle",spring:"Spring",rope:"Rope",pulley:"Pulley",wheel:"Wheel",beam:"Beam",ramp:"Inclined plane",pendulum:"Pendulum",mass:"Mass block"},panHint:"Drag the graph to pan. Use the mouse wheel to zoom."}
+ ID:{title:"Physimus Sandbox",subtitle:"Ruang eksperimen persamaan mekanika",hint:"Buat persamaan sendiri. Bentuk kurva atau lintasan benda, jalankan waktu, dan amati besaran fisik yang muncul.",math:"Ekspresi matematika",delete:"Hapus",hide:"Sembunyikan",show:"Tampilkan",gravity:"Gravitasi",amplitude:"Amplitudo A",initialSpeed:"Kecepatan awal v₀",angularSpeed:"Kecepatan sudut ω",stiffness:"Konstanta pegas k",phase:"Sudut/fase θ (rad)",add:"Tambah persamaan",play:"Jalankan",pause:"Jeda",reset:"Reset",time:"Waktu",duration:"Durasi (s)",mass:"Massa (kg)",object:"Objek",grid:"Grid",axes:"Sumbu",trail:"Jejak",velocity:"Vektor kecepatan",acceleration:"Vektor percepatan",force:"Vektor gaya",energy:"Besaran energi",labels:"Label",view:"Rentang grafik",xmin:"x minimum",xmax:"x maksimum",ymin:"y minimum",ymax:"y maksimum",examples:"Contoh cepat",syntax:"Sintaks",syntaxText:"+, −, ×, ÷, pangkat, kurung; sin, cos, tan, asin, acos, atan; sqrt, cbrt, abs, exp, ln, log, log2, floor, ceil, round, min, max, clamp, hypot; int(f,x) = integral akumulasi 0→x; int(f,x,a,b) = integral tentu; sum(f,i,a,b); prod(f,i,a,b) = produk berindeks; diff(f,x); θ, ω, α, β, γ, δ, ε, φ, ψ, μ, σ, ρ, λ, τ, π. LaTeX langsung: \\frac{a}{b}, \\sqrt{x}, x^{2}, v_{x}, \\sin(x). Sudut dalam radian.",status:"Validasi model",ok:"Persamaan lolos uji sintaks dan kestabilan pada titik sampel. Ini belum membuktikan kesesuaian dimensi atau semua hukum fisika; pastikan model dan satuan SI konsisten.",bad:"Persamaan memiliki kesalahan sintaks, ketidaksesuaian dimensi SI, atau nilai tidak hingga/tidak stabil. Periksa satuan dan model.",empty:"Tambahkan persamaan di panel kiri untuk mulai menggambar.",inspector:"Arahkan kursor ke grafik untuk membaca koordinat.",motion:"Analisis gerak langsung",notMotion:"Tambahkan x(t) dan/atau y(t) untuk membentuk objek bergerak.",parametric:"Lintasan parametrik",function:"Kurva y = f(x)",particle:"Partikel",ball:"Bola",cart:"Kereta",satellite:"Satelit",rocket:"Roket",export:"Ekspor CSV",zoom:"Zoom",noBackend:"Berjalan lokal di browser; tidak ada data yang dikirim ke backend.",warning:"Turunan dihitung dengan beda hingga pusat. Pemeriksaan dimensi dan penegakan semua hukum fisika belum otomatis; periksa konsistensi satuan dan model.",tabEquations:"Persamaan",tabObjects:"Objek mekanika",tabExamples:"Contoh",tabGraph:"Grafik",variables:"Variabel persamaan",noVariables:"Variabel yang digunakan persamaan akan muncul di sini.",addObject:"Tambah objek",objectPosition:"Posisi objek",objectMass:"Massa",objectRadius:"Jari-jari / ukuran",objectSpring:"Konstanta pegas",objectAngle:"Sudut",enabled:"Tampil",objectNames:{box:"Kotak / balok",circle:"Lingkaran",spring:"Pegas",rope:"Tali",pulley:"Katrol",wheel:"Roda",beam:"Batang",ramp:"Bidang miring",pendulum:"Bandul",mass:"Balok massa"},panHint:"Seret grafik untuk menggeser. Gunakan roda mouse untuk zoom."},
+ EN:{title:"Physimus Sandbox",subtitle:"A mechanics equation playground",hint:"Create your own equations. Shape a curve or an object's trajectory, run time, and inspect the physical quantities that emerge.",math:"Mathematical expressions",delete:"Delete",hide:"Hide",show:"Show",gravity:"Gravity g",amplitude:"Amplitude A",initialSpeed:"Initial speed v₀",angularSpeed:"Angular speed ω",stiffness:"Spring constant k",phase:"Angle/phase θ (rad)",add:"Add equation",play:"Run",pause:"Pause",reset:"Reset",time:"Time",duration:"Duration (s)",mass:"Mass (kg)",object:"Object",grid:"Grid",axes:"Axes",trail:"Trail",velocity:"Velocity vector",acceleration:"Acceleration vector",force:"Force vector",energy:"Energy quantities",labels:"Labels",view:"Graph range",xmin:"x minimum",xmax:"x maximum",ymin:"y minimum",ymax:"y maximum",examples:"Quick examples",syntax:"Syntax",syntaxText:"+, −, ×, ÷, powers, parentheses; sin, cos, tan, asin, acos, atan; sqrt, cbrt, abs, exp, ln, log, log2, floor, ceil, round, min, max, clamp, hypot; int(f,x) = accumulation from 0 to x; int(f,x,a,b) = definite integral; sum(f,i,a,b); prod(f,i,a,b) = indexed product; diff(f,x); θ, ω, α, β, γ, δ, ε, φ, ψ, μ, σ, ρ, λ, τ, π. Direct LaTeX input: \\frac{a}{b}, \\sqrt{x}, x^{2}, v_{x}, \\sin(x). Angles are in radians.",status:"Model validation",ok:"Expressions pass syntax and numerical-stability checks at sampled points. This does not prove dimensional consistency or compliance with every physics law; check the model and SI units.",bad:"Syntax errors, SI dimensional mismatches, or non-finite/unstable values were found. Check units and the model.",empty:"Add an equation in the left panel to start plotting.",inspector:"Move the pointer over the graph to inspect coordinates.",motion:"Live motion analysis",notMotion:"Add x(t) and/or y(t) to create a moving object.",parametric:"Parametric trajectory",function:"Curve y = f(x)",particle:"Particle",ball:"Ball",cart:"Cart",satellite:"Satellite",rocket:"Rocket",export:"Export CSV",zoom:"Zoom",noBackend:"Runs locally in your browser; no data is sent to a backend.",warning:"Derivatives use central finite differences. Dimensional analysis and enforcement of all physics laws are not automatic; check model and unit consistency.",tabEquations:"Equations",tabObjects:"Mechanics objects",tabExamples:"Examples",tabGraph:"Graph",variables:"Equation variables",noVariables:"Variables used in the equations will appear here.",addObject:"Add object",objectPosition:"Object position",objectMass:"Mass",objectRadius:"Radius / size",objectSpring:"Spring constant",objectAngle:"Angle",enabled:"Visible",objectNames:{box:"Box / block",circle:"Circle",spring:"Spring",rope:"Rope",pulley:"Pulley",wheel:"Wheel",beam:"Beam",ramp:"Inclined plane",pendulum:"Pendulum",mass:"Mass block"},panHint:"Drag the graph to pan. Use the mouse wheel to zoom."}
 };
 
 function tokenize(source:string):string[] {
@@ -174,6 +176,103 @@ function variableLatex(name:string){
  if(numericSub)return (greek[numericSub[1]]??numericSub[1])+"_{"+numericSub[2]+"}";
  return name.length===1?name:"\\mathrm{"+name+"}";
 }
+
+function readLatexGroup(source:string,start:number):{value:string;next:number}{
+ let i=start;
+ while(i<source.length&&/\s/.test(source[i]))i++;
+ if(source[i]!=="{"){
+  let end=i;
+  while(end<source.length&&!/[\s_^]/.test(source[end]))end++;
+  return {value:source.slice(i,end),next:end};
+ }
+ let depth=0;
+ for(let j=i;j<source.length;j++){
+  if(source[j]==="{")depth++;
+  else if(source[j]==="}"){
+   depth--;
+   if(depth===0)return {value:source.slice(i+1,j),next:j+1};
+  }
+ }
+ throw new Error("Kurung kurawal LaTeX belum lengkap");
+}
+function latexExpressionToAscii(source:string):string{
+ let out="",i=0;
+ const commands:Record<string,string>={
+  theta:"theta",vartheta:"theta",omega:"omega",alpha:"alpha",beta:"beta",gamma:"gamma",
+  delta:"delta",epsilon:"epsilon",varepsilon:"epsilon",phi:"phi",varphi:"phi",psi:"psi",
+  mu:"mu",sigma:"sigma",rho:"rho",lambda:"lambda",nu:"nu",xi:"xi",tau:"tau",pi:"pi",
+  sin:"sin",cos:"cos",tan:"tan",arcsin:"asin",arccos:"acos",arctan:"atan",
+  sinh:"sinh",cosh:"cosh",tanh:"tanh",ln:"ln",log:"log",exp:"exp",
+  cdot:"*",times:"*",div:"/",pm:"+",mp:"-",leq:"<=",geq:">=",neq:"!=",infty:"infinity"
+ };
+ while(i<source.length){
+  const ch=source[i];
+  if(ch==="\\"){
+   const match=source.slice(i+1).match(/^[a-zA-Z]+/);
+   if(!match){i++;if(source[i]===","||source[i]===";"||source[i]==="!")i++;continue;}
+   const name=match[0];i+=name.length+1;
+   if(name==="left"||name==="right"||name==="displaystyle"||name==="textstyle"||name==="quad"||name==="qquad")continue;
+   if(name==="frac"){
+    const top=readLatexGroup(source,i),bottom=readLatexGroup(source,top.next);
+    out+="("+latexExpressionToAscii(top.value)+")/("+latexExpressionToAscii(bottom.value)+")";i=bottom.next;continue;
+   }
+   if(name==="sqrt"||name==="cbrt"){
+    let index="";if(source[i]==="["){const end=source.indexOf("]",i);if(end>i){index=source.slice(i+1,end);i=end+1;}}
+    const body=readLatexGroup(source,i);
+    out+=(index==="3"?"cbrt(":"sqrt(")+latexExpressionToAscii(body.value)+")";i=body.next;continue;
+   }
+   if(name==="mathrm"||name==="operatorname"||name==="text"){
+    const body=readLatexGroup(source,i);out+=body.value.replace(/[^a-zA-Z0-9_]/g,"");i=body.next;continue;
+   }
+   if(name==="int"||name==="sum"||name==="prod"){out+=name;continue;}
+   out+=commands[name]??name;continue;
+  }
+  if(ch==="_"||ch==="^"){
+   const op=ch,body=readLatexGroup(source,i+1),value=latexExpressionToAscii(body.value);
+   out+=op==="^"?"^("+value+")":"_"+value;i=body.next;continue;
+  }
+  if(ch==="{"){out+="(";i++;continue;}
+  if(ch==="}"){out+=")";i++;continue;}
+  if(ch==="\n"||ch==="\r"||ch==="\t"||ch==="\u00a0"){out+=" ";i++;continue;}
+  if(ch==="\u2062"||ch==="\u2061"){i++;continue;}
+  if(ch==="−"){out+="-";i++;continue;}
+  if(ch==="×"){out+="*";i++;continue;}
+  if(ch==="÷"){out+="/";i++;continue;}
+  out+=ch;i++;
+ }
+ return out.replace(/\s+/g," ").trim();
+}
+function mathLiveToExpression(ascii:string,latex:string):string{
+ const source=latex||ascii;
+ const findOperator=(name:"int"|"sum"|"prod")=>source.indexOf("\\"+name);
+ for(const name of ["int","sum","prod"] as const){
+  const at=findOperator(name);if(at<0)continue;
+  const prefix=source.slice(0,at),afterOperator=at+name.length+1;
+  let cursor=afterOperator,lower="",upper="";
+  while(cursor<source.length&&/\s/.test(source[cursor]))cursor++;
+  if(source[cursor]==="_"){const group=readLatexGroup(source,cursor+1);lower=group.value;cursor=group.next;}
+  while(cursor<source.length&&/\s/.test(source[cursor]))cursor++;
+  if(source[cursor]==="^"){const group=readLatexGroup(source,cursor+1);upper=group.value;cursor=group.next;}
+  const tail=source.slice(cursor);
+  if(name==="int"){
+   const differential=tail.match(/\\,?\s*(?:\\mathrm\s*\{\s*d\s*\}|d)\s*([a-zA-Z])\s*$/);
+   if(!differential)break;
+   const body=tail.slice(0,differential.index).trim(),variable=differential[1];
+   const args=lower&&upper?","+variable+","+latexExpressionToAscii(lower)+","+latexExpressionToAscii(upper):","+variable;
+   return prefix+"int("+latexExpressionToAscii(body)+args+")";
+  }
+  const assignment=lower.match(/^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
+  if(!assignment||!upper)break;
+  const body=tail.trim(),variable=assignment[1],start=latexExpressionToAscii(assignment[2]),end=latexExpressionToAscii(upper);
+  return prefix+name+"("+latexExpressionToAscii(body)+","+variable+","+start+","+end+")";
+ }
+ const derivativeSource=source.replace(/\\mathrm\s*\{\s*d\s*\}/g,"d").replace(/\\partial/g,"d");
+ const derivative=derivativeSource.match(/^\s*\\frac\s*\{\s*d\s*\}\s*\{\s*d\s*([a-zA-Z])\s*\}\s*(.*)$/);
+ if(derivative)return "diff("+latexExpressionToAscii(derivative[2])+","+derivative[1]+")";
+ const simple=ascii?.trim();
+ if(simple)return simple;
+ return latexExpressionToAscii(source);
+}
 function equationToLatex(source:string){
  const clean=source.trim();
  const target=clean.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);
@@ -272,6 +371,12 @@ const variableDimensions:Record<string,Dimension>={
 function addDimension(a:Dimension,b:Dimension):Dimension{return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
 function subtractDimension(a:Dimension,b:Dimension):Dimension{return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
 function scaleDimension(a:Dimension,factor:number):Dimension{return [a[0]*factor,a[1]*factor,a[2]*factor];}
+function isZeroDimensionNode(node:Node):boolean{
+ return node.kind==="num"&&node.n===0;
+}
+function sameDimension(a:Dimension,b:Dimension):boolean{
+ return a.every((value,index)=>Math.abs(value-b[index])<1e-9);
+}
 function dimensionOf(node:Node):Dimension|null{
  const zero:Dimension=[0,0,0];
  if(node.kind==="num")return zero;
@@ -285,7 +390,12 @@ function dimensionOf(node:Node):Dimension|null{
    if(b.some(value=>Math.abs(value)>1e-9)||node.b.kind!=="num")return null;
    return scaleDimension(a,node.b.n);
   }
-  return a.every((value,index)=>Math.abs(value-b[index])<1e-9)?a:null;
+  if(node.op==="+"||node.op==="-"){
+   // Zero is dimension-polymorphic: x(t)=0 is a valid initial condition.
+   if(isZeroDimensionNode(node.a))return b;
+   if(isZeroDimensionNode(node.b))return a;
+  }
+  return sameDimension(a,b)?a:null;
  }
  const name=node.name,args=node.args,dims=args.map(dimensionOf);
  if(name==="abs"||name==="floor"||name==="ceil"||name==="round")return dims[0]??null;
@@ -308,6 +418,40 @@ function dimensionOf(node:Node):Dimension|null{
   const first=dims[0];return first&&dims.every(dimension=>dimension&&dimension.every((value,index)=>Math.abs(value-first[index])<1e-9))?first:null;
  }
  return null;
+}
+function hasDimensionConflict(node:Node):boolean{
+ if(node.kind==="num"||node.kind==="var")return false;
+ if(node.kind==="unary")return hasDimensionConflict(node.child);
+ if(node.kind==="binary"){
+  if(hasDimensionConflict(node.a)||hasDimensionConflict(node.b))return true;
+  const a=dimensionOf(node.a),b=dimensionOf(node.b);
+  if((node.op==="+"||node.op==="-")&&a&&b&&!sameDimension(a,b)&&!isZeroDimensionNode(node.a)&&!isZeroDimensionNode(node.b))return true;
+  if(node.op==="^"&&b&&b.some(value=>Math.abs(value)>1e-9))return true;
+  return false;
+ }
+ if(node.args.some(hasDimensionConflict))return true;
+ const dims=node.args.map(dimensionOf);
+ const dimensionless=(d:Dimension|null)=>!!d&&d.every(value=>Math.abs(value)<1e-9);
+ if(["sin","cos","tan","asin","acos","atan","sec","csc","cot","sinh","cosh","tanh","exp","ln","log","log2","log10"].includes(node.name)){
+  return !!dims[0]&&!dimensionless(dims[0]);
+ }
+ if(node.name==="atan2"&&dims[0]&&dims[1])return !sameDimension(dims[0],dims[1]);
+ if(["min","max","hypot","clamp","mod"].includes(node.name)){
+  const known=dims.filter((d):d is Dimension=>!!d);
+  return known.some(d=>!sameDimension(d,known[0]));
+ }
+ return false;
+}
+function equationDimensionIssue(item:Compiled):boolean{
+ if(hasDimensionConflict(item.root))return true;
+ const rhs=dimensionOf(item.root);
+ let lhs:Dimension|null=null;
+ if(item.target!=="scalar")lhs=[0,1,0];
+ else{
+  const match=item.text.trim().match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=/);
+  if(match)lhs=variableDimensions[match[1]]??null;
+ }
+ return !!lhs&&!!rhs&&!sameDimension(lhs,rhs);
 }
 function dimensionUnitLatex(dimension:Dimension|null):string{
  if(!dimension)return "";
@@ -334,29 +478,7 @@ function scalarSubstitutionLatex(row:Row,compiled:Compiled,vars:Vars,value:numbe
  const unit=dimensionUnitLatex(dimensionOf(compiled.root));
  return variableLatex(lhs)+"="+expression+"="+result+unit;
 }
-function equationPreviewHtml(source:string){
- const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true} as const;
- try{return katex.renderToString(equationToLatex(source),options);}
- catch{
-  const clean=source.trim();
-  const lhs=clean.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=|[a-zA-Z_][a-zA-Z0-9_]*\s*=)/);
-  const left=lhs?lhs[1].replace(/\s/g,"").replace(/([xy])\(/g,"$1\\left(").replace(/\)/g,"\\right)"):"";
-  const body=lhs?clean.slice(lhs[0].length).trimEnd():clean;
-  const command=body.match(/(\\?[a-zA-Z]+)\s*\(?$/);
-  const token=command?.[1].replace(/^\\/,"").toLowerCase();
-  const pending:Record<string,string>={
-   int:"\\int_{0}^{x}\\square\\,dx",sum:"\\sum_{i=1}^{n}\\square",prod:"\\prod_{i=1}^{n}\\square",
-   diff:"\\frac{d}{dx}\\square",frac:"\\frac{a}{b}",sqrt:"\\sqrt{\\square}",cbrt:"\\sqrt[3]{\\square}",
-   sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"
-  };
-  let tail="\\square";
-  if(body==="")tail="\\square";
-  else if(token&&pending[token])tail=pending[token];
-  else if(/[+\-*/^]\s*$/.test(body))tail=body.trim()+"\\square";
-  else tail="\\text{complete the expression}";
-  return katex.renderToString(left+tail,options);
- }
-}
+
 type EquationSuggestion={title:string;description:string;insert:string;trigger:string};
 function equationSuggestions(source:string,language:Language):EquationSuggestion[]{
  const trimmed=source.trimEnd();
@@ -435,24 +557,41 @@ function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
 }
 function arrow(ctx:CanvasRenderingContext2D,x1:number,y1:number,x2:number,y2:number,color:string,label?:string){const a=Math.atan2(y2-y1,x2-x1);ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.7;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-10*Math.cos(a-.45),y2-10*Math.sin(a-.45));ctx.lineTo(x2-10*Math.cos(a+.45),y2-10*Math.sin(a+.45));ctx.closePath();ctx.fill();if(label){ctx.font="700 13px DM Sans";ctx.lineWidth=3;ctx.strokeStyle=getComputedStyle(ctx.canvas).getPropertyValue("--plot-bg").trim()||"#fff";ctx.strokeText(label,x2+7,y2-7);ctx.fillStyle=color;ctx.fillText(label,x2+7,y2-7);}}
 
+function SandboxMath({value}:{value:string}){return <span className="sandbox-example-math" dangerouslySetInnerHTML={{__html:katex.renderToString(value,{throwOnError:false,strict:"ignore",trust:false})}}/>;}
+
 export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{language:Language;theme:"light"|"dark";motionLevel:"low"|"medium"|"high";renderMode:"auto"|"performance"|"detail"}){
  const w=copy[language];
+ const [mathLiveReady,setMathLiveReady]=useState(()=>typeof customElements!=="undefined"&&!!customElements.get("math-field"));
+ const [mathLiveFailed,setMathLiveFailed]=useState(false);
+ useEffect(()=>{
+  if(typeof customElements==="undefined")return;
+  if(customElements.get("math-field")){setMathLiveReady(true);return;}
+  let script=document.querySelector<HTMLScriptElement>('script[data-physimus-mathlive]');
+  if(!script){script=document.createElement("script");script.src="https://cdn.jsdelivr.net/npm/mathlive@0.111.4";script.async=true;script.dataset.physimusMathlive="true";document.head.appendChild(script);}
+  let active=true;
+  const ready=()=>{void customElements.whenDefined("math-field").then(()=>{if(active)setMathLiveReady(true);});};
+  const failed=()=>{if(active)setMathLiveFailed(true);};
+  script.addEventListener("load",ready);script.addEventListener("error",failed);
+  if(customElements.get("math-field"))ready();
+  return()=>{active=false;script?.removeEventListener("load",ready);script?.removeEventListener("error",failed);};
+ },[]);
  const [rows,setRows]=useState<Row[]>([{id:1,text:"",enabled:true}]);const [nextId,setNextId]=useState(2);
  const [time,setTime]=useState(0);const [duration,setDuration]=useState(12);const [mass,setMass]=useState(1);const [customVariables,setCustomVariables]=useState<Record<string,number>>({});const [gravity,setGravity]=useState(9.81);const [amplitude,setAmplitude]=useState(2);const [initialSpeed,setInitialSpeed]=useState(5);const [angularSpeed,setAngularSpeed]=useState(1);const [stiffness,setStiffness]=useState(10);const [phase,setPhase]=useState(Math.PI/4);const [playing,setPlaying]=useState(false);
  const [showGrid,setShowGrid]=useState(true);const [showAxes,setShowAxes]=useState(true);const [showTrail,setShowTrail]=useState(true);const [showVelocity,setShowVelocity]=useState(true);const [showAcceleration,setShowAcceleration]=useState(true);const [showForce,setShowForce]=useState(false);const [showWeight,setShowWeight]=useState(true);const [showMomentum,setShowMomentum]=useState(true);const [showEnergy,setShowEnergy]=useState(true);const [showLabels,setShowLabels]=useState(true);
  const [object,setObject]=useState("particle");const [expandedMeasurements,setExpandedMeasurements]=useState<string[]>([]);const [expandedScalarResults,setExpandedScalarResults]=useState<number[]>([]);const [scale,setScale]=useState(1);const [cursor,setCursor]=useState<{x:number;y:number}|null>(null);const [view,setView]=useState({xmin:-10,xmax:10,ymin:-10,ymax:10});const [canvasSize,setCanvasSize]=useState(0);
  const [editorTab,setEditorTab]=useState<EditorTab>("equations");const [focusedEquationId,setFocusedEquationId]=useState(1);const [suggestionSelection,setSuggestionSelection]=useState<Record<number,number>>({});const [sceneObjects,setSceneObjects]=useState<MechanicalObject[]>([]);const [nextObjectId,setNextObjectId]=useState(1);const [selectedObjectId,setSelectedObjectId]=useState<number|null>(null);
- const canvasRef=useRef<HTMLCanvasElement>(null);const objectPropertiesRef=useRef<HTMLDivElement>(null);const equationInputsRef=useRef<Record<number,HTMLInputElement|null>>({});const equationSelectionsRef=useRef<Record<number,{start:number;end:number}>>({});const timeRef=useRef(0);const dragRef=useRef<{kind:"pan";x:number;y:number;view:{xmin:number;xmax:number;ymin:number;ymax:number}}|{kind:"object";x:number;y:number;view:{xmin:number;xmax:number;ymin:number;ymax:number};id:number;objectX:number;objectY:number}|null>(null);const dragFrameRef=useRef<number|null>(null);const cursorFrameRef=useRef<number|null>(null);const pendingViewRef=useRef<typeof view|null>(null);const pendingObjectRef=useRef<{id:number;x:number;y:number}|null>(null);const pendingCursorRef=useRef<{x:number;y:number}|null>(null);
+ const canvasRef=useRef<HTMLCanvasElement>(null);const objectPropertiesRef=useRef<HTMLDivElement>(null);const equationInputsRef=useRef<Record<number,EquationInput|null>>({});const equationSelectionsRef=useRef<Record<number,{start:number;end:number}>>({});const timeRef=useRef(0);const dragRef=useRef<{kind:"pan";x:number;y:number;view:{xmin:number;xmax:number;ymin:number;ymax:number}}|{kind:"object";x:number;y:number;view:{xmin:number;xmax:number;ymin:number;ymax:number};id:number;objectX:number;objectY:number}|null>(null);const dragFrameRef=useRef<number|null>(null);const cursorFrameRef=useRef<number|null>(null);const pendingViewRef=useRef<typeof view|null>(null);const pendingObjectRef=useRef<{id:number;x:number;y:number}|null>(null);const pendingCursorRef=useRef<{x:number;y:number}|null>(null);
  const parsed=useMemo(()=>compile(rows),[rows]);const valid=useMemo(()=>parsed.filter(x=>!x.error),[parsed]);const errors=useMemo(()=>parsed.filter(x=>x.error),[parsed]);
  const hasMotion=valid.some(x=>x.target==="x(t)"||x.target==="y(t)");
  const usedVariables=useMemo(()=>{const result=new Set<string>();valid.forEach(item=>collectVariables(item.root,result));return Array.from(result).filter(name=>!["x","t","pi","e"].includes(name)).sort();},[valid]);
  const knownVariables=useMemo(()=>({m:mass,g:gravity,A:amplitude,v0:initialSpeed,omega:angularSpeed,k:stiffness,theta:phase}),[mass,gravity,amplitude,initialSpeed,angularSpeed,stiffness,phase]);
  const parameterSet=useMemo<Vars>(()=>({x:0,t:0,...Object.fromEntries(usedVariables.map(name=>[name,customVariables[name]??knownVariables[name as keyof typeof knownVariables]??variableDefaults(name)])),...knownVariables}),[usedVariables,customVariables,knownVariables]);
   const scalarResults=useMemo(()=>valid.filter(item=>item.target==="scalar").map(item=>({id:item.id,value:calc(item.root,parameterSet)})),[valid,parameterSet]);
- const current=useMemo(()=>motionAt(valid,time,parameterSet),[valid,time,parameterSet]);const constrainedDevice=typeof navigator!=="undefined"&&((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);const effectiveMotionLevel=constrainedDevice&&motionLevel==="high"?"medium":motionLevel;const motionBudget=effectiveMotionLevel==="low"?{fps:12,trail:90}:effectiveMotionLevel==="medium"?{fps:20,trail:125}:{fps:24,trail:150};const renderQuality={...motionBudget,dpr:renderMode==="performance"?1:renderMode==="detail"?(constrainedDevice?1.15:1.25):effectiveMotionLevel==="low"?1:effectiveMotionLevel==="medium"?1.05:1.1,samples:renderMode==="performance"?80:renderMode==="detail"?(constrainedDevice?160:190):effectiveMotionLevel==="low"?90:effectiveMotionLevel==="medium"?140:170};const functionCurves=useMemo(()=>{const halfSpan=(view.xmax-view.xmin)/(2*scale),mid=(view.xmin+view.xmax)/2,lo=mid-halfSpan,hi=mid+halfSpan;return valid.filter(item=>item.target==="y(x)").map((item,index)=>({id:item.id,color:["#347fd5","#4da786","#d99a46","#8b6bd6"][index%4],points:Array.from({length:renderQuality.samples+1},(_,i)=>{const x=lo+(hi-lo)*i/renderQuality.samples;return {x,y:calc(item.root,{...parameterSet,x,t:0})};})}));},[valid,parameterSet,view,scale,renderQuality.samples]);const motionTrail=useMemo(()=>hasMotion?Array.from({length:renderQuality.trail+1},(_,i)=>{const t=duration*i/renderQuality.trail,p=motionAt(valid,t,{...parameterSet,t});return p?{x:p.x,y:p.y}:{x:Number.NaN,y:Number.NaN};}):[],[hasMotion,valid,duration,parameterSet,renderQuality.trail]);
- const badSample=useMemo(()=>{for(const item of valid){for(let i=0;i<=100;i++){const q=item.target==="y(x)"?calc(item.root,{...parameterSet,x:view.xmin+(view.xmax-view.xmin)*i/100,t:0}):calc(item.root,{...parameterSet,x:0,t:duration*i/100});if(!Number.isFinite(q)||Math.abs(q)>1e6)return true;}}return false;},[valid,view,duration,parameterSet]);
- const warning=errors.length>0||badSample||(hasMotion&&!current);
- useEffect(()=>{if(!playing)return;let frame=0,last=0,lastUi=0;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;const fps=reduced?8:renderQuality.fps;const interval=1000/fps;const tick=(now:number)=>{if(!last)last=now;const next=timeRef.current+Math.min((now-last)/1000,.05);last=now;timeRef.current=Math.min(duration,next);if(now-lastUi>=interval||next>=duration){lastUi=now;setTime(timeRef.current);}if(next>=duration){setPlaying(false);return;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,duration,renderQuality.fps]);
+ const current=useMemo(()=>motionAt(valid,time,parameterSet),[valid,time,parameterSet]);const constrainedDevice=typeof navigator!=="undefined"&&((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);const effectiveMotionLevel=constrainedDevice&&motionLevel==="high"?"medium":motionLevel;const motionBudget=effectiveMotionLevel==="low"?{fps:16,trail:48}:effectiveMotionLevel==="medium"?{fps:22,trail:64}:{fps:28,trail:82};const renderQuality={...motionBudget,dpr:renderMode==="performance"?1:renderMode==="detail"?(constrainedDevice?1:1.1):1,samples:renderMode==="performance"?48:renderMode==="detail"?(constrainedDevice?72:90):effectiveMotionLevel==="low"?55:effectiveMotionLevel==="medium"?72:85};const functionCurves=useMemo(()=>{const halfSpan=(view.xmax-view.xmin)/(2*scale),mid=(view.xmin+view.xmax)/2,lo=mid-halfSpan,hi=mid+halfSpan;return valid.filter(item=>item.target==="y(x)").map((item,index)=>({id:item.id,color:["#347fd5","#4da786","#d99a46","#8b6bd6"][index%4],points:Array.from({length:renderQuality.samples+1},(_,i)=>{const x=lo+(hi-lo)*i/renderQuality.samples;return {x,y:calc(item.root,{...parameterSet,x,t:0})};})}));},[valid,parameterSet,view,scale,renderQuality.samples]);const motionTrail=useMemo(()=>hasMotion?Array.from({length:renderQuality.trail+1},(_,i)=>{const t=duration*i/renderQuality.trail,p=motionAt(valid,t,{...parameterSet,t});return p?{x:p.x,y:p.y}:{x:Number.NaN,y:Number.NaN};}):[],[hasMotion,valid,duration,parameterSet,renderQuality.trail]);
+ const badSample=useMemo(()=>{for(const item of valid){for(let i=0;i<=60;i++){const q=item.target==="y(x)"?calc(item.root,{...parameterSet,x:view.xmin+(view.xmax-view.xmin)*i/60,t:0}):calc(item.root,{...parameterSet,x:0,t:duration*i/60});if(!Number.isFinite(q)||Math.abs(q)>1e6)return true;}}return false;},[valid,view,duration,parameterSet]);
+ const dimensionErrors=useMemo(()=>valid.filter(equationDimensionIssue),[valid]);
+ const warning=errors.length>0||badSample||(hasMotion&&!current)||dimensionErrors.length>0;
+ useEffect(()=>{if(!playing)return;let frame=0,last=0,lastUi=0;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;const fps=reduced?8:renderQuality.fps;const interval=1000/fps;const tick=(now:number)=>{if(!last)last=now;const next=timeRef.current+Math.min((now-last)/1000,.1);last=now;timeRef.current=Math.min(duration,next);if(now-lastUi>=interval||next>=duration){lastUi=now;setTime(timeRef.current);}if(next>=duration){setPlaying(false);return;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,duration,renderQuality.fps]);
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)return;const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;const dpr=Math.min(window.devicePixelRatio||1,renderQuality.dpr),width=rect.width,height=rect.height;const backingWidth=Math.round(width*dpr),backingHeight=Math.round(height*dpr);if(canvas.width!==backingWidth||canvas.height!==backingHeight){canvas.width=backingWidth;canvas.height=backingHeight;}ctx.setTransform(dpr,0,0,dpr,0,0);const canvasStyle=getComputedStyle(canvas),plotBg=canvasStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=canvasStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf1f5"),axisColor=canvasStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#627b94");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
   const spanX=(view.xmax-view.xmin)/scale,spanY=(view.ymax-view.ymin)/scale,mx=(view.xmax+view.xmin)/2,my=(view.ymax+view.ymin)/2,xmin=mx-spanX/2,xmax=mx+spanX/2,ymin=my-spanY/2,ymax=my+spanY/2;const left=58,right=20,top=22,bottom=40,pw=width-left-right,ph=height-top-bottom;const X=(x:number)=>left+(x-xmin)/(xmax-xmin)*pw,Y=(y:number)=>top+ph-(y-ymin)/(ymax-ymin)*ph;
   const nice=(span:number)=>{const raw=span/9,p=10**Math.floor(Math.log10(Math.max(raw,1e-9))),q=raw/p;return (q<=1?1:q<=2?2:q<=5?5:10)*p;};const dx=nice(xmax-xmin),dy=nice(ymax-ymin);
@@ -545,23 +684,31 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const selectedSceneObject=sceneObjects.find(item=>item.id===selectedObjectId)??null;
 
  const update=(id:number,text:string)=>setRows(old=>old.map(r=>r.id===id?{...r,text}:r));
+ const isMathfield=(input:EquationInput):input is MathfieldLike=>"getValue" in input&&typeof input.getValue==="function";
  const restoreEquationCaret=(id:number,position:number)=>{
-  requestAnimationFrame(()=>{const input=equationInputsRef.current[id];if(!input)return;input.focus();input.setSelectionRange(position,position);equationSelectionsRef.current[id]={start:position,end:position};});
+  requestAnimationFrame(()=>{const input=equationInputsRef.current[id];if(!input)return;input.focus();if(isMathfield(input)){input.position=input.lastOffset;}else{input.setSelectionRange(position,position);}equationSelectionsRef.current[id]={start:position,end:position};});
  };
  const applyEquationSuggestion=(row:Row,suggestion:EquationSuggestion)=>{
-  const next=acceptSuggestion(row.text,suggestion);update(row.id,next);setSuggestionSelection(old=>({...old,[row.id]:-1}));restoreEquationCaret(row.id,next.length);
+  const next=acceptSuggestion(row.text,suggestion);update(row.id,next);setSuggestionSelection(old=>({...old,[row.id]:-1}));
+  const input=equationInputsRef.current[row.id];if(input&&isMathfield(input)){input.value=equationToLatex(next);restoreEquationCaret(row.id,input.lastOffset);}else restoreEquationCaret(row.id,next.length);
  };
  const insertToken=(token:string)=>{
   const row=rows.find(item=>item.id===focusedEquationId)??rows[rows.length-1];if(!row)return;
   const input=equationInputsRef.current[row.id],stored=equationSelectionsRef.current[row.id];
-  const start=input?.selectionStart??stored?.start??row.text.length,end=input?.selectionEnd??stored?.end??start;
+  if(input&&isMathfield(input)){
+   const left=row.text.trimEnd(),needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!["=","+","-","*","/","(",","] .includes(left.slice(-1));
+   input.insert(equationToLatex((needsProduct?"*":"")+token));input.focus();update(row.id,mathLiveToExpression(input.getValue("ascii-math"),input.getValue("latex")));setFocusedEquationId(row.id);return;
+  }
+  const plain=input as HTMLInputElement|null;
+  const start=plain?.selectionStart??stored?.start??row.text.length,end=plain?.selectionEnd??stored?.end??start;
   const before=row.text.slice(0,start),after=row.text.slice(end),left=before.trimEnd();
-  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/[=+\-*\/^(,]$/.test(left);
+  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!["=","+","-","*","/","(",","] .includes(left.slice(-1));
   const prefix=needsProduct?"*":"";
   const next=before+prefix+token+after;
   update(row.id,next);setFocusedEquationId(row.id);
   restoreEquationCaret(row.id,start+prefix.length+token.length);
  };
+ useEffect(()=>{if(!mathLiveReady)return;rows.forEach(row=>{const input=equationInputsRef.current[row.id];if(input&&isMathfield(input)&&document.activeElement!==input&&input.getValue("ascii-math")!==row.text)input.value=equationToLatex(row.text);});},[rows,mathLiveReady]);
  const reset=()=>{setTime(0);timeRef.current=0;setPlaying(false);};
  const preset=(kind:string)=>{
   const data:Record<string,string[]>={
@@ -653,10 +800,10 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       <div className="sandbox-editor-heading"><strong>{w.math}</strong><button onClick={add}><Plus size={15}/>{w.add}</button></div>
       <p className="sandbox-section-intro">{language==="ID"?"Ketik seperti notasi matematika. LaTeX akan terbentuk otomatis; gunakan saran operator untuk integral, sigma, dan turunan.":"Type in mathematical notation. LaTeX is generated automatically; use operator suggestions for integrals, summation and derivatives."}</p>
       <div className="sandbox-math-palette" aria-label={language==="ID"?"Simbol matematika":"Math symbols"}>{[{label:"θ",token:"theta"},{label:"ω",token:"omega"},{label:"α",token:"alpha"},{label:"β",token:"beta"},{label:"γ",token:"gamma"},{label:"δ",token:"delta"},{label:"φ",token:"phi"},{label:"ψ",token:"psi"},{label:"μ",token:"mu"},{label:"π",token:"pi"},{label:"σ",token:"sigma"},{label:"τ",token:"tau"},{label:"∫",token:"int(u^2, u, 0, x)"},{label:"∫ₐᵇ",token:"int(x^2, x, 0, 1)"},{label:"Σ",token:"sum(i^2, i, 1, 5)"},{label:"∏",token:"prod(i, i, 1, 5)"},{label:"d/dx",token:"diff(x^2, x)"},{label:"√",token:"sqrt(x)"},{label:"∛",token:"cbrt(x)"},{label:"sin",token:"sin(x)"},{label:"cos",token:"cos(x)"},{label:"ln",token:"ln(x)"}].map(item=><button key={item.label} type="button" onClick={()=>insertToken(item.token)} title={item.token}>{item.label}</button>)}</div>
-      <div className="sandbox-equations">{rows.map((row,index)=>{const suggestions=equationSuggestions(row.text,language),scalar=scalarResults.find(result=>result.id===row.id);return <div className={row.enabled?"sandbox-equation-item":"sandbox-equation-item disabled"} key={row.id}><div className="sandbox-equation-row"><span>{index+1}</span><button title={row.enabled?w.hide:w.show} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button><input ref={el=>{equationInputsRef.current[row.id]=el;}} aria-label={"Equation "+(index+1)} value={row.text} onFocus={e=>{setFocusedEquationId(row.id);setSuggestionSelection(old=>({...old,[row.id]:0}));equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??row.text.length,end:e.currentTarget.selectionEnd??row.text.length};}} onSelect={e=>{equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??0,end:e.currentTarget.selectionEnd??0};}} onChange={e=>{update(row.id,e.target.value);equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??e.target.value.length,end:e.currentTarget.selectionEnd??e.target.value.length};setSuggestionSelection(old=>({...old,[row.id]:0}));}} onKeyDown={e=>{if(!suggestions.length)return;const currentSelection=suggestionSelection[row.id]??0;if(e.key==="ArrowDown"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.min(suggestions.length-1,Math.max(0,currentSelection)+1)}));}else if(e.key==="ArrowUp"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.max(0,(currentSelection<0?0:currentSelection)-1)}));}else if((e.key==="Enter"||e.key==="Tab")&&currentSelection>=0){e.preventDefault();applyEquationSuggestion(row,suggestions[Math.min(suggestions.length-1,currentSelection)]);}else if(e.key==="Escape"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:-1}));}}} placeholder="x(t)=A*cos(omega*t)"/><button title={w.delete} onClick={()=>{setRows(old=>old.filter(q=>q.id!==row.id));if(focusedEquationId===row.id)setFocusedEquationId(rows.find(q=>q.id!==row.id)?.id??0);}}><Trash2 size={14}/></button></div><div className="sandbox-equation-preview"><span>{language==="ID"?"LaTeX otomatis":"Live LaTeX"}</span><div dangerouslySetInnerHTML={{__html:row.text.trim()?equationPreviewHtml(row.text):""}}/></div>{scalar&&<button type="button" className={expandedScalarResults.includes(row.id)?"sandbox-scalar-result expanded":"sandbox-scalar-result"} aria-expanded={expandedScalarResults.includes(row.id)} onClick={()=>setExpandedScalarResults(old=>old.includes(row.id)?old.filter(id=>id!==row.id):[...old,row.id])}><span>{language==="ID"?"Nilai saat ini · klik untuk substitusi":"Current value · click to substitute"}</span><strong>{Number.isFinite(scalar.value)?scalar.value.toPrecision(6):"—"}</strong>{expandedScalarResults.includes(row.id)&&(()=>{const compiled=valid.find(item=>item.id===row.id);return compiled?<small dangerouslySetInnerHTML={mathHtml(scalarSubstitutionLatex(row,compiled,parameterSet,scalar.value))}/>:null;})()}</button>}{suggestions.length>0&&(suggestionSelection[row.id]??0)>=0&&<div className="sandbox-math-suggestions" role="listbox">{suggestions.map((item,suggestionIndex)=><button type="button" role="option" aria-selected={(suggestionSelection[row.id]??0)===suggestionIndex} className={(suggestionSelection[row.id]??0)===suggestionIndex?"active":""} key={item.title} onMouseEnter={()=>setSuggestionSelection(old=>({...old,[row.id]:suggestionIndex}))} onClick={()=>applyEquationSuggestion(row,item)}><span dangerouslySetInnerHTML={{__html:katex.renderToString(item.description,{throwOnError:false,strict:"ignore",trust:false})}}/><strong>{item.title}</strong><small>{item.insert}</small></button>)}</div>}</div>;})}</div>
+      <div className="sandbox-equations">{rows.map((row,index)=>{const suggestions=equationSuggestions(row.text,language),scalar=scalarResults.find(result=>result.id===row.id),focus=()=>{setFocusedEquationId(row.id);setSuggestionSelection(old=>({...old,[row.id]:0}));},keys=(e:KeyboardEvent)=>{if(!suggestions.length)return;const currentSelection=suggestionSelection[row.id]??0;if(e.key==="ArrowDown"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.min(suggestions.length-1,Math.max(0,currentSelection)+1)}));}else if(e.key==="ArrowUp"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.max(0,(currentSelection<0?0:currentSelection)-1)}));}else if((e.key==="Enter"||e.key==="Tab")&&currentSelection>=0){e.preventDefault();applyEquationSuggestion(row,suggestions[Math.min(suggestions.length-1,currentSelection)]);}else if(e.key==="Escape"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:-1}));}};const field=mathLiveReady?createElement("math-field" as any,{ref:(el:MathfieldLike|null)=>{equationInputsRef.current[row.id]=el;if(el&&!el.dataset.physimusReady){el.value=equationToLatex(row.text);el.dataset.physimusReady="true";}},key:row.id,"aria-label":(language==="ID"?"Editor persamaan ":"Equation editor ")+(index+1),className:"sandbox-mathfield","virtual-keyboard-mode":"onfocus","smart-fence":"true","smart-superscript":"true","letter-shape-style":"tex",onFocus:focus,onInput:(event:{currentTarget:MathfieldLike})=>{const text=mathLiveToExpression(event.currentTarget.getValue("ascii-math"),event.currentTarget.getValue("latex"));update(row.id,text);setSuggestionSelection(old=>({...old,[row.id]:0}));},onKeyDown:keys}):<input ref={el=>{equationInputsRef.current[row.id]=el;}} aria-label={"Equation "+(index+1)} value={row.text} onFocus={focus} onSelect={e=>{equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??0,end:e.currentTarget.selectionEnd??0};}} onChange={e=>{update(row.id,e.target.value);equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??e.target.value.length,end:e.currentTarget.selectionEnd??e.target.value.length};setSuggestionSelection(old=>({...old,[row.id]:0}));}} onKeyDown={e=>keys(e.nativeEvent)} placeholder="x(t)=A*cos(omega*t)"/>;return <div className={row.enabled?"sandbox-equation-item":"sandbox-equation-item disabled"} key={row.id}><div className="sandbox-equation-editor"><div className="sandbox-equation-row"><span>{index+1}</span><button title={row.enabled?w.hide:w.show} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button>{field}<button title={w.delete} onClick={()=>{setRows(old=>old.filter(q=>q.id!==row.id));if(focusedEquationId===row.id)setFocusedEquationId(rows.find(q=>q.id!==row.id)?.id??0);}}><Trash2 size={14}/></button></div>{!mathLiveReady&&mathLiveFailed&&<p className="sandbox-editor-fallback-note">{language==="ID"?"Editor matematika penuh tidak dapat dimuat. Gunakan notasi teks pada kolom ini.":"The rich math editor could not load. Use text notation in this field."}</p>}</div>{scalar&&<button type="button" className={expandedScalarResults.includes(row.id)?"sandbox-scalar-result expanded":"sandbox-scalar-result"} aria-expanded={expandedScalarResults.includes(row.id)} onClick={()=>setExpandedScalarResults(old=>old.includes(row.id)?old.filter(id=>id!==row.id):[...old,row.id])}><span>{language==="ID"?"Nilai saat ini · buka rincian":"Current value · open details"}</span><strong>{Number.isFinite(scalar.value)?scalar.value.toPrecision(6):"—"}</strong>{expandedScalarResults.includes(row.id)&&(()=>{const compiled=valid.find(item=>item.id===row.id);return compiled?<small dangerouslySetInnerHTML={mathHtml(scalarSubstitutionLatex(row,compiled,parameterSet,scalar.value))}/>:null;})()}</button>}{suggestions.length>0&&(suggestionSelection[row.id]??0)>=0&&<div className="sandbox-math-suggestions" role="listbox">{suggestions.map((item,suggestionIndex)=><button type="button" role="option" aria-selected={(suggestionSelection[row.id]??0)===suggestionIndex} className={(suggestionSelection[row.id]??0)===suggestionIndex?"active":""} key={item.title} onMouseEnter={()=>setSuggestionSelection(old=>({...old,[row.id]:suggestionIndex}))} onClick={()=>applyEquationSuggestion(row,item)}><span dangerouslySetInnerHTML={{__html:katex.renderToString(item.description,{throwOnError:false,strict:"ignore",trust:false})}}/><strong>{item.title}</strong><small>{item.insert}</small></button>)}</div>}</div>;})}</div>
       <section className="sandbox-variable-panel">
         <div className="sandbox-panel-title"><strong>{w.variables}</strong><span>{usedVariables.length}</span></div>
-        {usedVariables.length===0?<p className="sandbox-variable-empty">{w.noVariables}</p>:<div className="sandbox-variable-grid">{usedVariables.map(name=>{const meta=variableDescription(name,language);return <label key={name}><span>{meta.label} <code>{name}</code></span><div><input type="number" step="any" value={parameterSet[name]??variableDefaults(name)} onChange={e=>setVariable(name,Number(e.target.value))}/><small>{meta.unit}</small></div></label>;})}</div>}
+        {usedVariables.length===0?<p className="sandbox-variable-empty">{w.noVariables}</p>:<div className="sandbox-variable-grid">{usedVariables.map(name=>{const meta=variableDescription(name,language);return <label key={name}><span>{meta.label} <code>{name}</code></span><div><input type="number" step="any" value={parameterSet[name]??variableDefaults(name)} onChange={e=>{const raw=e.currentTarget.value;if(raw.trim()==="")return;const next=Number(raw);if(Number.isFinite(next))setVariable(name,next);}}/><small>{meta.unit}</small></div></label>;})}</div>}
         <p className="sandbox-variable-help">{language==="ID"?"Nilai variabel langsung mengubah evaluasi persamaan dan lintasan saat ini. x dan t adalah variabel independen; pi dan e adalah konstanta.":"Changing a variable recalculates the expressions and trajectory. x and t are independent variables; pi and e are constants."}</p>
       </section>
     </>}
@@ -699,42 +846,42 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       <div className="sandbox-editor-heading"><strong>{w.examples}</strong></div>
       <p className="sandbox-section-intro">{language==="ID"?"Pilih contoh untuk memuat persamaan, variabel, dan kondisi awal.":"Load a starter model with equations, variables and initial conditions."}</p>
       <div className="sandbox-example-list">
-        <button onClick={()=>preset("circle")}><strong>01 · {language==="ID"?"Gerak melingkar beraturan":"Uniform circular motion"}</strong><code>x(t)=A cos(ωt), y(t)=A sin(ωt)</code></button>
-        <button onClick={()=>preset("projectile")}><strong>02 · {language==="ID"?"Gerak parabola":"Projectile motion"}</strong><code>x(t)=v₀ cos(θ)t, y(t)=v₀ sin(θ)t − ½gt²</code></button>
-        <button onClick={()=>preset("spring")}><strong>03 · {language==="ID"?"Osilasi harmonik pegas":"Mass–spring SHM"}</strong><code>x(t)=A cos(√(k/m)t)</code></button>
-        <button onClick={()=>preset("mru")}><strong>04 · {language==="ID"?"Gerak lurus beraturan":"Uniform linear motion"}</strong><code>x(t)=x₀+v₀t</code></button>
-        <button onClick={()=>preset("mrua")}><strong>05 · {language==="ID"?"Gerak lurus berubah beraturan":"Constant acceleration"}</strong><code>x(t)=x₀+v₀t+½at²</code></button>
-        <button onClick={()=>preset("pendulum")}><strong>06 · {language==="ID"?"Bandul sudut kecil":"Small-angle pendulum"}</strong><code>x(t)=L sin(θ cos(√(g/L)t))</code></button>
-        <button onClick={()=>preset("incline")}><strong>07 · {language==="ID"?"Balok pada bidang miring":"Block on an incline"}</strong><code>a=g(sin θ−μ cos θ)</code></button>
-        <button onClick={()=>preset("energy")}><strong>08 · {language==="ID"?"Energi pada bidang miring":"Energy on an incline"}</strong><code>Eₘ=Eₖ+Eₚ</code></button>
-        <button onClick={()=>preset("curve")}><strong>09 · {language==="ID"?"Kurva fungsi kuadrat":"Quadratic function"}</strong><code>y=0.2x²−2</code></button>
-        <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><code>y=∫₀ˣ u² du</code></button>
-        <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><code>y=Σᵢ₌₁ⁿ i²</code></button>
-        <button onClick={()=>preset("product")}><strong>12 · {language==="ID"?"Perkalian berindeks pi":"Indexed product operator"}</strong><code>y=∏ᵢ₌₁ⁿ i</code></button>
-        <button onClick={()=>preset("derivative")}><strong>12 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><code>y=d(sin x)/dx</code></button>
-        <button onClick={()=>preset("newton")}><strong>13 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><code>F=ma</code></button>
-        <button onClick={()=>preset("weight")}><strong>14 · {language==="ID"?"Berat benda":"Weight"}</strong><code>w=mg</code></button>
-        <button onClick={()=>preset("momentum")}><strong>15 · {language==="ID"?"Momentum linear":"Linear momentum"}</strong><code>p=mv</code></button>
-        <button onClick={()=>preset("work")}><strong>16 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><code>W=F d cos(θ)</code></button>
-        <button onClick={()=>preset("kinetic")}><strong>17 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><code>Eₖ=½mv²</code></button>
-        <button onClick={()=>preset("springforce")}><strong>18 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><code>F=−kx</code></button>
-        <button onClick={()=>preset("centripetal")}><strong>19 · {language==="ID"?"Gaya sentripetal":"Centripetal force"}</strong><code>F_c=mω²r</code></button>
-        <button onClick={()=>preset("potential")}><strong>20 · {language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy"}</strong><code>U=mgh</code></button>
-        <button onClick={()=>preset("impulse")}><strong>21 · {language==="ID"?"Impuls dan perubahan momentum":"Impulse and momentum change"}</strong><code>J=FΔt</code></button>
-        <button onClick={()=>preset("torque")}><strong>22 · {language==="ID"?"Momen gaya / torsi":"Torque"}</strong><code>τ=Iα</code></button>
-        <button onClick={()=>preset("rotation")}><strong>23 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><code>Kᵣₒₜ=½Iω²</code></button>
-        <button onClick={()=>preset("springenergy")}><strong>24 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><code>Uₛ=½kx²</code></button>
-        <button onClick={()=>preset("friction")}><strong>25 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><code>fₖ=μₖN, N=mg cos θ</code></button>
-        <button onClick={()=>preset("components")}><strong>26 · {language==="ID"?"Komponen gaya":"Force components"}</strong><code>Fₓ=F cos θ, Fᵧ=F sin θ</code></button>
-        <button onClick={()=>preset("torricelli")}><strong>27 · {language==="ID"?"Persamaan Torricelli":"Torricelli equation"}</strong><code>v=√(v₀²+2as)</code></button>
-        <button onClick={()=>preset("power")}><strong>28 · {language==="ID"?"Daya mekanik":"Mechanical power"}</strong><code>P=Fv</code></button>
-        <button onClick={()=>preset("gravitation")}><strong>29 · {language==="ID"?"Hukum gravitasi Newton":"Newtonian gravitation"}</strong><code>F=Gm₁m₂/r²</code></button>
-        <button onClick={()=>preset("angularmomentum")}><strong>30 · {language==="ID"?"Momentum sudut":"Angular momentum"}</strong><code>H=Iω</code></button>
-        <button onClick={()=>preset("damped")}><strong>31 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><code>x=Ae^(−βt) cos(ωᵈt)</code></button>
-        <button onClick={()=>preset("workenergy")}><strong>32 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><code>Wₙₑₜ=½m(v²−v₀²)</code></button>
-        <button onClick={()=>preset("dampedforce")}><strong>33 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><code>Fᵈ=−cv</code></button>
-        <button onClick={()=>preset("staticfriction")}><strong>34 · {language==="ID"?"Batas gaya gesek statis":"Maximum static friction"}</strong><code>fₛ,max=μₛN</code></button>
-        <button onClick={()=>preset("angularkinematics")}><strong>35 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><code>ω=ω₀+αt</code></button>
+        <button onClick={()=>preset("circle")}><strong>01 · {language==="ID"?"Gerak melingkar beraturan":"Uniform circular motion"}</strong><SandboxMath value={String.raw`x(t)=A\cos(\omega t),\quad y(t)=A\sin(\omega t)`}/></button>
+        <button onClick={()=>preset("projectile")}><strong>02 · {language==="ID"?"Gerak parabola":"Projectile motion"}</strong><SandboxMath value={String.raw`x(t)=v_0\cos\theta\,t,\quad y(t)=v_0\sin\theta\,t-\frac12gt^2`}/></button>
+        <button onClick={()=>preset("spring")}><strong>03 · {language==="ID"?"Osilasi harmonik pegas":"Mass–spring SHM"}</strong><SandboxMath value={String.raw`x(t)=A\cos\left(\sqrt{\frac{k}{m}}\,t\right)`}/></button>
+        <button onClick={()=>preset("mru")}><strong>04 · {language==="ID"?"Gerak lurus beraturan":"Uniform linear motion"}</strong><SandboxMath value={String.raw`x(t)=x_0+v_0t`}/></button>
+        <button onClick={()=>preset("mrua")}><strong>05 · {language==="ID"?"Gerak lurus berubah beraturan":"Constant acceleration"}</strong><SandboxMath value={String.raw`x(t)=x_0+v_0t+\frac12at^2`}/></button>
+        <button onClick={()=>preset("pendulum")}><strong>06 · {language==="ID"?"Bandul sudut kecil":"Small-angle pendulum"}</strong><SandboxMath value={String.raw`x(t)=L\sin\left(\theta_0\cos\left(\sqrt{\frac{g}{L}}\,t\right)\right)`}/></button>
+        <button onClick={()=>preset("incline")}><strong>07 · {language==="ID"?"Balok pada bidang miring":"Block on an incline"}</strong><SandboxMath value={String.raw`a=g(\sin\theta-\mu_k\cos\theta)`}/></button>
+        <button onClick={()=>preset("energy")}><strong>08 · {language==="ID"?"Energi pada bidang miring":"Energy on an incline"}</strong><SandboxMath value={String.raw`E_m=E_k+E_p`}/></button>
+        <button onClick={()=>preset("curve")}><strong>09 · {language==="ID"?"Kurva fungsi kuadrat":"Quadratic function"}</strong><SandboxMath value={String.raw`y=0.2x^2-2`}/></button>
+        <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><SandboxMath value={String.raw`y=\int_0^x u^2\,du`}/></button>
+        <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><SandboxMath value={String.raw`y=\sum_{i=1}^{n}i^2`}/></button>
+        <button onClick={()=>preset("product")}><strong>12 · {language==="ID"?"Perkalian berindeks pi":"Indexed product operator"}</strong><SandboxMath value={String.raw`y=\prod_{i=1}^{n}i`}/></button>
+        <button onClick={()=>preset("derivative")}><strong>13 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><SandboxMath value={String.raw`y=\frac{d}{dx}\sin x`}/></button>
+        <button onClick={()=>preset("newton")}><strong>14 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><SandboxMath value={String.raw`F=ma`}/></button>
+        <button onClick={()=>preset("weight")}><strong>15 · {language==="ID"?"Berat benda":"Weight"}</strong><SandboxMath value={String.raw`w=mg`}/></button>
+        <button onClick={()=>preset("momentum")}><strong>16 · {language==="ID"?"Momentum linear":"Linear momentum"}</strong><SandboxMath value={String.raw`p=mv`}/></button>
+        <button onClick={()=>preset("work")}><strong>17 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><SandboxMath value={String.raw`W=Fd\cos\theta`}/></button>
+        <button onClick={()=>preset("kinetic")}><strong>18 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><SandboxMath value={String.raw`E_k=\frac12mv^2`}/></button>
+        <button onClick={()=>preset("springforce")}><strong>19 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><SandboxMath value={String.raw`F=-kx`}/></button>
+        <button onClick={()=>preset("centripetal")}><strong>20 · {language==="ID"?"Gaya sentripetal":"Centripetal force"}</strong><SandboxMath value={String.raw`F_c=m\omega^2r`}/></button>
+        <button onClick={()=>preset("potential")}><strong>21 · {language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy"}</strong><SandboxMath value={String.raw`U=mgh`}/></button>
+        <button onClick={()=>preset("impulse")}><strong>22 · {language==="ID"?"Impuls dan perubahan momentum":"Impulse and momentum change"}</strong><SandboxMath value={String.raw`J=F\Delta t`}/></button>
+        <button onClick={()=>preset("torque")}><strong>23 · {language==="ID"?"Momen gaya / torsi":"Torque"}</strong><SandboxMath value={String.raw`\tau=I\alpha`}/></button>
+        <button onClick={()=>preset("rotation")}><strong>24 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><SandboxMath value={String.raw`K_{\mathrm{rot}}=\frac12I\omega^2`}/></button>
+        <button onClick={()=>preset("springenergy")}><strong>25 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><SandboxMath value={String.raw`U_s=\frac12kx^2`}/></button>
+        <button onClick={()=>preset("friction")}><strong>26 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><SandboxMath value={String.raw`f_k=\mu_kN,\quad N=mg\cos\theta`}/></button>
+        <button onClick={()=>preset("components")}><strong>27 · {language==="ID"?"Komponen gaya":"Force components"}</strong><SandboxMath value={String.raw`F_x=F\cos\theta,\quad F_y=F\sin\theta`}/></button>
+        <button onClick={()=>preset("torricelli")}><strong>28 · {language==="ID"?"Persamaan Torricelli":"Torricelli equation"}</strong><SandboxMath value={String.raw`v=\sqrt{v_0^2+2as}`}/></button>
+        <button onClick={()=>preset("power")}><strong>29 · {language==="ID"?"Daya mekanik":"Mechanical power"}</strong><SandboxMath value={String.raw`P=Fv`}/></button>
+        <button onClick={()=>preset("gravitation")}><strong>30 · {language==="ID"?"Hukum gravitasi Newton":"Newtonian gravitation"}</strong><SandboxMath value={String.raw`F=G\frac{m_1m_2}{r^2}`}/></button>
+        <button onClick={()=>preset("angularmomentum")}><strong>31 · {language==="ID"?"Momentum sudut":"Angular momentum"}</strong><SandboxMath value={String.raw`H=I\omega`}/></button>
+        <button onClick={()=>preset("damped")}><strong>32 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><SandboxMath value={String.raw`x=Ae^{-\beta t}\cos(\omega_dt)`}/></button>
+        <button onClick={()=>preset("workenergy")}><strong>33 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><SandboxMath value={String.raw`W_{\mathrm{net}}=\frac12m(v^2-v_0^2)`}/></button>
+        <button onClick={()=>preset("dampedforce")}><strong>34 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><SandboxMath value={String.raw`F_d=-cv`}/></button>
+        <button onClick={()=>preset("staticfriction")}><strong>35 · {language==="ID"?"Batas gaya gesek statis":"Maximum static friction"}</strong><SandboxMath value={String.raw`f_{s,\max}=\mu_sN`}/></button>
+        <button onClick={()=>preset("angularkinematics")}><strong>36 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><SandboxMath value={String.raw`\omega=\omega_0+\alpha t`}/></button>
       </div>
     </>}
     {editorTab==="graph"&&<>
@@ -747,7 +894,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <Toggle label={w.trail} value={showTrail} onClick={()=>setShowTrail(v=>!v)}/>
       </div>
     </>}
-    <div className="sandbox-validation"><span className="eyebrow">{w.status}</span><p className={warning?"bad":"good"}>{warning?<><AlertTriangle size={14}/>{w.bad}</>:<><Sparkles size={14}/>{w.ok}</>}</p>{errors.map(e=><small key={e.id}>{e.text}: {e.error}</small>)}{parsed.length===0&&<small>{w.empty}</small>}</div>
+    <div className="sandbox-validation"><span className="eyebrow">{w.status}</span><p className={warning?"bad":"good"}>{warning?<><AlertTriangle size={14}/>{w.bad}</>:<><Sparkles size={14}/>{w.ok}</>}</p>{errors.map(e=><small key={e.id}>{e.text}: {e.error}</small>)}{dimensionErrors.map(e=><small key={"dimension-"+e.id}>{e.text}: {language==="ID"?"ketidaksesuaian dimensi SI atau argumen fungsi berdimensi":"SI dimensional mismatch or a dimensioned function argument"}</small>)}{parsed.length===0&&<small>{w.empty}</small>}</div>
    </aside>   <section className="sandbox-main">
     <div className="sandbox-toolbar"><div className="sandbox-switches">
      <Toggle label={w.grid} value={showGrid} onClick={()=>setShowGrid(v=>!v)}/><Toggle label={w.axes} value={showAxes} onClick={()=>setShowAxes(v=>!v)}/><Toggle label={w.trail} value={showTrail} onClick={()=>setShowTrail(v=>!v)}/><Toggle label={w.velocity} value={showVelocity} onClick={()=>setShowVelocity(v=>!v)}/><Toggle label={w.acceleration} value={showAcceleration} onClick={()=>setShowAcceleration(v=>!v)}/><Toggle label={w.force} value={showForce} onClick={()=>setShowForce(v=>!v)}/><Toggle label={language==="ID"?"Berat":"Weight"} value={showWeight} onClick={()=>setShowWeight(v=>!v)}/><Toggle label={language==="ID"?"Momentum":"Momentum"} value={showMomentum} onClick={()=>setShowMomentum(v=>!v)}/><Toggle label={w.energy} value={showEnergy} onClick={()=>setShowEnergy(v=>!v)}/><Toggle label={w.labels} value={showLabels} onClick={()=>setShowLabels(v=>!v)}/>

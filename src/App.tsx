@@ -555,7 +555,7 @@ function collisionResults(v:Record<string,number>){
   const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2);
   const v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
   const impulseMagnitude=Math.abs(m1*(v1-u1));
-  return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,impactDuration,v1,v2,impulseMagnitude,meanContactForce:impulseMagnitude/impactDuration,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
+  return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,impactDuration,v1,v2,impulseMagnitude,meanContactForce:Number.isFinite(collisionTime)?impulseMagnitude/impactDuration:0,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
 }
 
 function projectileStateAt(time:number,values:Record<string,number>){
@@ -775,13 +775,14 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  if(id==="collision"){
   const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=p.vx,v2=p.vx2??c.u2;
   const impulse=occurred?c.m1*(v1-c.u1):0;
+  const contactFraction=Number.isFinite(c.collisionTime)?Math.max(0,Math.min(1,(time-c.collisionTime)/c.impactDuration)):0;
   const tc=Number.isFinite(c.collisionTime)?c.collisionTime:NaN;
   const formulaV1=occurred
-   ?"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+qty(c.m1,"kg")+"-"+n(c.e)+"("+qty(c.m2,"kg")+"))("+qty(c.u1,"m/s")+")+(1+"+n(c.e)+")("+qty(c.m2,"kg")+")("+qty(c.u2,"m/s")+")}{"+qty(c.m1,"kg")+"+"+qty(c.m2,"kg")+"}="+qty(c.v1,"m/s")
-   :"v_1(t)=u_1=("+n(c.u1)+"\\,\\mathrm{m/s})="+qty(v1,"m/s")+"\\quad(\\text{before impact})";
+   ?"v_1(t)=u_1+(v_{1,f}-u_1)\\lambda=("+qty(c.u1,"m/s")+")+[("+qty(c.v1,"m/s")+")-("+qty(c.u1,"m/s")+")]("+n(contactFraction)+")="+qty(v1,"m/s")
+   :"v_1(t)=u_1="+qty(v1,"m/s")+"\\quad(\\text{before impact})";
   const formulaV2=occurred
-   ?"v_2=\\frac{(1+e)m_1u_1+(m_2-em_1)u_2}{m_1+m_2}=\\frac{(1+"+n(c.e)+")("+qty(c.m1,"kg")+")("+qty(c.u1,"m/s")+")+("+qty(c.m2,"kg")+"-"+n(c.e)+"("+qty(c.m1,"kg")+"))("+qty(c.u2,"m/s")+")}{"+qty(c.m1,"kg")+"+"+qty(c.m2,"kg")+"}="+qty(c.v2,"m/s")
-   :"v_2(t)=u_2=("+n(c.u2)+"\\,\\mathrm{m/s})="+qty(v2,"m/s")+"\\quad(\\text{before impact})";
+   ?"v_2(t)=u_2+(v_{2,f}-u_2)\\lambda=("+qty(c.u2,"m/s")+")+[("+qty(c.v2,"m/s")+")-("+qty(c.u2,"m/s")+")]("+n(contactFraction)+")="+qty(v2,"m/s")
+   :"v_2(t)=u_2="+qty(v2,"m/s")+"\\quad(\\text{before impact})";
   const tExpression=Number.isFinite(tc)
    ?"t_c=\\frac{s-d}{u_1-u_2}=\\frac{("+n(c.separation)+"-"+n(c.contactDistance)+")\\,\\mathrm{m}}{("+n(c.u1)+"-("+n(c.u2)+"))\\,\\mathrm{m/s}}="+qty(tc,"s")
    :language==="ID"?"\\text{Tidak terjadi kontak: }u_1\\leq u_2":"\\text{No collision: }u_1\\leq u_2";

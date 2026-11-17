@@ -398,7 +398,7 @@ const englishLabText: Record<LabId,{description:string;question:string}> = {
 function parameterText(language:Language,key:string,fallback:string) {
   if(language==="ID") return fallback;
   const en:Record<string,string> = {
-    speed:"Initial speed",x0:"Initial position",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
+    speed:"Initial speed",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
     acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",x0:"Initial horizontal position",dragBeta:"Linear drag coefficient per unit mass β",phaseDegrees:"Initial phase angle",inclineAngle:"Incline angle",initialSpeed:"Initial speed along the plane",appliedForce:"External force along the plane (+ downhill)",impactDuration:"Collision contact duration",dampingRatio:"Damping ratio ζ",
     friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude
   };
@@ -634,10 +634,9 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       }
       kinetic=.5*c.m1*vx*vx+.5*c.m2*(vx2??0)**2;
     } else if(lab.id==="energy") {
-      const u=p("initialSpeed"),a=staticHolds?0:energyAcceleration;
-      const s=Math.min(totalDistance,Math.max(0,u*time+.5*a*time*time));
+      const u=p("initialSpeed"),a=staticHolds?0:energyAcceleration,stopTime=a< -1e-9?u/(-a):Infinity,activeTime=Math.min(time,stopTime),rawDistance=u*activeTime+.5*a*activeTime*activeTime,s=Math.min(totalDistance,Math.max(0,rawDistance));
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
-      const v=Math.max(0,u+a*time);
+      const v=Math.max(0,u+a*activeTime);
       x=s*Math.cos(inclineAngle);y=h;vx=v*Math.cos(inclineAngle);vy=-v*Math.sin(inclineAngle);kinetic=.5*mass*v*v;potential=mass*g*h;
     } else if(lab.id==="incline") {
       const a=accel;
@@ -658,7 +657,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
     ? {x:"Posisi x",y:"Posisi y",speed:"Kelajuan",range:"Jangkauan",max:"Tinggi maksimum",flight:"Waktu terbang",position:"Posisi",velocity:"Kecepatan",acceleration:lab.id==="projectile"?"Percepatan vertikal":"Percepatan",time:"Waktu",period:"Periode",omega:"Kecepatan sudut",centripetal:"Percepatan sentripetal",kinetic:"Energi kinetik",potential:"Energi potensial",mechanical:"Energi mekanik",height:"Ketinggian",initial:"Energi awal",net:"Resultan gaya",distance:"Jarak",mass:"Massa"}
     : {x:"Position x",y:"Position y",speed:"Speed",range:"Range",max:"Maximum height",flight:"Flight time",position:"Position",velocity:"Velocity",acceleration:lab.id==="projectile"?"Vertical acceleration":"Acceleration",time:"Time",period:"Period",omega:"Angular velocity",centripetal:"Centripetal acceleration",kinetic:"Kinetic energy",potential:"Potential energy",mechanical:"Mechanical energy",height:"Height",initial:"Initial energy",net:"Net force",distance:"Distance",mass:"Mass"};
   const peak=points.reduce((best,p)=>p.y>best.y?p:best,points[0]);
-  const exactProjectilePeak=lab.id==="projectile"?(values.height??0)+((values.speed??0)*Math.sin((values.angle??0)*Math.PI/180))**2/(2*(values.gravity??9.81)):peak.y;
+  const projectileBeta=Math.max(0,values.dragBeta??0),projectileV0y=(values.speed??0)*Math.sin((values.angle??0)*Math.PI/180),projectileG=values.gravity??9.81,projectilePeakTime=projectileBeta>1e-8&&projectileV0y>0?Math.log(1+projectileBeta*projectileV0y/projectileG)/projectileBeta:projectileV0y/projectileG;const exactProjectilePeak=lab.id==="projectile"?(projectileBeta>1e-8?projectileStateAt(Math.max(0,projectilePeakTime),values).y:(values.height??0)+projectileV0y**2/(2*projectileG)):peak.y;
   const total=point.kinetic+point.potential;
   const mass=values.mass??1;
   const g=values.gravity??9.81;
@@ -672,7 +671,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
   ] as [string,number,string][];
   if(lab.id==="circular") return [
     [labels.x,point.x,"m"],[labels.y,point.y,"m"],[labels.speed,point.speed,"m/s"],
-    [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"]
+    [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"],[language==="ID"?"Gaya sentripetal":"Centripetal force",mass*values.omega**2*values.radius,"N"]
   ] as [string,number,string][];
   if(lab.id==="collision"){
     const c=collisionResults(values),occurred=point.collisionOccurred??false,v1=point.vx,v2=point.vx2??c.u2;
@@ -704,8 +703,8 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
     ] as [string,number,string][];
   }
   return [
-    [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,-(values.spring/values.mass)*point.x,"m/s²"],
-    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.period,2*Math.PI*Math.sqrt(values.mass/values.spring),"s"]
+    [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,-(values.spring/values.mass)*point.x-2*(values.dampingRatio??0)*Math.sqrt(values.spring/values.mass)*point.vx,"m/s²"],
+    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.period,2*Math.PI/(Math.sqrt(values.spring/values.mass)*Math.sqrt(1-(values.dampingRatio??0)**2)),"s"]
   ] as [string,number,string][];
 }
 
@@ -1002,7 +1001,7 @@ function downloadFile(name:string,data:string,mime:string) {
 function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode}:{labId:LabId;language:Language;onBack:()=>void;onChoose:(id:LabId)=>void;theme:Theme;motionLevel:MotionLevel;renderMode:RenderMode}) {
   const lab=labs.find(item=>item.id===labId)??labs[0];
   const w=words[language];
-  const [values,setValues]=useState<Record<string,number>>(()=>Object.fromEntries(lab.params.map(p=>[p.key,p.initial])));
+  const [values,setValues]=useState<Record<string,number>>(()=>Object.fromEntries(allLabParams(lab).map(p=>[p.key,p.initial])));
   const [time,setTime]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [speedFactor,setSpeedFactor]=useState(1);const [focusMode,setFocusMode]=useState(false);const [expandedMetric,setExpandedMetric]=useState<string|null>(null);const [graphPan,setGraphPan]=useState({x:0,y:0});const [graphZoom,setGraphZoom]=useState(1);
@@ -1028,10 +1027,10 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const metrics=useMemo(()=>metricsFor(lab,values,current,points,language),[lab,values,current,points,language]);
   const plottedPoints=useMemo(()=>graphMode==="trajectory"?points:points.map((p,i)=>{
     const angle=(values.angle??0)*Math.PI/180;
-    const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(Math.tan(angle)<=(values.staticFriction??0)?0:Math.max(0,(values.gravity??9.81)*(Math.sin(angle)-(values.friction??0)*Math.cos(angle)))):lab.id==="spring"?-(values.spring??0)/(values.mass??1)*p.x:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?(values.gravity??9.81)*(Math.sin(Math.PI/6)-(values.friction??0)*Math.cos(Math.PI/6)):lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
-    return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
+    const inclineNormal=(values.gravity??9.81)*Math.cos(angle),inclineParallel=(values.gravity??9.81)*Math.sin(angle)+(values.appliedForce??0)/Math.max(values.mass??1,.01),inclineStatic=Math.abs(inclineParallel)<= (values.staticFriction??0)*inclineNormal;const energyAngle=(values.inclineAngle??30)*Math.PI/180,energyStatic=(values.initialSpeed??0)<=1e-9&&Math.tan(energyAngle)<=(values.staticFriction??0),energyAccel=energyStatic?0:(values.gravity??9.81)*(Math.sin(energyAngle)-(values.friction??0)*Math.cos(energyAngle));const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springBeta=(values.dampingRatio??0)*springOmega0;const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(inclineStatic?0:inclineParallel-Math.sign(inclineParallel||1)*(values.friction??0)*inclineNormal):lab.id==="spring"?-springOmega0**2*p.x-2*springBeta*p.vx:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?energyAccel:lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
+    return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,lab.id==="energy"?(values.height??0)-p.y:p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
   }),[graphMode,points,lab,values]);
-  const objectOrientation=lab.id==="energy"?Math.PI/6:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
+  const objectOrientation=lab.id==="energy"?(values.inclineAngle??30)*Math.PI/180:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
 
   useEffect(()=>{
     const initial=Object.fromEntries(allLabParams(lab).map(p=>[p.key,p.initial]));

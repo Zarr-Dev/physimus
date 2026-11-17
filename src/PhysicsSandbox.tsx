@@ -225,7 +225,7 @@ function latexExpressionToAscii(source:string):string{
 }
 function mathLiveToExpression(ascii:string,latex:string):string{
  const source=latex||ascii;
- const findOperator=(name:"int"|"sum"|"prod")=>source.indexOf("\\\\"+name);
+ const findOperator=(name:"int"|"sum"|"prod")=>source.indexOf("\\"+name);
  for(const name of ["int","sum","prod"] as const){
   const at=findOperator(name);if(at<0)continue;
   const prefix=source.slice(0,at),afterOperator=at+name.length+1;
@@ -236,7 +236,7 @@ function mathLiveToExpression(ascii:string,latex:string):string{
   if(source[cursor]==="^"){const group=readLatexGroup(source,cursor+1);upper=group.value;cursor=group.next;}
   const tail=source.slice(cursor);
   if(name==="int"){
-   const differential=tail.match(/\\\\,?\\s*d\\s*([a-zA-Z])\\s*$/);
+   const differential=tail.match(/\\,?\\s*(?:\\\\mathrm\\{d\\}|d)\\s*([a-zA-Z])\\s*$/);
    if(!differential)break;
    const body=tail.slice(0,differential.index).trim(),variable=differential[1];
    const args=lower&&upper?","+variable+","+latexExpressionToAscii(lower)+","+latexExpressionToAscii(upper):","+variable;

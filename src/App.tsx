@@ -222,7 +222,9 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
  energy:[
   {id:"kinetic",titleID:"Energi kinetik",titleEN:"Kinetic energy",formula:"E_k=\\frac12mv^2",noteID:"Energi kinetik bergantung pada massa dan kuadrat kelajuan.",noteEN:"Kinetic energy depends on mass and the square of speed.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"v",labelID:"Kelajuan",labelEN:"Speed",unit:"m/s",initial:5,min:0,step:.1}],evaluate:v=>({substitution:"E_k = ½("+v.m.toFixed(2)+")("+v.v.toFixed(2)+")²",value:(.5*v.m*v.v*v.v).toFixed(3),unit:"J"})},
   {id:"potential",titleID:"Energi potensial gravitasi",titleEN:"Gravitational potential energy",formula:"E_p=mgh",noteID:"Tinggi diukur relatif terhadap titik acuan yang dipilih.",noteEN:"Height is measured relative to the chosen reference level.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"h",labelID:"Ketinggian",labelEN:"Height",unit:"m",initial:8,min:0,step:.1}],evaluate:v=>({substitution:"E_p = ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+")("+v.h.toFixed(2)+")",value:(v.m*v.g*v.h).toFixed(3),unit:"J"})}
-  ,{id:"mechanical",titleID:"Energi mekanik total",titleEN:"Total mechanical energy",formula:"E_m=\\frac12mv^2+mgh",noteID:"Jumlah energi kinetik dan potensial gravitasi terhadap titik acuan yang dipilih.",noteEN:"Sum of kinetic and gravitational potential energy relative to the chosen reference level.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"v",labelID:"Kelajuan",labelEN:"Speed",unit:"m/s",initial:5,min:0,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"h",labelID:"Ketinggian",labelEN:"Height",unit:"m",initial:8,min:0,step:.1}],evaluate:v=>({substitution:"E_m = ½("+v.m.toFixed(2)+")("+v.v.toFixed(2)+")² + ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+")("+v.h.toFixed(2)+")",value:(.5*v.m*v.v*v.v+v.m*v.g*v.h).toFixed(3),unit:"J"})}
+  ,{id:"mechanical",titleID:"Energi mekanik total",titleEN:"Total mechanical energy",formula:"E_m=\\frac12mv^2+mgh",noteID:"Jumlah energi kinetik dan potensial gravitasi terhadap titik acuan yang dipilih.",noteEN:"Sum of kinetic and gravitational potential energy relative to the chosen reference level.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"v",labelID:"Kelajuan",labelEN:"Speed",unit:"m/s",initial:5,min:0,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"h",labelID:"Ketinggian",labelEN:"Height",unit:"m",initial:8,min:0,step:.1}],evaluate:v=>({substitution:"E_m = ½("+v.m.toFixed(2)+")("+v.v.toFixed(2)+")² + ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+")("+v.h.toFixed(2)+")",value:(.5*v.m*v.v*v.v+v.m*v.g*v.h).toFixed(3),unit:"J"})},
+  {id:"work",titleID:"Usaha oleh gaya konstan",titleEN:"Work by a constant force",formula:"W=Fs\\cos\\phi",noteID:"Sudut φ diukur antara arah gaya dan perpindahan. Usaha positif jika komponen gaya searah perpindahan.",noteEN:"Angle φ is measured between force and displacement. Work is positive when the force component is along the displacement.",fields:[{key:"force",labelID:"Besar gaya",labelEN:"Force magnitude",unit:"N",initial:20,min:0,step:.5},{key:"distance",labelID:"Perpindahan",labelEN:"Displacement",unit:"m",initial:5,min:0,step:.1},{key:"phi",labelID:"Sudut antara gaya dan perpindahan",labelEN:"Angle between force and displacement",unit:"°",initial:30,min:0,max:180,step:1}],evaluate:v=>{const W=v.force*v.distance*Math.cos(v.phi*Math.PI/180);return{substitution:"W = ("+v.force.toFixed(2)+")("+v.distance.toFixed(2)+") cos("+v.phi.toFixed(1)+"°)",value:W.toFixed(3),unit:"J"};}},
+  {id:"workEnergy",titleID:"Kelajuan dari usaha total",titleEN:"Speed from net work",formula:"v_f=\\sqrt{v_i^2+\\frac{2W_{net}}{m}}",noteID:"Diperoleh dari W_net = ΔK untuk massa tetap. Nilai di dalam akar harus tidak negatif.",noteEN:"Derived from W_net = ΔK for constant mass. The radicand must be non-negative.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:2,min:.01,step:.1},{key:"vi",labelID:"Kelajuan awal",labelEN:"Initial speed",unit:"m/s",initial:3,min:0,step:.1},{key:"work",labelID:"Usaha total",labelEN:"Net work",unit:"J",initial:20,step:.5}],evaluate:v=>{const q=v.vi*v.vi+2*v.work/v.m;return{substitution:"v_f = √(("+v.vi.toFixed(2)+")² + 2("+v.work.toFixed(2)+") / "+v.m.toFixed(2)+")",value:q>=0?Math.sqrt(q).toFixed(3):"NaN",unit:"m/s"};}}
  ],
  incline:[
   {id:"normal",titleID:"Gaya normal",titleEN:"Normal force",formula:"N=mg\\cos\\theta",noteID:"Berlaku tanpa percepatan tegak lurus bidang dan tanpa gaya normal tambahan.",noteEN:"Applies with no perpendicular acceleration or additional normal force.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:5,min:.01,step:.1},{key:"g",labelID:"Gravitasi",labelEN:"Gravity",unit:"m/s²",initial:9.81,min:.01,step:.01},{key:"theta",labelID:"Sudut bidang",labelEN:"Incline angle",unit:"°",initial:30,min:0,max:89,step:1}],evaluate:v=>({substitution:"N = ("+v.m.toFixed(2)+")("+v.g.toFixed(2)+") cos("+v.theta.toFixed(1)+"°)",value:(v.m*v.g*Math.cos(v.theta*Math.PI/180)).toFixed(3),unit:"N"})},
@@ -616,10 +618,17 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       x=r*Math.cos(theta);y=r*Math.sin(theta);
       vx=-r*omega*Math.sin(theta);vy=r*omega*Math.cos(theta);kinetic=.5*mass*(r*omega)**2;
     } else if(lab.id==="collision") {
-      const c=collisionResults(values),elapsed=Math.max(0,time-c.collisionTime),hasCollided=time>=c.collisionTime;
-      if(hasCollided&&Number.isFinite(c.collisionTime)){
-        const contactX1=-c.separation/2+c.u1*c.collisionTime,contactX2=c.separation/2+c.u2*c.collisionTime;
-        x=contactX1+c.v1*elapsed;x2=contactX2+c.v2*elapsed;vx=c.v1;vx2=c.v2;
+      const c=collisionResults(values),elapsed=time-c.collisionTime,hasContact=Number.isFinite(c.collisionTime)&&elapsed>=0;
+      if(hasContact){
+        const contactX1=-c.separation/2+c.u1*c.collisionTime,contactX2=c.separation/2+c.u2*c.collisionTime,tau=Math.min(elapsed,c.impactDuration);
+        if(elapsed<c.impactDuration){
+          x=contactX1+c.u1*tau+.5*(c.v1-c.u1)*tau*tau/c.impactDuration;
+          x2=contactX2+c.u2*tau+.5*(c.v2-c.u2)*tau*tau/c.impactDuration;
+          vx=c.u1+(c.v1-c.u1)*tau/c.impactDuration;vx2=c.u2+(c.v2-c.u2)*tau/c.impactDuration;
+        }else{
+          x=contactX1+.5*(c.u1+c.v1)*c.impactDuration+c.v1*(elapsed-c.impactDuration);
+          x2=contactX2+.5*(c.u2+c.v2)*c.impactDuration+c.v2*(elapsed-c.impactDuration);vx=c.v1;vx2=c.v2;
+        }
       }else{
         x=-(values.separation??6)/2+c.u1*time;x2=(values.separation??6)/2+c.u2*time;vx=c.u1;vx2=c.u2;
       }
@@ -666,7 +675,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
     [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"]
   ] as [string,number,string][];
   if(lab.id==="collision"){
-    const c=collisionResults(values),occurred=point.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
+    const c=collisionResults(values),occurred=point.collisionOccurred??false,v1=point.vx,v2=point.vx2??c.u2;
     return [
       [language==="ID"?"Kecepatan benda 1":"Body 1 velocity",v1,"m/s"],
       [language==="ID"?"Kecepatan benda 2":"Body 2 velocity",v2,"m/s"],
@@ -751,8 +760,8 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="collision"){
-  const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=occurred?c.v1:c.u1,v2=occurred?c.v2:c.u2;
-  const impulse=occurred?c.m1*(c.v1-c.u1):0;
+  const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=p.vx,v2=p.vx2??c.u2;
+  const impulse=occurred?c.m1*(v1-c.u1):0;
   const tc=Number.isFinite(c.collisionTime)?c.collisionTime:NaN;
   const formulaV1=occurred
    ?"v_1=\\frac{(m_1-em_2)u_1+(1+e)m_2u_2}{m_1+m_2}=\\frac{("+qty(c.m1,"kg")+"-"+n(c.e)+"("+qty(c.m2,"kg")+"))("+qty(c.u1,"m/s")+")+(1+"+n(c.e)+")("+qty(c.m2,"kg")+")("+qty(c.u2,"m/s")+")}{"+qty(c.m1,"kg")+"+"+qty(c.m2,"kg")+"}="+qty(c.v1,"m/s")
@@ -781,7 +790,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
    "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
    "W_{\\mathrm{nc}}=E_{m,f}-E_{m,i}=("+qty(p.kinetic+p.potential,"J")+")-("+qty(.5*m*(v.initialSpeed??0)**2+m*g*h0,"J")+")=-"+qty(dissipated,"J"),
    "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin("+n(v.inclineAngle??30)+"^\\circ)="+qty(p.y,"m"),
-   "v=v_0+at=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(Math.max(0,a))+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
+   "v=v_0+at=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
   ][index];
  }
  if(id==="incline"){
@@ -796,7 +805,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
    "\\sum F_{\\parallel}=ma=("+n(m)+"\\,\\mathrm{kg})("+n(a)+"\\,\\mathrm{m/s^2})="+qty(m*a,"N"),
    "N=mg\\cos\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
    frictionFormula,
-   "v=v_0+at=("+n(v.appliedForce??0)+"\\,\\mathrm{N})= "+qty(p.speed,"m/s"),
+   "v=at=("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s"),
    "s=\\frac12at^2=\\frac12("+qty(a,"m/s^2")+")("+qty(time,"s")+")^2="+qty(Math.hypot(p.x,p.y),"m")
   ][index];
  }
@@ -1300,7 +1309,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   };
   const activeLabLabel=tLabel(language,lab);
   const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springZeta=values.dampingRatio??0,springBeta=springZeta*springOmega0,springOmegaD=springOmega0*Math.sqrt(1-springZeta*springZeta);
-  const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\\beta t},\\quad v_y=(v_{0y}+g/\\beta)e^{-\\beta t}-g/\\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\\zeta\\omega_0t}\\cos(\\omega_dt+\\phi),\\quad \\omega_d=\\omega_0\\sqrt{1-\\zeta^2}`:lab.formula;
+  const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\beta t},\quad v_y=(v_{0y}+g/\beta)e^{-\beta t}-g/\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\zeta\omega_0t}\cos(\omega_dt+\phi),\quad \omega_d=\omega_0\sqrt{1-\zeta^2}`:lab.id==="circular"&&(values.phaseDegrees??0)!==0?String.raw`\theta(t)=\theta_0+\omega t,\quad \theta_0=\mathrm{phaseDegrees}`:lab.id==="incline"&&(values.appliedForce??0)!==0?String.raw`a= g\sin\theta+\frac{F_{\parallel}}{m}-\mu_k g\cos\theta`:lab.formula;
   const assumptions:Record<LabId,{id:string;en:string}> = {
     projectile:{id:"Lintasan 2D ideal tanpa hambatan udara; gravitasi konstan dan permukaan tanah datar.",en:"Ideal 2D trajectory without air drag; gravity is constant and the ground is level."},
     mru:{id:"Gerak satu dimensi pada lintasan lurus; kecepatan konstan dan resultan gaya nol.",en:"One-dimensional straight-line motion; velocity is constant and net force is zero."},

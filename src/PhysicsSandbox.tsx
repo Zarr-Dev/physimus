@@ -349,7 +349,7 @@ function equationDimensionIssue(item:Compiled):boolean{
  let lhs:Dimension|null=null;
  if(item.target!=="scalar")lhs=[0,1,0];
  else{
-  const match=item.text.trim().match(/^([a-zA-Z_][a-zA-Z0-9_]*)\\s*=/);
+  const match=item.text.trim().match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=/);
   if(match)lhs=variableDimensions[match[1]]??null;
  }
  return !!lhs&&!!rhs&&!sameDimension(lhs,rhs);

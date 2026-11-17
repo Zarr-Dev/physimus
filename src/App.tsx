@@ -803,14 +803,14 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="energy"){
-  const h0=v.height??0,mu=v.friction??0,alpha=(v.inclineAngle??30)*Math.PI/180,external=v.appliedWorkForce??0,parallel=g*Math.sin(alpha)+external/Math.max(m,1e-9),staticHolds=(v.initialSpeed??0)<=1e-9&&Math.abs(parallel)<=(v.staticFriction??0)*g*Math.cos(alpha),a=staticHolds?0:parallel-mu*g*Math.cos(alpha),distance=Math.hypot(p.x,h0-p.y),nonConservativeWork=p.kinetic+p.potential-(.5*m*(v.initialSpeed??0)**2+m*g*h0);
+  const h0=v.height??0,mu=v.friction??0,alpha=(v.inclineAngle??30)*Math.PI/180,external=v.appliedWorkForce??0,parallel=g*Math.sin(alpha)+external/Math.max(m,1e-9),staticHolds=(v.initialSpeed??0)<=1e-9&&Math.abs(parallel)<=(v.staticFriction??0)*g*Math.cos(alpha),a=staticHolds?0:parallel-mu*g*Math.cos(alpha),stopTime=a< -1e-9?(v.initialSpeed??0)/(-a):Infinity,activeTime=Math.min(time,stopTime),distance=Math.hypot(p.x,h0-p.y),nonConservativeWork=p.kinetic+p.potential-(.5*m*(v.initialSpeed??0)**2+m*g*h0);
   return [
    "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
    "E_p=mgh=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})("+n(p.y)+"\\,\\mathrm{m})="+qty(p.potential,"J"),
    "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
    "W_{\\mathrm{nc}}=E_{m,f}-E_{m,i}=W_{\\mathrm{applied}}+W_{\\mathrm{friction}}=F_{\\parallel}s-\\mu_kmg\\cos\\alpha\\,s="+qty(nonConservativeWork,"J"),
    "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin("+n(v.inclineAngle??30)+"^\\circ)="+qty(p.y,"m"),
-   "v=v_0+at=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
+   "v=v_0+at_{\\mathrm{active}}=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(a)+"\\,\\mathrm{m/s^2})("+n(activeTime)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
   ][index];
  }
  if(id==="incline"){

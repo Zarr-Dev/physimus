@@ -858,30 +858,30 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><SandboxMath value={String.raw`y=\int_0^x u^2\,du`}/></button>
         <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><SandboxMath value={String.raw`y=\sum_{i=1}^{n}i^2`}/></button>
         <button onClick={()=>preset("product")}><strong>12 · {language==="ID"?"Perkalian berindeks pi":"Indexed product operator"}</strong><SandboxMath value={String.raw`y=\prod_{i=1}^{n}i`}/></button>
-        <button onClick={()=>preset("derivative")}><strong>12 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><SandboxMath value={String.raw`y=\frac{d}{dx}\sin x`}/></button>
-        <button onClick={()=>preset("newton")}><strong>13 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><SandboxMath value={String.raw`F=ma`}/></button>
-        <button onClick={()=>preset("weight")}><strong>14 · {language==="ID"?"Berat benda":"Weight"}</strong><SandboxMath value={String.raw`w=mg`}/></button>
-        <button onClick={()=>preset("momentum")}><strong>15 · {language==="ID"?"Momentum linear":"Linear momentum"}</strong><SandboxMath value={String.raw`p=mv`}/></button>
-        <button onClick={()=>preset("work")}><strong>16 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><SandboxMath value={String.raw`W=Fd\cos\theta`}/></button>
-        <button onClick={()=>preset("kinetic")}><strong>17 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><SandboxMath value={String.raw`E_k=\frac12mv^2`}/></button>
-        <button onClick={()=>preset("springforce")}><strong>18 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><SandboxMath value={String.raw`F=-kx`}/></button>
-        <button onClick={()=>preset("centripetal")}><strong>19 · {language==="ID"?"Gaya sentripetal":"Centripetal force"}</strong><SandboxMath value={String.raw`F_c=m\omega^2r`}/></button>
-        <button onClick={()=>preset("potential")}><strong>20 · {language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy"}</strong><SandboxMath value={String.raw`U=mgh`}/></button>
-        <button onClick={()=>preset("impulse")}><strong>21 · {language==="ID"?"Impuls dan perubahan momentum":"Impulse and momentum change"}</strong><SandboxMath value={String.raw`J=F\Delta t`}/></button>
-        <button onClick={()=>preset("torque")}><strong>22 · {language==="ID"?"Momen gaya / torsi":"Torque"}</strong><SandboxMath value={String.raw`\tau=I\alpha`}/></button>
-        <button onClick={()=>preset("rotation")}><strong>23 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><SandboxMath value={String.raw`K_{\mathrm{rot}}=\frac12I\omega^2`}/></button>
-        <button onClick={()=>preset("springenergy")}><strong>24 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><SandboxMath value={String.raw`U_s=\frac12kx^2`}/></button>
-        <button onClick={()=>preset("friction")}><strong>25 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><SandboxMath value={String.raw`f_k=\mu_kN,\quad N=mg\cos\theta`}/></button>
-        <button onClick={()=>preset("components")}><strong>26 · {language==="ID"?"Komponen gaya":"Force components"}</strong><SandboxMath value={String.raw`F_x=F\cos\theta,\quad F_y=F\sin\theta`}/></button>
-        <button onClick={()=>preset("torricelli")}><strong>27 · {language==="ID"?"Persamaan Torricelli":"Torricelli equation"}</strong><SandboxMath value={String.raw`v=\sqrt{v_0^2+2as}`}/></button>
-        <button onClick={()=>preset("power")}><strong>28 · {language==="ID"?"Daya mekanik":"Mechanical power"}</strong><SandboxMath value={String.raw`P=Fv`}/></button>
-        <button onClick={()=>preset("gravitation")}><strong>29 · {language==="ID"?"Hukum gravitasi Newton":"Newtonian gravitation"}</strong><SandboxMath value={String.raw`F=G\frac{m_1m_2}{r^2}`}/></button>
-        <button onClick={()=>preset("angularmomentum")}><strong>30 · {language==="ID"?"Momentum sudut":"Angular momentum"}</strong><SandboxMath value={String.raw`H=I\omega`}/></button>
-        <button onClick={()=>preset("damped")}><strong>31 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><SandboxMath value={String.raw`x=Ae^{-\beta t}\cos(\omega_dt)`}/></button>
-        <button onClick={()=>preset("workenergy")}><strong>32 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><SandboxMath value={String.raw`W_{\mathrm{net}}=\frac12m(v^2-v_0^2)`}/></button>
-        <button onClick={()=>preset("dampedforce")}><strong>33 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><SandboxMath value={String.raw`F_d=-cv`}/></button>
-        <button onClick={()=>preset("staticfriction")}><strong>34 · {language==="ID"?"Batas gaya gesek statis":"Maximum static friction"}</strong><SandboxMath value={String.raw`f_{s,\max}=\mu_sN`}/></button>
-        <button onClick={()=>preset("angularkinematics")}><strong>35 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><SandboxMath value={String.raw`\omega=\omega_0+\alpha t`}/></button>
+        <button onClick={()=>preset("derivative")}><strong>13 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><SandboxMath value={String.raw`y=\frac{d}{dx}\sin x`}/></button>
+        <button onClick={()=>preset("newton")}><strong>14 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><SandboxMath value={String.raw`F=ma`}/></button>
+        <button onClick={()=>preset("weight")}><strong>15 · {language==="ID"?"Berat benda":"Weight"}</strong><SandboxMath value={String.raw`w=mg`}/></button>
+        <button onClick={()=>preset("momentum")}><strong>16 · {language==="ID"?"Momentum linear":"Linear momentum"}</strong><SandboxMath value={String.raw`p=mv`}/></button>
+        <button onClick={()=>preset("work")}><strong>17 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><SandboxMath value={String.raw`W=Fd\cos\theta`}/></button>
+        <button onClick={()=>preset("kinetic")}><strong>18 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><SandboxMath value={String.raw`E_k=\frac12mv^2`}/></button>
+        <button onClick={()=>preset("springforce")}><strong>19 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><SandboxMath value={String.raw`F=-kx`}/></button>
+        <button onClick={()=>preset("centripetal")}><strong>20 · {language==="ID"?"Gaya sentripetal":"Centripetal force"}</strong><SandboxMath value={String.raw`F_c=m\omega^2r`}/></button>
+        <button onClick={()=>preset("potential")}><strong>21 · {language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy"}</strong><SandboxMath value={String.raw`U=mgh`}/></button>
+        <button onClick={()=>preset("impulse")}><strong>22 · {language==="ID"?"Impuls dan perubahan momentum":"Impulse and momentum change"}</strong><SandboxMath value={String.raw`J=F\Delta t`}/></button>
+        <button onClick={()=>preset("torque")}><strong>23 · {language==="ID"?"Momen gaya / torsi":"Torque"}</strong><SandboxMath value={String.raw`\tau=I\alpha`}/></button>
+        <button onClick={()=>preset("rotation")}><strong>24 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><SandboxMath value={String.raw`K_{\mathrm{rot}}=\frac12I\omega^2`}/></button>
+        <button onClick={()=>preset("springenergy")}><strong>25 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><SandboxMath value={String.raw`U_s=\frac12kx^2`}/></button>
+        <button onClick={()=>preset("friction")}><strong>26 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><SandboxMath value={String.raw`f_k=\mu_kN,\quad N=mg\cos\theta`}/></button>
+        <button onClick={()=>preset("components")}><strong>27 · {language==="ID"?"Komponen gaya":"Force components"}</strong><SandboxMath value={String.raw`F_x=F\cos\theta,\quad F_y=F\sin\theta`}/></button>
+        <button onClick={()=>preset("torricelli")}><strong>28 · {language==="ID"?"Persamaan Torricelli":"Torricelli equation"}</strong><SandboxMath value={String.raw`v=\sqrt{v_0^2+2as}`}/></button>
+        <button onClick={()=>preset("power")}><strong>29 · {language==="ID"?"Daya mekanik":"Mechanical power"}</strong><SandboxMath value={String.raw`P=Fv`}/></button>
+        <button onClick={()=>preset("gravitation")}><strong>30 · {language==="ID"?"Hukum gravitasi Newton":"Newtonian gravitation"}</strong><SandboxMath value={String.raw`F=G\frac{m_1m_2}{r^2}`}/></button>
+        <button onClick={()=>preset("angularmomentum")}><strong>31 · {language==="ID"?"Momentum sudut":"Angular momentum"}</strong><SandboxMath value={String.raw`H=I\omega`}/></button>
+        <button onClick={()=>preset("damped")}><strong>32 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><SandboxMath value={String.raw`x=Ae^{-\beta t}\cos(\omega_dt)`}/></button>
+        <button onClick={()=>preset("workenergy")}><strong>33 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><SandboxMath value={String.raw`W_{\mathrm{net}}=\frac12m(v^2-v_0^2)`}/></button>
+        <button onClick={()=>preset("dampedforce")}><strong>34 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><SandboxMath value={String.raw`F_d=-cv`}/></button>
+        <button onClick={()=>preset("staticfriction")}><strong>35 · {language==="ID"?"Batas gaya gesek statis":"Maximum static friction"}</strong><SandboxMath value={String.raw`f_{s,\max}=\mu_sN`}/></button>
+        <button onClick={()=>preset("angularkinematics")}><strong>36 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><SandboxMath value={String.raw`\omega=\omega_0+\alpha t`}/></button>
       </div>
     </>}
     {editorTab==="graph"&&<>

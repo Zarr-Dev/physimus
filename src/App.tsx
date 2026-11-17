@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import katex from "katex";
 const PhysicsSandbox = lazy(() => import("./PhysicsSandbox"));
@@ -362,7 +362,7 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
     <div className="equation-calc-substitution"><div className="equation-calc-substitution-math">{result?<Equation value={calculatorMath(result.substitution)}/>:<span>{language==="ID"?"Lengkapi variabel untuk melihat perhitungan.":"Complete the variables to see the calculation."}</span>}</div></div>
     {errorText&&<p className="equation-calc-error" role="status">{errorText}</p>}
     <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL":"RESULT"}</span><strong>{result?<><Equation value={result.value}/>{" "}<small>{result.unit}</small></>:"—"}</strong></div>
-    <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p>{language==="ID"?active.noteID:active.noteEN}</p></div>
+    <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p><PhysicsCopy value={language==="ID"?active.noteID:active.noteEN}/></p></div>
    </article>
    <div className="equation-calc-navigation">
     <button type="button" onClick={()=>setSelectedId(definitions[(activeIndex-1+definitions.length)%definitions.length].id)}><ArrowLeft size={15}/>{language==="ID"?"Sebelumnya":"Previous"}</button>
@@ -468,6 +468,60 @@ function MeasurementDerivation({formula,value,unit,language}:{formula:string;val
 function Equation({ value, display = false }: { value: string; display?: boolean }) {
   const html = useMemo(() => {try{return katex.renderToString(value, {throwOnError:false, strict:"ignore", trust:false, displayMode:display});}catch{return `<span class="math-render-error">${value.replace(/[&<>]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[char]??char))}</span>`;}}, [value,display]);
   return <span className={display ? "math-display" : "math-inline"} dangerouslySetInnerHTML={{__html:html}} />;
+}
+
+type PhysicsSegment = { text: string; latex?: string };
+const physicsBase = String.raw`(?:[0-9]+(?:[.,][0-9]+)?|[½¼¾](?:[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ∥̈̇]*)?|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψΣ∑∫√][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ∥̈̇_]*(?:\\([^()]*\\)[A-Za-z0-9₀-₉⁰-⁹]*)?)(?:\\([^()]*\\)[A-Za-z0-9₀-₉⁰-⁹]*)?`;
+const physicsTrig = String.raw`(?:sin|cos|tan|sqrt|ln|log)\\s*(?:\\([^()]*\\)|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹]*)`;
+const physicsTerm = String.raw`(?:${physicsTrig}|${physicsBase}|\\([^()]*\\)[A-Za-z0-9₀-₉⁰-⁹]*)(?:\\s+${physicsTrig})?`;
+const physicsExpr = String.raw`${physicsTerm}(?:\\s*(?:\\+|−|-|×|·|/|\\*|=|≤|≥|<|>|≈|≠|∝)\\s*[+−-]?${physicsTerm})*`;
+const physicsEquation = String.raw`${physicsExpr}\\s*(?:=|≤|≥|<|>|≈|≠|∝)\\s*[+−-]?${physicsExpr}`;
+const physicsProduct = String.raw`${physicsTerm}\\s*(?:·|×|/|\\*)\\s*${physicsTerm}`;
+const physicsDecorated = String.raw`(?:[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9]*[₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ]+|(?:[0-9]+)?π|[ẍẋ])`;
+const physicsPattern = new RegExp(`(${physicsEquation}|${physicsProduct}|${physicsTrig}|${physicsDecorated})`, "g");
+
+function physicsLatex(source: string): string {
+  const greek: Record<string,string> = {
+    "θ":"\\\\theta","ω":"\\\\omega","α":"\\\\alpha","β":"\\\\beta","γ":"\\\\gamma","δ":"\\\\delta",
+    "ε":"\\\\epsilon","ζ":"\\\\zeta","η":"\\\\eta","κ":"\\\\kappa","λ":"\\\\lambda","μ":"\\\\mu",
+    "ν":"\\\\nu","ξ":"\\\\xi","π":"\\\\pi","ρ":"\\\\rho","σ":"\\\\sigma","τ":"\\\\tau",
+    "φ":"\\\\phi","χ":"\\\\chi","ψ":"\\\\psi","Δ":"\\\\Delta","Σ":"\\\\sum","∑":"\\\\sum","∫":"\\\\int"
+  };
+  const sub: Record<string,string> = {"₀":"0","₁":"1","₂":"2","₃":"3","₄":"4","₅":"5","₆":"6","₇":"7","₈":"8","₉":"9","ₖ":"k","ₛ":"s","ₓ":"x","ₘ":"m","ₚ":"p","ₜ":"t","ₐ":"a","ᵦ":"b","ᵢ":"i","ᵣ":"r","ᵥ":"v"};
+  const sup: Record<string,string> = {"⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5","⁶":"6","⁷":"7","⁸":"8","⁹":"9","⁺":"+","⁻":"-"};
+  return source
+    .replace(/ẍ/g, "\\\\ddot{x}").replace(/ẋ/g, "\\\\dot{x}")
+    .replace(/√\\(([^()]*)\\)/g, (_m,inner:string)=>"\\\\sqrt{"+inner+"}")
+    .replace(/√([A-Za-z0-9]+)/g, (_m,inner:string)=>"\\\\sqrt{"+inner+"}")
+    .replace(/\\bsqrt\\s*\\(([^()]*)\\)/g, (_m,inner:string)=>"\\\\sqrt{"+inner+"}")
+    .replace(/½/g, "\\\\frac{1}{2}").replace(/¼/g, "\\\\frac{1}{4}").replace(/¾/g, "\\\\frac{3}{4}")
+    .replace(/[θωαβγδεζηκλμνξπρστφχψΔΣ∑∫]/g, char=>greek[char]??char)
+    .replace(/[₀₁₂₃₄₅₆₇₈₉ₖₛₓₘₚₜₐᵦᵢᵣᵥ]+/g, chars=>"_{"+[...chars].map(char=>sub[char]??char).join("")+"}")
+    .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+/g, chars=>"^{"+[...chars].map(char=>sup[char]??char).join("")+"}")
+    .replace(/−/g,"-").replace(/·/g,"\\\\cdot ").replace(/×/g,"\\\\times ")
+    .replace(/≤/g,"\\\\leq ").replace(/≥/g,"\\\\geq ").replace(/≈/g,"\\\\approx ")
+    .replace(/≠/g,"\\\\ne ").replace(/∝/g,"\\\\propto ").replace(/∥/g,"\\\\parallel ")
+    .replace(/°/g,"^{\\\\circ}");
+}
+
+function PhysicsCopy({ value }: { value: string }) {
+  const segments = useMemo<PhysicsSegment[]>(() => {
+    const result: PhysicsSegment[] = [];
+    const pattern = new RegExp(physicsPattern.source, "g");
+    let cursor = 0;
+    for (const match of value.matchAll(pattern)) {
+      const token = match[0];
+      const index = match.index ?? 0;
+      if (index > cursor) result.push({ text: value.slice(cursor, index) });
+      result.push({ text: token, latex: physicsLatex(token) });
+      cursor = index + token.length;
+    }
+    if (cursor < value.length) result.push({ text: value.slice(cursor) });
+    return result.length ? result : [{ text: value }];
+  }, [value]);
+  return <span className="physics-copy">{segments.map((segment,index)=>segment.latex
+    ? <Equation key={index} value={segment.latex}/>
+    : <Fragment key={index}>{segment.text}</Fragment>)}</span>;
 }
 
 function Brand() {
@@ -1449,9 +1503,9 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         </nav>
         <div className="drawer-content">
           {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-mode-switch" role="group" aria-label={language==="ID"?"Tingkat parameter":"Parameter level"}><button type="button" className={parameterLevel==="basic"?"active":""} aria-pressed={parameterLevel==="basic"} onClick={()=>setParameterLevel("basic")}>{language==="ID"?"Dasar":"Basic"}</button><button type="button" className={parameterLevel==="advanced"?"active":""} aria-pressed={parameterLevel==="advanced"} onClick={()=>setParameterLevel("advanced")}>{language==="ID"?"Lanjutan":"Advanced"}</button></div><p className="parameter-mode-help">{parameterLevel==="basic"?(language==="ID"?"Variabel utama untuk memahami pengaruh dasar pada eksperimen.":"Core variables for exploring the main effects."):(language==="ID"?"Seluruh parameter, termasuk kondisi awal dan model spesifik yang mengubah perhitungan serta grafik.":"All parameters, including initial conditions and model-specific settings that change calculations and graphs.")}</p><div className="parameter-list">{(parameterLevel==="basic"?lab.params.filter(param=>basicParamKeys[lab.id].includes(param.key)):allLabParams(lab)).map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]??param.initial} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
-          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"MODEL UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={activeMainFormula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
+          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"MODEL UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={activeMainFormula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p><PhysicsCopy value={language==="ID"?eq.noteID:eq.noteEN}/></p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
           {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button disabled={graphMode==="trajectory"} className={showTangent?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTangent(v=>!v)}>{language==="ID"?"Garis singgung & gradien":"Tangent & slope"}<span>{showTangent?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
-          {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><div className="model-assumption-card"><strong>{language==="ID"?"Batas dan asumsi model":"Model assumptions and limits"}</strong><p>{language==="ID"?assumptions[lab.id].id:assumptions[lab.id].en}</p></div><section className="model-qa-section"><h3>{language==="ID"?"Pertanyaan umum":"Common questions"}</h3><details className="model-qa-item" open><summary>{language==="ID"?modelKnowledge[lab.id].qID:modelKnowledge[lab.id].qEN}</summary><p>{language==="ID"?modelKnowledge[lab.id].aID:modelKnowledge[lab.id].aEN}</p></details>{modelKnowledgeExtra[lab.id].map((item,index)=><details className="model-qa-item" key={index}><summary>{language==="ID"?item.qID:item.qEN}</summary><p>{language==="ID"?item.aID:item.aEN}</p></details>)}</section><aside className="model-fact-card"><span><Sparkles size={14}/>{language==="ID"?"FAKTA FISIKA":"PHYSICS FACT"}</span><p>{language==="ID"?modelKnowledge[lab.id].factID:modelKnowledge[lab.id].factEN}</p></aside></>}
+          {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><div className="model-assumption-card"><strong>{language==="ID"?"Batas dan asumsi model":"Model assumptions and limits"}</strong><p><PhysicsCopy value={language==="ID"?assumptions[lab.id].id:assumptions[lab.id].en}/></p></div><section className="model-qa-section"><h3>{language==="ID"?"Pertanyaan umum":"Common questions"}</h3><details className="model-qa-item" open><summary><PhysicsCopy value={language==="ID"?modelKnowledge[lab.id].qID:modelKnowledge[lab.id].qEN}/></summary><p><PhysicsCopy value={language==="ID"?modelKnowledge[lab.id].aID:modelKnowledge[lab.id].aEN}/></p></details>{modelKnowledgeExtra[lab.id].map((item,index)=><details className="model-qa-item" key={index}><summary><PhysicsCopy value={language==="ID"?item.qID:item.qEN}/></summary><p><PhysicsCopy value={language==="ID"?item.aID:item.aEN}/></p></details>)}</section><aside className="model-fact-card"><span><Sparkles size={14}/>{language==="ID"?"FAKTA FISIKA":"PHYSICS FACT"}</span><p><PhysicsCopy value={language==="ID"?modelKnowledge[lab.id].factID:modelKnowledge[lab.id].factEN}/></p></aside></>}
         </div>
       </aside>
       <section className="graph-panel">
@@ -1824,16 +1878,16 @@ function Learn({language}:{language:Language}) {
   <div className="lesson-layout">
    <aside className="lesson-topic-nav"><div className="lesson-nav-heading">{en?"COURSE CONTENT":"DAFTAR MATERI"}</div>{labs.map((item,index)=><button key={item.id} className={selectedTopic===item.id?"active":""} onClick={()=>chooseTopic(item.id)}><span>{String(index+1).padStart(2,"0")}</span><strong>{en?item.subtitle:item.title}</strong></button>)}</aside>
    <article className="lesson-content">
-    <div className="lesson-topic-heading"><span className="eyebrow">{en?labs.find(x=>x.id===selectedTopic)?.category:"MATERI SMA · "+labs.find(x=>x.id===selectedTopic)?.category}</span><h2>{en?labs.find(x=>x.id===selectedTopic)?.subtitle:labs.find(x=>x.id===selectedTopic)?.title}</h2><p>{lessonText(lesson.overview,language)}</p></div>
-    <div className="lesson-goals"><strong>{en?"Learning objectives":"Tujuan pembelajaran"}</strong><ul>{lesson.goals.map((goal,i)=><li key={i}>{lessonText(goal,language)}</li>)}</ul></div>
+    <div className="lesson-topic-heading"><span className="eyebrow">{en?labs.find(x=>x.id===selectedTopic)?.category:"MATERI SMA · "+labs.find(x=>x.id===selectedTopic)?.category}</span><h2>{en?labs.find(x=>x.id===selectedTopic)?.subtitle:labs.find(x=>x.id===selectedTopic)?.title}</h2><p><PhysicsCopy value={lessonText(lesson.overview,language)}/></p></div>
+    <div className="lesson-goals"><strong>{en?"Learning objectives":"Tujuan pembelajaran"}</strong><ul>{lesson.goals.map((goal,i)=><li key={i}><PhysicsCopy value={lessonText(goal,language)}/></li>)}</ul></div>
     <div className="lesson-chapter-tabs" role="tablist">{lesson.chapters.map((item,i)=><button key={i} role="tab" aria-selected={selectedChapter===i} className={selectedChapter===i?"active":""} onClick={()=>{setSelectedChapter(i);setActiveLessonStep(0);}}><span>{String(i+1).padStart(2,"0")}</span>{lessonText(item.title,language)}</button>)}</div>
     <section className="lesson-chapter-card">
      <div className="lesson-chapter-title"><span>{en?"SUBCHAPTER":"SUBBAB"} {selectedChapter+1} / {lesson.chapters.length}</span><h3>{lessonText(chapter.title,language)}</h3></div>
-     <p className="lesson-intro-text">{lessonText(chapter.idea,language)}</p>
+     <p className="lesson-intro-text"><PhysicsCopy value={lessonText(chapter.idea,language)}/></p>
      <LessonDiagram id={selectedTopic} value={experimentValue} stage={activeLessonStep} language={language}/>
-     <div className="lesson-steps"><strong>{en?"Step-by-step explanation":"Penjelasan langkah demi langkah"}</strong><p className="lesson-step-hint">{en?"Select a step to focus the experiment diagram on that part of the explanation.":"Pilih langkah untuk mengarahkan visual eksperimen ke bagian penjelasan tersebut."}</p>{chapter.steps.map((step,i)=><button type="button" className={activeLessonStep===i?"lesson-step active":"lesson-step"} key={i} onClick={()=>setActiveLessonStep(i)} aria-pressed={activeLessonStep===i} title={en?"Show experiment state for step "+(i+1):"Tampilkan eksperimen untuk langkah "+(i+1)}><span>{i+1}</span><p>{lessonText(step,language)}</p><small>{activeLessonStep===i?(en?"Visual active":"Visual aktif"):(en?"View experiment":"Lihat eksperimen")}</small></button>)}</div>
+     <div className="lesson-steps"><strong>{en?"Step-by-step explanation":"Penjelasan langkah demi langkah"}</strong><p className="lesson-step-hint">{en?"Select a step to focus the experiment diagram on that part of the explanation.":"Pilih langkah untuk mengarahkan visual eksperimen ke bagian penjelasan tersebut."}</p>{chapter.steps.map((step,i)=><button type="button" className={activeLessonStep===i?"lesson-step active":"lesson-step"} key={i} onClick={()=>setActiveLessonStep(i)} aria-pressed={activeLessonStep===i} title={en?"Show experiment state for step "+(i+1):"Tampilkan eksperimen untuk langkah "+(i+1)}><span>{i+1}</span><p><PhysicsCopy value={lessonText(step,language)}/></p><small>{activeLessonStep===i?(en?"Visual active":"Visual aktif"):(en?"View experiment":"Lihat eksperimen")}</small></button>)}</div>
      <div className="lesson-formula-block"><span>{en?"MATHEMATICAL MODEL":"MODEL MATEMATIKA"}</span><Equation value={chapter.formula} display/></div>
-     <div className="lesson-takeaway"><strong>{en?"Key idea":"Inti pemahaman"}</strong><p>{lessonText(chapter.takeaway,language)}</p></div>
+     <div className="lesson-takeaway"><strong>{en?"Key idea":"Inti pemahaman"}</strong><p><PhysicsCopy value={lessonText(chapter.takeaway,language)}/></p></div>
     </section>
     <div className="lesson-chapter-nav"><button className="secondary-button" disabled={selectedChapter===0} onClick={()=>{setSelectedChapter(v=>Math.max(0,v-1));setActiveLessonStep(0);}}><ArrowLeft size={15}/>{en?"Previous subchapter":"Subbab sebelumnya"}</button><button className="primary-button" disabled={selectedChapter===lesson.chapters.length-1} onClick={()=>{setSelectedChapter(v=>Math.min(lesson.chapters.length-1,v+1));setActiveLessonStep(0);}}>{en?"Next subchapter":"Subbab berikutnya"}<ArrowRight size={15}/></button></div>
     <div className="lesson-practice-intro"><span className="eyebrow">{en?"CHECK YOUR UNDERSTANDING":"UJI PEMAHAMAN"}</span><h3>{en?"Practice this topic":"Latihan soal materi ini"}</h3><p>{en?"A separate practice set is provided for this lesson. Generate a new question and reveal the worked solution when ready.":"Latihan ini berdiri sendiri untuk materi yang sedang dipelajari. Buat soal baru dan buka pembahasan langkah demi langkah."}</p></div>

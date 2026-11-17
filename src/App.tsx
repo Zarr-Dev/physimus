@@ -892,13 +892,26 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
   const f=(x:number)=>Number(x.toFixed(2));
   const en=language==="EN",variant=Math.random()<.5;
   if(id==="projectile"){
-    const g=9.81;
-    if(variant){
-      const v=r(14,28,1),a=r(25,65,1),rad=a*Math.PI/180,answer=v*v*Math.sin(2*rad)/g;
-      return {prompt:en?"A projectile lands at the same height from which it was launched. Calculate its horizontal range.":"Sebuah benda ditembakkan dan mendarat pada ketinggian yang sama. Hitung jangkauan horizontalnya.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"R=\\frac{v_0^2\\sin(2\\theta)}{g}",answer,unit:"m",resultLabel:en?"Horizontal range":"Jangkauan horizontal",steps:["R=\\frac{("+v+")^2\\sin(2\\times"+a+"^\\circ)}{9.81}","R="+f(answer)+"\\;\\mathrm{m}"]};
-    }
-    const v=r(14,28,1),a=r(25,65,1),rad=a*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
-    return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+a+"°, g = 9.81 m/s²",formula:"\\Delta h_{max}=\\frac{v_0^2\\sin^2\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\Delta h=\\frac{("+v+")^2\\sin^2("+a+"^\\circ)}{2(9.81)}","\\Delta h="+f(answer)+"\\;\\mathrm{m}"]};
+   const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,x0=v.x0??0,beta=Math.max(0,v.dragBeta??0),v0x=v0*Math.cos(theta),v0y=v0*Math.sin(theta);
+   const peakTime=beta>1e-8&&v0y>0?Math.log(1+beta*v0y/g)/beta:v0y/g;
+   const peak=beta>1e-8?projectileStateAt(Math.max(0,peakTime),v).y:h0+v0y*v0y/(2*g);
+   const range=p.x-x0;
+   if(beta>1e-8)return [
+    "x(t)=x_0+\\\\frac{v_0\\\\cos\\\\theta}{\\\\beta}(1-e^{-\\\\beta t})="+qty(x0,"m")+"+\\\\frac{("+n(v0)+"\\\\,\\\\mathrm{m/s})\\\\cos("+n(angle)+"^\\\\circ)}{"+n(beta)+"\\\\,\\\\mathrm{s^{-1}}}(1-e^{-("+n(beta)+"\\\\,\\\\mathrm{s^{-1}})("+n(time)+"\\\\,\\\\mathrm{s})})="+qty(p.x,"m"),
+    "y(t)=h_0+\\\\frac{v_0\\\\sin\\\\theta+g/\\\\beta}{\\\\beta}(1-e^{-\\\\beta t})-\\\\frac{gt}{\\\\beta}="+qty(p.y,"m"),
+    "v_x=v_0\\\\cos\\\\theta\\\\,e^{-\\\\beta t}="+qty(p.vx,"m/s")+"\\\\quad v_y=(v_0\\\\sin\\\\theta+g/\\\\beta)e^{-\\\\beta t}-g/\\\\beta="+qty(p.vy,"m/s"),
+    "R=x(t_f)-x_0="+qty(range,"m"),
+    "t_{\\\\max}=\\\\frac{1}{\\\\beta}\\\\ln(1+\\\\frac{\\\\beta v_0\\\\sin\\\\theta}{g})="+qty(Math.max(0,peakTime),"s")+"\\\\quad H_{\\\\max}="+qty(peak,"m"),
+    "y(t_f)=0\\\\quad\\\\text{(akar dicari numerik dengan bisection)}\\\\quad t_f="+qty(tf,"s")
+   ][index];
+   return [
+    "x(t)=x_0+v_0\\\\cos\\\\theta\\\\,t="+qty(x0,"m")+"+("+qty(v0,"m/s")+")\\\\cos("+n(angle)+"^\\\\circ)("+n(time)+"\\\\,\\\\mathrm{s})="+qty(p.x,"m"),
+    "y(t)=h_0+v_0\\\\sin\\\\theta\\\\,t-\\\\frac12gt^2="+qty(h0,"m")+"+("+qty(v0,"m/s")+")\\\\sin("+n(angle)+"^\\\\circ)("+n(time)+"\\\\,\\\\mathrm{s})-\\\\frac12("+n(g)+"\\\\,\\\\mathrm{m/s^2})("+n(time)+"\\\\,\\\\mathrm{s})^2="+qty(p.y,"m"),
+    "v=\\\\sqrt{v_x^2+v_y^2}=\\\\sqrt{("+n(p.vx)+"\\\\,\\\\mathrm{m/s})^2+("+n(p.vy)+"\\\\,\\\\mathrm{m/s})^2}="+qty(p.speed,"m/s"),
+    "R=v_0\\\\cos\\\\theta\\\\,t_f=("+n(v0)+"\\\\,\\\\mathrm{m/s})\\\\cos("+n(angle)+"^\\\\circ)("+n(tf)+"\\\\,\\\\mathrm{s})="+qty(range,"m"),
+    "H_{\\\\max}=h_0+\\\\frac{v_0^2\\\\sin^2\\\\theta}{2g}="+qty(peak,"m"),
+    "t_f=\\\\frac{v_0\\\\sin\\\\theta+\\\\sqrt{(v_0\\\\sin\\\\theta)^2+2gh_0}}{g}="+qty(tf,"s")
+   ][index];
   }
   if(id==="mru"){
     const v=r(3,18,1),t=r(2,12,1);

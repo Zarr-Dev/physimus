@@ -2068,3 +2068,50 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   .sandbox-workspace{min-width:720px}
   .settings-popover{right:0}
 }
+
+
+/* Compact mechanics equation presentation: let the mathematics use the full card width. */
+.measurement-derivation-row{
+ display:block;
+ min-width:0;
+ padding:2px 0 5px;
+ text-align:left;
+}
+.measurement-derivation-row .math-inline{
+ display:block;
+ width:max-content;
+ min-width:100%;
+ max-width:none;
+ overflow-x:auto;
+ padding:2px 0 6px;
+ font-size:13px;
+ line-height:1.75;
+ white-space:nowrap;
+ scrollbar-width:thin;
+}
+.measurement-derivation-result{
+ margin-top:2px;
+}
+.equation-calc-formula{
+ padding:9px 12px;
+}
+.equation-calc-formula .equation-calc-math{
+ min-width:0;
+ overflow-x:auto;
+ overflow-y:hidden;
+ padding:3px 0 6px;
+ font-size:clamp(15px,1.9vw,18px);
+ line-height:1.8;
+ scrollbar-width:thin;
+}
+.equation-calc-substitution{
+ padding:7px 0 8px;
+}
+.equation-calc-substitution-math{
+ min-width:0;
+ overflow-x:auto;
+ padding:4px 0;
+}
+.equation-calc-result{
+ margin-top:2px;
+}

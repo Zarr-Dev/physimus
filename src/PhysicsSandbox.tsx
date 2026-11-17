@@ -597,13 +597,13 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   const row=rows.find(item=>item.id===focusedEquationId)??rows[rows.length-1];if(!row)return;
   const input=equationInputsRef.current[row.id],stored=equationSelectionsRef.current[row.id];
   if(input&&isMathfield(input)){
-   const left=row.text.trimEnd(),needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/(?:=|\\+|-|\\*|\\/|\\(|,)$/.test(left);
+   const left=row.text.trimEnd(),needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!["=","+","-","*","/","(",","] .includes(left.slice(-1));
    input.insert(equationToLatex((needsProduct?"*":"")+token));input.focus();update(row.id,input.getValue("ascii-math"));setFocusedEquationId(row.id);return;
   }
   const plain=input as HTMLInputElement|null;
   const start=plain?.selectionStart??stored?.start??row.text.length,end=plain?.selectionEnd??stored?.end??start;
   const before=row.text.slice(0,start),after=row.text.slice(end),left=before.trimEnd();
-  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/(?:=|\\+|-|\\*|\\/|\\(|,)$/.test(left);
+  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!["=","+","-","*","/","(",","] .includes(left.slice(-1));
   const prefix=needsProduct?"*":"";
   const next=before+prefix+token+after;
   update(row.id,next);setFocusedEquationId(row.id);

@@ -400,7 +400,7 @@ function parameterText(language:Language,key:string,fallback:string) {
   const en:Record<string,string> = {
     speed:"Initial speed",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
     acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",x0:"Initial horizontal position",dragBeta:"Linear drag coefficient per unit mass β",phaseDegrees:"Initial phase angle",inclineAngle:"Incline angle",initialSpeed:"Initial speed along the plane",appliedForce:"External force along the plane (+ downhill)",impactDuration:"Collision contact duration",dampingRatio:"Damping ratio ζ",
-    friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude
+    friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
   };
   return en[key]??fallback;
 }
@@ -831,7 +831,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   "a(t)=-\\omega_0^2x-2\\beta v="+qty(acceleration,"m/s^2"),
   "E_k=\\frac12mv^2=\\frac12("+qty(m,"kg")+")("+qty(p.speed,"m/s")+")^2="+qty(p.kinetic,"J"),
   "E_p=\\frac12kx^2=\\frac12("+qty(k,"N/m")+")("+qty(p.x,"m")+")^2="+qty(p.potential,"J"),
-  k>0?"T_d=\\frac{2\\pi}{\\omega_d}=\\frac{2\\pi}{"+n(omegaD)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/Math.max(omegaD,1e-12),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0
+  k>0?"T_d=\\frac{2\\pi}{\\omega_d}=\\frac{2\\pi}{"+n(omegaD)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/Math.max(omegaD,1e-12),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0"
  ][index];
 }
 function objectOptionsFor(id:LabId,language:Language):{value:string;label:string}[] {
@@ -1026,7 +1026,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const metrics=useMemo(()=>metricsFor(lab,values,current,points,language),[lab,values,current,points,language]);
   const plottedPoints=useMemo(()=>graphMode==="trajectory"?points:points.map((p,i)=>{
     const angle=(values.angle??0)*Math.PI/180;
-    const inclineNormal=(values.gravity??9.81)*Math.cos(angle),inclineParallel=(values.gravity??9.81)*Math.sin(angle)+(values.appliedForce??0)/Math.max(values.mass??1,.01),inclineStatic=Math.abs(inclineParallel)<= (values.staticFriction??0)*inclineNormal;const energyAngle=(values.inclineAngle??30)*Math.PI/180,energyStatic=(values.initialSpeed??0)<=1e-9&&Math.tan(energyAngle)<=(values.staticFriction??0),energyAccel=energyStatic?0:(values.gravity??9.81)*(Math.sin(energyAngle)-(values.friction??0)*Math.cos(energyAngle));const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springBeta=(values.dampingRatio??0)*springOmega0;const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(inclineStatic?0:inclineParallel-Math.sign(inclineParallel||1)*(values.friction??0)*inclineNormal):lab.id==="spring"?-springOmega0**2*p.x-2*springBeta*p.vx:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?energyAccel:lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
+    const inclineNormal=(values.gravity??9.81)*Math.cos(angle),inclineParallel=(values.gravity??9.81)*Math.sin(angle)+(values.appliedForce??0)/Math.max(values.mass??1,.01),inclineStatic=Math.abs(inclineParallel)<= (values.staticFriction??0)*inclineNormal;const energyAngle=(values.inclineAngle??30)*Math.PI/180,energyStatic=(values.initialSpeed??0)<=1e-9&&Math.tan(energyAngle)<=(values.staticFriction??0),energyAccel=energyStatic?0:(values.gravity??9.81)*(Math.sin(energyAngle)-(values.friction??0)*Math.cos(energyAngle));const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springBeta=(values.dampingRatio??0)*springOmega0;const acceleration=lab.id==="mru"?0:lab.id==="mrua"?values.acceleration??0:lab.id==="incline"?(inclineStatic?0:inclineParallel-Math.sign(inclineParallel||1)*(values.friction??0)*inclineNormal):lab.id==="spring"?-(springOmega0**2)*p.x-2*springBeta*p.vx:lab.id==="circular"?-((values.omega??0)**2)*p.x:lab.id==="energy"?energyAccel:lab.id==="projectile"?-(values.gravity??9.81):lab.id==="collision"?0:(i===0?0:(points[i].vx-points[i-1].vx)/Math.max(.000001,points[i].t-points[i-1].t));
     return graphMode==="position-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?Math.hypot(p.x,lab.id==="energy"?(values.height??0)-p.y:p.y):p.x}:graphMode==="velocity-time"?{...p,x:p.t,y:(lab.id==="energy"||lab.id==="incline")?p.speed:p.vx}:{...p,x:p.t,y:acceleration};
   }),[graphMode,points,lab,values]);
   const objectOrientation=lab.id==="energy"?(values.inclineAngle??30)*Math.PI/180:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;

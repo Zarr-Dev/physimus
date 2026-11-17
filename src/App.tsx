@@ -773,7 +773,8 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
    "v=\\omega r=("+n(omega)+"\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+qty(p.speed,"m/s"),
    omega>0?"T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/omega,"s"):"T=\\frac{2\\pi}{0}=\\text{undefined for }\\omega=0",
    "\\omega="+qty(omega,"rad/s"),
-   "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
+   "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2"),
+   "F_c=m\\omega^2r=("+qty(v.mass??1,"kg")+")("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty((v.mass??1)*omega*omega*r,"N")
   ][index];
  }
 

@@ -176,6 +176,84 @@ function variableLatex(name:string){
  if(numericSub)return (greek[numericSub[1]]??numericSub[1])+"_{"+numericSub[2]+"}";
  return name.length===1?name:"\\mathrm{"+name+"}";
 }
+
+function readLatexGroup(source:string,start:number):{value:string;next:number}{
+ let i=start;while(i<source.length&&/\\s/.test(source[i]))i++;
+ if(source[i]!=="{"){let end=i;while(end<source.length&&!/[\\s_^]/.test(source[end]))end++;return {value:source.slice(i,end),next:end};}
+ let depth=0;for(let j=i;j<source.length;j++){if(source[j]==="{")depth++;else if(source[j]==="}"){depth--;if(depth===0)return {value:source.slice(i+1,j),next:j+1};}}
+ throw new Error("Kurung kurawal LaTeX belum lengkap");
+}
+function latexExpressionToAscii(source:string):string{
+ let out="",i=0;
+ const commands:Record<string,string>={theta:"theta",vartheta:"theta",omega:"omega",alpha:"alpha",beta:"beta",gamma:"gamma",delta:"delta",epsilon:"epsilon",varepsilon:"epsilon",phi:"phi",varphi:"phi",psi:"psi",mu:"mu",sigma:"sigma",rho:"rho",lambda:"lambda",nu:"nu",xi:"xi",tau:"tau",pi:"pi",sin:"sin",cos:"cos",tan:"tan",arcsin:"asin",arccos:"acos",arctan:"atan",sinh:"sinh",cosh:"cosh",tanh:"tanh",ln:"ln",log:"log",exp:"exp",cdot:"*",times:"*",div:"/",pm:"+",mp:"-",leq:"<=",geq:">=",neq:"!=",infty:"infinity"};
+ while(i<source.length){
+  const ch=source[i];
+  if(ch==="\\"){
+   const match=source.slice(i+1).match(/^[a-zA-Z]+/);
+   if(!match){i++;if(source[i]===","||source[i]===";"||source[i]==="!")i++;continue;}
+   const name=match[0];i+=name.length+1;
+   if(name==="left"||name==="right"||name==="displaystyle"||name==="textstyle")continue;
+   if(name==="frac"){
+    const a=readLatexGroup(source,i);const b=readLatexGroup(source,a.next);out+="("+latexExpressionToAscii(a.value)+")/("+latexExpressionToAscii(b.value)+")";i=b.next;continue;
+   }
+   if(name==="sqrt"||name==="cbrt"){
+    let index="";if(source[i]==="["){const end=source.indexOf("]",i);if(end>i){index=source.slice(i+1,end);i=end+1;}}
+    const a=readLatexGroup(source,i);out+=(index==="3"?"cbrt(":"sqrt(")+latexExpressionToAscii(a.value)+")";i=a.next;continue;
+   }
+   if(name==="mathrm"||name==="operatorname"||name==="text"){
+    const a=readLatexGroup(source,i);out+=a.value.replace(/[^a-zA-Z0-9_]/g,"");i=a.next;continue;
+   }
+   if(name==="quad"||name==="qquad"||name===", "||name===";"||name==="!"){continue;}
+   out+=commands[name]??name;continue;
+  }
+  if(ch==="_"||ch==="^"){
+   const op=ch;i++;
+   if(source[i]==="{"){const a=readLatexGroup(source,i);const value=latexExpressionToAscii(a.value);out+=op==="^"?"^("+value+")":"_"+value;i=a.next;continue;}
+   const a=readLatexGroup(source,i);out+=op==="^"?"^("+a.value+")":"_"+a.value;i=a.next;continue;
+  }
+  if(ch==="{"){out+="(";i++;continue;}
+  if(ch==="}"){out+=")";i++;continue;}
+  if(ch==="\\n"||ch==="\\r"||ch==="\\t"){out+=" ";i++;continue;}
+  if(ch==="\\u00a0"){out+=" ";i++;continue;}
+  if(ch==="\\u2062"||ch==="\\u2061"){i++;continue;}
+  if(ch==="\\u2212"){out+="-";i++;continue;}
+  if(ch==="\\u00d7"){out+="*";i++;continue;}
+  if(ch==="\\u00f7"){out+="/";i++;continue;}
+  out+=ch;i++;
+ }
+ return out.replace(/\\s+/g," ").trim();
+}
+function mathLiveToExpression(ascii:string,latex:string):string{
+ const source=latex||ascii;
+ const findOperator=(name:"int"|"sum"|"prod")=>source.indexOf("\\\\"+name);
+ for(const name of ["int","sum","prod"] as const){
+  const at=findOperator(name);if(at<0)continue;
+  const prefix=source.slice(0,at),afterOperator=at+name.length+1;
+  let cursor=afterOperator,lower="",upper="";
+  while(cursor<source.length&&/\\s/.test(source[cursor]))cursor++;
+  if(source[cursor]==="_"){const group=readLatexGroup(source,cursor+1);lower=group.value;cursor=group.next;}
+  while(cursor<source.length&&/\\s/.test(source[cursor]))cursor++;
+  if(source[cursor]==="^"){const group=readLatexGroup(source,cursor+1);upper=group.value;cursor=group.next;}
+  const tail=source.slice(cursor);
+  if(name==="int"){
+   const differential=tail.match(/\\\\,?\\s*d\\s*([a-zA-Z])\\s*$/);
+   if(!differential)break;
+   const body=tail.slice(0,differential.index).trim(),variable=differential[1];
+   const args=lower&&upper?","+variable+","+latexExpressionToAscii(lower)+","+latexExpressionToAscii(upper):","+variable;
+   return prefix+"int("+latexExpressionToAscii(body)+args+")";
+  }
+  const assignment=lower.match(/^\\s*([a-zA-Z][a-zA-Z0-9_]*)\\s*=\\s*(.+)$/);
+  if(!assignment||!upper)break;
+  const body=tail.trim(),variable=assignment[1],start=latexExpressionToAscii(assignment[2]),end=latexExpressionToAscii(upper);
+  return prefix+name+"("+latexExpressionToAscii(body)+","+variable+","+start+","+end+")";
+ }
+ // A simple first derivative: d/dx of the following expression.
+ const derivative=source.match(/^\\s*\\\\frac\\s*\\{d\\}\\s*\\{d\\s*([a-zA-Z])\\}\\s*(.*)$/);
+ if(derivative)return "diff("+latexExpressionToAscii(derivative[2])+","+derivative[1]+")";
+ const simple=ascii?.trim();
+ if(simple)return simple.replace(/\\bint_\\(([^)]*)\\)\\^\\(([^)]*)\\)/g,"int($1,$2)");
+ return latexExpressionToAscii(source);
+}
 function equationToLatex(source:string){
  const clean=source.trim();
  const target=clean.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);
@@ -598,7 +676,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   const input=equationInputsRef.current[row.id],stored=equationSelectionsRef.current[row.id];
   if(input&&isMathfield(input)){
    const left=row.text.trimEnd(),needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!["=","+","-","*","/","(",","] .includes(left.slice(-1));
-   input.insert(equationToLatex((needsProduct?"*":"")+token));input.focus();update(row.id,input.getValue("ascii-math"));setFocusedEquationId(row.id);return;
+   input.insert(equationToLatex((needsProduct?"*":"")+token));input.focus();update(row.id,mathLiveToExpression(input.getValue("ascii-math"),input.getValue("latex")));setFocusedEquationId(row.id);return;
   }
   const plain=input as HTMLInputElement|null;
   const start=plain?.selectionStart??stored?.start??row.text.length,end=plain?.selectionEnd??stored?.end??start;
@@ -701,7 +779,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       <div className="sandbox-editor-heading"><strong>{w.math}</strong><button onClick={add}><Plus size={15}/>{w.add}</button></div>
       <p className="sandbox-section-intro">{language==="ID"?"Ketik seperti notasi matematika. LaTeX akan terbentuk otomatis; gunakan saran operator untuk integral, sigma, dan turunan.":"Type in mathematical notation. LaTeX is generated automatically; use operator suggestions for integrals, summation and derivatives."}</p>
       <div className="sandbox-math-palette" aria-label={language==="ID"?"Simbol matematika":"Math symbols"}>{[{label:"θ",token:"theta"},{label:"ω",token:"omega"},{label:"α",token:"alpha"},{label:"β",token:"beta"},{label:"γ",token:"gamma"},{label:"δ",token:"delta"},{label:"φ",token:"phi"},{label:"ψ",token:"psi"},{label:"μ",token:"mu"},{label:"π",token:"pi"},{label:"σ",token:"sigma"},{label:"τ",token:"tau"},{label:"∫",token:"int(u^2, u, 0, x)"},{label:"∫ₐᵇ",token:"int(x^2, x, 0, 1)"},{label:"Σ",token:"sum(i^2, i, 1, 5)"},{label:"∏",token:"prod(i, i, 1, 5)"},{label:"d/dx",token:"diff(x^2, x)"},{label:"√",token:"sqrt(x)"},{label:"∛",token:"cbrt(x)"},{label:"sin",token:"sin(x)"},{label:"cos",token:"cos(x)"},{label:"ln",token:"ln(x)"}].map(item=><button key={item.label} type="button" onClick={()=>insertToken(item.token)} title={item.token}>{item.label}</button>)}</div>
-      <div className="sandbox-equations">{rows.map((row,index)=>{const suggestions=equationSuggestions(row.text,language),scalar=scalarResults.find(result=>result.id===row.id),focus=()=>{setFocusedEquationId(row.id);setSuggestionSelection(old=>({...old,[row.id]:0}));},keys=(e:KeyboardEvent)=>{if(!suggestions.length)return;const currentSelection=suggestionSelection[row.id]??0;if(e.key==="ArrowDown"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.min(suggestions.length-1,Math.max(0,currentSelection)+1)}));}else if(e.key==="ArrowUp"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.max(0,(currentSelection<0?0:currentSelection)-1)}));}else if((e.key==="Enter"||e.key==="Tab")&&currentSelection>=0){e.preventDefault();applyEquationSuggestion(row,suggestions[Math.min(suggestions.length-1,currentSelection)]);}else if(e.key==="Escape"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:-1}));}};const field=mathLiveReady?createElement("math-field" as any,{ref:(el:MathfieldLike|null)=>{equationInputsRef.current[row.id]=el;if(el&&!el.dataset.physimusReady){el.value=equationToLatex(row.text);el.dataset.physimusReady="true";}},key:row.id,"aria-label":(language==="ID"?"Editor persamaan ":"Equation editor ")+(index+1),className:"sandbox-mathfield","virtual-keyboard-mode":"onfocus","smart-fence":"true","smart-superscript":"true","letter-shape-style":"tex",onFocus:focus,onInput:(event:{currentTarget:MathfieldLike})=>{const text=event.currentTarget.getValue("ascii-math");update(row.id,text);setSuggestionSelection(old=>({...old,[row.id]:0}));},onKeyDown:keys}):<input ref={el=>{equationInputsRef.current[row.id]=el;}} aria-label={"Equation "+(index+1)} value={row.text} onFocus={focus} onSelect={e=>{equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??0,end:e.currentTarget.selectionEnd??0};}} onChange={e=>{update(row.id,e.target.value);equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??e.target.value.length,end:e.currentTarget.selectionEnd??e.target.value.length};setSuggestionSelection(old=>({...old,[row.id]:0}));}} onKeyDown={e=>keys(e.nativeEvent)} placeholder="x(t)=A*cos(omega*t)"/>;return <div className={row.enabled?"sandbox-equation-item":"sandbox-equation-item disabled"} key={row.id}><div className="sandbox-equation-editor"><div className="sandbox-equation-row"><span>{index+1}</span><button title={row.enabled?w.hide:w.show} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button>{field}<button title={w.delete} onClick={()=>{setRows(old=>old.filter(q=>q.id!==row.id));if(focusedEquationId===row.id)setFocusedEquationId(rows.find(q=>q.id!==row.id)?.id??0);}}><Trash2 size={14}/></button></div>{!mathLiveReady&&mathLiveFailed&&<p className="sandbox-editor-fallback-note">{language==="ID"?"Editor matematika penuh tidak dapat dimuat. Gunakan notasi teks pada kolom ini.":"The rich math editor could not load. Use text notation in this field."}</p>}</div>{scalar&&<button type="button" className={expandedScalarResults.includes(row.id)?"sandbox-scalar-result expanded":"sandbox-scalar-result"} aria-expanded={expandedScalarResults.includes(row.id)} onClick={()=>setExpandedScalarResults(old=>old.includes(row.id)?old.filter(id=>id!==row.id):[...old,row.id])}><span>{language==="ID"?"Nilai saat ini · buka rincian":"Current value · open details"}</span><strong>{Number.isFinite(scalar.value)?scalar.value.toPrecision(6):"—"}</strong>{expandedScalarResults.includes(row.id)&&(()=>{const compiled=valid.find(item=>item.id===row.id);return compiled?<small dangerouslySetInnerHTML={mathHtml(scalarSubstitutionLatex(row,compiled,parameterSet,scalar.value))}/>:null;})()}</button>}{suggestions.length>0&&(suggestionSelection[row.id]??0)>=0&&<div className="sandbox-math-suggestions" role="listbox">{suggestions.map((item,suggestionIndex)=><button type="button" role="option" aria-selected={(suggestionSelection[row.id]??0)===suggestionIndex} className={(suggestionSelection[row.id]??0)===suggestionIndex?"active":""} key={item.title} onMouseEnter={()=>setSuggestionSelection(old=>({...old,[row.id]:suggestionIndex}))} onClick={()=>applyEquationSuggestion(row,item)}><span dangerouslySetInnerHTML={{__html:katex.renderToString(item.description,{throwOnError:false,strict:"ignore",trust:false})}}/><strong>{item.title}</strong><small>{item.insert}</small></button>)}</div>}</div>;})}</div>
+      <div className="sandbox-equations">{rows.map((row,index)=>{const suggestions=equationSuggestions(row.text,language),scalar=scalarResults.find(result=>result.id===row.id),focus=()=>{setFocusedEquationId(row.id);setSuggestionSelection(old=>({...old,[row.id]:0}));},keys=(e:KeyboardEvent)=>{if(!suggestions.length)return;const currentSelection=suggestionSelection[row.id]??0;if(e.key==="ArrowDown"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.min(suggestions.length-1,Math.max(0,currentSelection)+1)}));}else if(e.key==="ArrowUp"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:Math.max(0,(currentSelection<0?0:currentSelection)-1)}));}else if((e.key==="Enter"||e.key==="Tab")&&currentSelection>=0){e.preventDefault();applyEquationSuggestion(row,suggestions[Math.min(suggestions.length-1,currentSelection)]);}else if(e.key==="Escape"){e.preventDefault();setSuggestionSelection(old=>({...old,[row.id]:-1}));}};const field=mathLiveReady?createElement("math-field" as any,{ref:(el:MathfieldLike|null)=>{equationInputsRef.current[row.id]=el;if(el&&!el.dataset.physimusReady){el.value=equationToLatex(row.text);el.dataset.physimusReady="true";}},key:row.id,"aria-label":(language==="ID"?"Editor persamaan ":"Equation editor ")+(index+1),className:"sandbox-mathfield","virtual-keyboard-mode":"onfocus","smart-fence":"true","smart-superscript":"true","letter-shape-style":"tex",onFocus:focus,onInput:(event:{currentTarget:MathfieldLike})=>{const text=mathLiveToExpression(event.currentTarget.getValue("ascii-math"),event.currentTarget.getValue("latex"));update(row.id,text);setSuggestionSelection(old=>({...old,[row.id]:0}));},onKeyDown:keys}):<input ref={el=>{equationInputsRef.current[row.id]=el;}} aria-label={"Equation "+(index+1)} value={row.text} onFocus={focus} onSelect={e=>{equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??0,end:e.currentTarget.selectionEnd??0};}} onChange={e=>{update(row.id,e.target.value);equationSelectionsRef.current[row.id]={start:e.currentTarget.selectionStart??e.target.value.length,end:e.currentTarget.selectionEnd??e.target.value.length};setSuggestionSelection(old=>({...old,[row.id]:0}));}} onKeyDown={e=>keys(e.nativeEvent)} placeholder="x(t)=A*cos(omega*t)"/>;return <div className={row.enabled?"sandbox-equation-item":"sandbox-equation-item disabled"} key={row.id}><div className="sandbox-equation-editor"><div className="sandbox-equation-row"><span>{index+1}</span><button title={row.enabled?w.hide:w.show} onClick={()=>setRows(old=>old.map(q=>q.id===row.id?{...q,enabled:!q.enabled}:q))}>{row.enabled?<Eye size={14}/>:<EyeOff size={14}/>}</button>{field}<button title={w.delete} onClick={()=>{setRows(old=>old.filter(q=>q.id!==row.id));if(focusedEquationId===row.id)setFocusedEquationId(rows.find(q=>q.id!==row.id)?.id??0);}}><Trash2 size={14}/></button></div>{!mathLiveReady&&mathLiveFailed&&<p className="sandbox-editor-fallback-note">{language==="ID"?"Editor matematika penuh tidak dapat dimuat. Gunakan notasi teks pada kolom ini.":"The rich math editor could not load. Use text notation in this field."}</p>}</div>{scalar&&<button type="button" className={expandedScalarResults.includes(row.id)?"sandbox-scalar-result expanded":"sandbox-scalar-result"} aria-expanded={expandedScalarResults.includes(row.id)} onClick={()=>setExpandedScalarResults(old=>old.includes(row.id)?old.filter(id=>id!==row.id):[...old,row.id])}><span>{language==="ID"?"Nilai saat ini · buka rincian":"Current value · open details"}</span><strong>{Number.isFinite(scalar.value)?scalar.value.toPrecision(6):"—"}</strong>{expandedScalarResults.includes(row.id)&&(()=>{const compiled=valid.find(item=>item.id===row.id);return compiled?<small dangerouslySetInnerHTML={mathHtml(scalarSubstitutionLatex(row,compiled,parameterSet,scalar.value))}/>:null;})()}</button>}{suggestions.length>0&&(suggestionSelection[row.id]??0)>=0&&<div className="sandbox-math-suggestions" role="listbox">{suggestions.map((item,suggestionIndex)=><button type="button" role="option" aria-selected={(suggestionSelection[row.id]??0)===suggestionIndex} className={(suggestionSelection[row.id]??0)===suggestionIndex?"active":""} key={item.title} onMouseEnter={()=>setSuggestionSelection(old=>({...old,[row.id]:suggestionIndex}))} onClick={()=>applyEquationSuggestion(row,item)}><span dangerouslySetInnerHTML={{__html:katex.renderToString(item.description,{throwOnError:false,strict:"ignore",trust:false})}}/><strong>{item.title}</strong><small>{item.insert}</small></button>)}</div>}</div>;})}</div>
       <section className="sandbox-variable-panel">
         <div className="sandbox-panel-title"><strong>{w.variables}</strong><span>{usedVariables.length}</span></div>
         {usedVariables.length===0?<p className="sandbox-variable-empty">{w.noVariables}</p>:<div className="sandbox-variable-grid">{usedVariables.map(name=>{const meta=variableDescription(name,language);return <label key={name}><span>{meta.label} <code>{name}</code></span><div><input type="number" step="any" value={parameterSet[name]??variableDefaults(name)} onChange={e=>{const raw=e.currentTarget.value;if(raw.trim()==="")return;const next=Number(raw);if(Number.isFinite(next))setVariable(name,next);}}/><small>{meta.unit}</small></div></label>;})}</div>}

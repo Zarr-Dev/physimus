@@ -381,29 +381,7 @@ function scalarSubstitutionLatex(row:Row,compiled:Compiled,vars:Vars,value:numbe
  const unit=dimensionUnitLatex(dimensionOf(compiled.root));
  return variableLatex(lhs)+"="+expression+"="+result+unit;
 }
-function equationPreviewHtml(source:string){
- const options={throwOnError:false,strict:"ignore",trust:false,displayMode:true} as const;
- try{return katex.renderToString(equationToLatex(source),options);}
- catch{
-  const clean=source.trim();
-  const lhs=clean.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=|[a-zA-Z_][a-zA-Z0-9_]*\s*=)/);
-  const left=lhs?lhs[1].replace(/\s/g,"").replace(/([xy])\(/g,"$1\\left(").replace(/\)/g,"\\right)"):"";
-  const body=lhs?clean.slice(lhs[0].length).trimEnd():clean;
-  const command=body.match(/(\\?[a-zA-Z]+)\s*\(?$/);
-  const token=command?.[1].replace(/^\\/,"").toLowerCase();
-  const pending:Record<string,string>={
-   int:"\\int_{0}^{x}\\square\\,dx",sum:"\\sum_{i=1}^{n}\\square",prod:"\\prod_{i=1}^{n}\\square",
-   diff:"\\frac{d}{dx}\\square",frac:"\\frac{a}{b}",sqrt:"\\sqrt{\\square}",cbrt:"\\sqrt[3]{\\square}",
-   sin:"\\sin(\\square)",cos:"\\cos(\\square)",tan:"\\tan(\\square)",ln:"\\ln(\\square)",log:"\\log(\\square)"
-  };
-  let tail="\\square";
-  if(body==="")tail="\\square";
-  else if(token&&pending[token])tail=pending[token];
-  else if(/[+\-*/^]\s*$/.test(body))tail=body.trim()+"\\square";
-  else tail="\\text{complete the expression}";
-  return katex.renderToString(left+tail,options);
- }
-}
+
 type EquationSuggestion={title:string;description:string;insert:string;trigger:string};
 function equationSuggestions(source:string,language:Language):EquationSuggestion[]{
  const trimmed=source.trimEnd();
@@ -619,13 +597,13 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   const row=rows.find(item=>item.id===focusedEquationId)??rows[rows.length-1];if(!row)return;
   const input=equationInputsRef.current[row.id],stored=equationSelectionsRef.current[row.id];
   if(input&&isMathfield(input)){
-   const left=row.text.trimEnd(),needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/[=+\\-*\\/(,]$/.test(left);
+   const left=row.text.trimEnd(),needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/(?:=|\\+|-|\\*|\\/|\\(|,)$/.test(left);
    input.insert(equationToLatex((needsProduct?"*":"")+token));input.focus();update(row.id,input.getValue("ascii-math"));setFocusedEquationId(row.id);return;
   }
   const plain=input as HTMLInputElement|null;
   const start=plain?.selectionStart??stored?.start??row.text.length,end=plain?.selectionEnd??stored?.end??start;
   const before=row.text.slice(0,start),after=row.text.slice(end),left=before.trimEnd();
-  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/[=+\\-*\\/(,]$/.test(left);
+  const needsProduct=left.length>0&&/[0-9A-Za-z)]$/.test(left)&&!/(?:=|\\+|-|\\*|\\/|\\(|,)$/.test(left);
   const prefix=needsProduct?"*":"";
   const next=before+prefix+token+after;
   update(row.id,next);setFocusedEquationId(row.id);

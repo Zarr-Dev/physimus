@@ -266,7 +266,8 @@ function mathLiveToExpression(ascii:string,latex:string):string{
   const body=tail.trim(),variable=assignment[1],start=latexExpressionToAscii(assignment[2]),end=latexExpressionToAscii(upper);
   return prefix+name+"("+latexExpressionToAscii(body)+","+variable+","+start+","+end+")";
  }
- const derivative=source.match(/^\s*\\frac\s*\{\s*d\s*\}\s*\{\s*d\s*([a-zA-Z])\s*\}\s*(.*)$/);
+ const derivativeSource=source.replace(/\\mathrm\s*\{\s*d\s*\}/g,"d").replace(/\\partial/g,"d");
+ const derivative=derivativeSource.match(/^\s*\\frac\s*\{\s*d\s*\}\s*\{\s*d\s*([a-zA-Z])\s*\}\s*(.*)$/);
  if(derivative)return "diff("+latexExpressionToAscii(derivative[2])+","+derivative[1]+")";
  const simple=ascii?.trim();
  if(simple)return simple;

@@ -715,16 +715,28 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  const qty=(x:number,unit:string)=>"("+n(x)+")\\,\\mathrm{"+unit+"}";
  const m=v.mass??1,g=v.gravity??9.81,theta=(v.angle??0)*Math.PI/180;
  if(id==="projectile"){
-  const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,range=v0*Math.cos(theta)*tf,peak=h0+(v0*Math.sin(theta))**2/(2*g);
+  const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,x0=v.x0??0,beta=Math.max(0,v.dragBeta??0),v0x=v0*Math.cos(theta),v0y=v0*Math.sin(theta);
+  const peakTime=beta>1e-8&&v0y>0?Math.log(1+beta*v0y/g)/beta:v0y/g;
+  const peak=beta>1e-8?projectileStateAt(Math.max(0,peakTime),v).y:h0+v0y*v0y/(2*g);
+  const range=p.x-x0;
+  if(beta>1e-8)return [
+   "x(t)=x_0+\\frac{v_0\\cos\\theta}{\\beta}(1-e^{-\\beta t})="+qty(x0,"m")+"+\\frac{("+n(v0)+"\\,\\mathrm{m/s})\\cos("+n(angle)+"^\\circ)}{"+n(beta)+"\\,\\mathrm{s^{-1}}}(1-e^{-("+n(beta)+"\\,\\mathrm{s^{-1}})("+n(time)+"\\,\\mathrm{s})})="+qty(p.x,"m"),
+   "y(t)=h_0+\\frac{v_0\\sin\\theta+g/\\beta}{\\beta}(1-e^{-\\beta t})-\\frac{gt}{\\beta}="+qty(p.y,"m"),
+   "v_x=v_0\\cos\\theta\\,e^{-\\beta t}="+qty(p.vx,"m/s")+"\\quad v_y=(v_0\\sin\\theta+g/\\beta)e^{-\\beta t}-g/\\beta="+qty(p.vy,"m/s"),
+   "R=x(t_f)-x_0="+qty(range,"m"),
+   "t_{\\max}=\\frac{1}{\\beta}\\ln(1+\\frac{\\beta v_0\\sin\\theta}{g})="+qty(Math.max(0,peakTime),"s")+"\\quad H_{\\max}="+qty(peak,"m"),
+   "y(t_f)=0\\quad\\text{(akar dicari numerik dengan bisection)}\\quad t_f="+qty(tf,"s")
+  ][index];
   return [
-   "x(t)=x_0+v_0\\cos\\theta\\,t=0+"+qty(v0,"m/s")+"\\cos("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})="+qty(p.x,"m"),
-   "y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2="+qty(h0,"m")+"+"+qty(v0,"m/s")+"\\sin("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})-\\frac12("+n(g)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})^2="+qty(p.y,"m"),
+   "x(t)=x_0+v_0\\cos\\theta\\,t="+qty(x0,"m")+"+("+qty(v0,"m/s")+")\\cos("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})="+qty(p.x,"m"),
+   "y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2="+qty(h0,"m")+"+("+qty(v0,"m/s")+")\\sin("+n(angle)+"^\\circ)("+n(time)+"\\,\\mathrm{s})-\\frac12("+n(g)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})^2="+qty(p.y,"m"),
    "v=\\sqrt{v_x^2+v_y^2}=\\sqrt{("+n(p.vx)+"\\,\\mathrm{m/s})^2+("+n(p.vy)+"\\,\\mathrm{m/s})^2}="+qty(p.speed,"m/s"),
    "R=v_0\\cos\\theta\\,t_f=("+n(v0)+"\\,\\mathrm{m/s})\\cos("+n(angle)+"^\\circ)("+n(tf)+"\\,\\mathrm{s})="+qty(range,"m"),
-   "H_{\\max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+qty(h0,"m")+"+\\frac{("+n(v0)+"\\,\\mathrm{m/s})^2\\sin^2("+n(angle)+"^\\circ)}{2("+n(g)+"\\,\\mathrm{m/s^2})}="+qty(peak,"m"),
-   "t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}=\\frac{("+n(v0)+"\\,\\mathrm{m/s})\\sin("+n(angle)+"^\\circ)+\\sqrt{[("+n(v0)+"\\,\\mathrm{m/s})\\sin("+n(angle)+"^\\circ)]^2+2("+n(g)+"\\,\\mathrm{m/s^2})("+n(h0)+"\\,\\mathrm{m})}}{"+n(g)+"\\,\\mathrm{m/s^2}}="+qty(tf,"s")
+   "H_{\\max}=h_0+\\frac{v_0^2\\sin^2\\theta}{2g}="+qty(peak,"m"),
+   "t_f=\\frac{v_0\\sin\\theta+\\sqrt{(v_0\\sin\\theta)^2+2gh_0}}{g}="+qty(tf,"s")
   ][index];
  }
+
  if(id==="mru"){
   const x0=v.x0??0,speed=v.speed??0;
   return [

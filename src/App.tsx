@@ -125,7 +125,7 @@ const basicParamKeys:Record<LabId,string[]>={projectile:["speed","angle","height
 const advancedParams:Record<LabId,Param[]>={
  projectile:[{key:"x0",label:"Posisi horizontal awal",min:-50,max:50,step:.1,unit:"m",initial:0},{key:"dragBeta",label:"Koefisien hambatan linear per massa β",min:0,max:1,step:.01,unit:"s⁻¹",initial:0}],mru:[],mrua:[],
  circular:[{key:"phaseDegrees",label:"Sudut fase awal",min:-360,max:360,step:1,unit:"°",initial:0}],
- energy:[{key:"inclineAngle",label:"Sudut bidang miring",min:0,max:60,step:1,unit:"°",initial:30},{key:"initialSpeed",label:"Kelajuan awal sepanjang bidang",min:0,max:15,step:.1,unit:"m/s",initial:0}],
+ energy:[{key:"inclineAngle",label:"Sudut bidang miring",min:1,max:60,step:1,unit:"°",initial:30},{key:"initialSpeed",label:"Kelajuan awal sepanjang bidang",min:0,max:15,step:.1,unit:"m/s",initial:0}],
  incline:[{key:"appliedForce",label:"Gaya luar sejajar bidang (+ menuruni bidang)",min:-100,max:100,step:.5,unit:"N",initial:0}],
  collision:[{key:"impactDuration",label:"Durasi kontak tumbukan",min:.005,max:.5,step:.005,unit:"s",initial:.05}],
  spring:[{key:"phaseDegrees",label:"Fase awal",min:-360,max:360,step:1,unit:"°",initial:0},{key:"dampingRatio",label:"Rasio redaman ζ",min:0,max:.95,step:.01,unit:"—",initial:0}]
@@ -576,8 +576,8 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   let duration=lab.duration;
   if(lab.id==="projectile") duration=projectileFlightTime(values);
   if(lab.id==="circular"&&p("omega")>0) duration=2*Math.PI/p("omega");
-  const energyAngle=(p("inclineAngle")||30)*Math.PI/180;
-  const energyStaticHolds=Math.tan(energyAngle)<=p("staticFriction");
+  const energyAngle=(p("inclineAngle")??30)*Math.PI/180;
+  const energyStaticHolds=p("initialSpeed")<=1e-9&&Math.tan(energyAngle)<=p("staticFriction");
   const energyAcceleration=energyStaticHolds?0:g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
   if(lab.id==="energy"){
     const distance=p("height")/Math.max(Math.sin(energyAngle),1e-6),u=p("initialSpeed");
@@ -654,7 +654,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
   const g=values.gravity??9.81;
   if(lab.id==="projectile") return [
     [labels.x,point.x,"m"],[labels.y,point.y,"m"],[labels.speed,point.speed,"m/s"],
-    [labels.range,points[points.length-1].x,"m"],[labels.max,exactProjectilePeak,"m"],[labels.flight,points[points.length-1].t,"s"]
+    [labels.range,points[points.length-1].x-(values.x0??0),"m"],[labels.max,exactProjectilePeak,"m"],[labels.flight,points[points.length-1].t,"s"]
   ] as [string,number,string][];
   if(lab.id==="mru"||lab.id==="mrua") return [
     [labels.position,point.x,"m"],[labels.velocity,point.vx,"m/s"],[labels.acceleration,lab.id==="mrua"?values.acceleration:0,"m/s²"],
@@ -683,11 +683,13 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
   ] as [string,number,string][];
   if(lab.id==="incline") {
     const angle=values.angle*Math.PI/180;
-    const acceleration=Math.tan(angle)<=values.staticFriction?0:Math.max(0,values.gravity*(Math.sin(angle)-values.friction*Math.cos(angle)));
+    const parallel=values.gravity*Math.sin(angle)+(values.appliedForce??0)/Math.max(mass,1e-9),normal=mass*values.gravity*Math.cos(angle);
+    const isStatic=Math.abs(parallel)<=values.staticFriction*values.gravity*Math.cos(angle);
+    const acceleration=isStatic?0:parallel-Math.sign(parallel||1)*values.friction*values.gravity*Math.cos(angle);
     return [
       [labels.acceleration,acceleration,"m/s²"],[labels.net,mass*acceleration,"N"],
       [language==="ID"?"Gaya normal":"Normal force",mass*values.gravity*Math.cos(angle),"N"],
-      [language==="ID"?"Gaya gesek":"Friction force",acceleration===0?mass*values.gravity*Math.sin(angle):values.friction*mass*values.gravity*Math.cos(angle),"N"],
+      [language==="ID"?"Gaya gesek":"Friction force",isStatic?Math.abs(mass*parallel):values.friction*normal,"N"],
       [labels.velocity,point.speed,"m/s"],[labels.distance,Math.hypot(point.x,point.y),"m"]
     ] as [string,number,string][];
   }
@@ -770,7 +772,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="energy"){
-  const h0=v.height??0,mu=v.friction??0,alpha=Math.PI/6,staticHolds=Math.tan(alpha)<=(v.staticFriction??0),a=staticHolds?0:g*(Math.sin(alpha)-mu*Math.cos(alpha)),distance=Math.hypot(p.x,h0-p.y);
+  const h0=v.height??0,mu=v.friction??0,alpha=(v.inclineAngle??30)*Math.PI/180,staticHolds=(v.initialSpeed??0)<=1e-9&&Math.tan(alpha)<=(v.staticFriction??0),a=staticHolds?0:g*(Math.sin(alpha)-mu*Math.cos(alpha)),distance=Math.hypot(p.x,h0-p.y);
   const dissipated=Math.max(0,m*g*h0-p.kinetic-p.potential);
   return [
    "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
@@ -778,7 +780,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
    "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
    "E_{diss}=mgh_0-E_m=("+qty(m,"kg")+")("+qty(g,"m/s^2")+")("+qty(h0,"m")+")-("+qty(p.kinetic+p.potential,"J")+")="+qty(dissipated,"J"),
    "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin(30^\\circ)="+qty(p.y,"m"),
-   "v=at=("+n(Math.max(0,a))+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
+   "v=v_0+at=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(Math.max(0,a))+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
   ][index];
  }
  if(id==="incline"){
@@ -1688,6 +1690,8 @@ function LessonDiagram({id,value,stage,language}:{id:LabId;value:number;stage:nu
  </svg>;
 }
 function Learn({language}:{language:Language}) {
+ const [learnFocus,setLearnFocus]=useState(false);
+ useEffect(()=>{if(!learnFocus)return;const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")setLearnFocus(false);};window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);},[learnFocus]);
  const [selectedTopic,setSelectedTopic]=useState<LabId>("projectile");
  const [selectedChapter,setSelectedChapter]=useState(0);const [activeLessonStep,setActiveLessonStep]=useState(0);
  const control=lessonExperimentControl(selectedTopic);
@@ -1695,8 +1699,8 @@ function Learn({language}:{language:Language}) {
  const lesson=lessonModules[selectedTopic],chapter=lesson.chapters[selectedChapter],experiment=calculateLessonExperiment(selectedTopic,experimentValue,language);
  const en=language==="EN";
  const chooseTopic=(id:LabId)=>{setSelectedTopic(id);setSelectedChapter(0);setActiveLessonStep(0);setExperimentValue(lessonExperimentControl(id).initial);};
- return <main className="secondary-page lesson-page">
-  <div className="secondary-intro"><span className="eyebrow">PHYSIMUS ACADEMY / LEARNING PATH</span><h1>{en?"Physics learning modules":"Modul belajar Fisika"}</h1><p>{en?"A structured high-school physics course: understand the phenomenon, derive the model, experiment, then practise.":"Materi Fisika SMA yang tersusun: pahami fenomena, turunkan model, bereksperimen, lalu berlatih."}</p></div>
+ return <main className={learnFocus?"secondary-page lesson-page is-focused":"secondary-page lesson-page"}>
+  <div className="secondary-intro"><span className="eyebrow">PHYSIMUS ACADEMY / LEARNING PATH</span><div className="lesson-intro-actions"><div><h1>{en?"Physics learning modules":"Modul belajar Fisika"}</h1><p>{en?"A structured high-school physics course: understand the phenomenon, derive the model, experiment, then practise.":"Materi Fisika SMA yang tersusun: pahami fenomena, turunkan model, bereksperimen, lalu berlatih."}</p></div><button className="secondary-button" type="button" onClick={()=>setLearnFocus(v=>!v)}>{learnFocus?<Minimize2 size={16}/>:<Maximize2 size={16}/ >}{learnFocus?(en?"Exit focus":"Keluar fokus"):(en?"Focus view":"Mode fokus")}</button></div></div>
   <div className="lesson-layout">
    <aside className="lesson-topic-nav"><div className="lesson-nav-heading">{en?"COURSE CONTENT":"DAFTAR MATERI"}</div>{labs.map((item,index)=><button key={item.id} className={selectedTopic===item.id?"active":""} onClick={()=>chooseTopic(item.id)}><span>{String(index+1).padStart(2,"0")}</span><strong>{en?item.subtitle:item.title}</strong></button>)}</aside>
    <article className="lesson-content">

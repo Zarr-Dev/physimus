@@ -178,50 +178,69 @@ function variableLatex(name:string){
 }
 
 function readLatexGroup(source:string,start:number):{value:string;next:number}{
- let i=start;while(i<source.length&&/\\s/.test(source[i]))i++;
- if(source[i]!=="{"){let end=i;while(end<source.length&&!/[\\s_^]/.test(source[end]))end++;return {value:source.slice(i,end),next:end};}
- let depth=0;for(let j=i;j<source.length;j++){if(source[j]==="{")depth++;else if(source[j]==="}"){depth--;if(depth===0)return {value:source.slice(i+1,j),next:j+1};}}
+ let i=start;
+ while(i<source.length&&/\s/.test(source[i]))i++;
+ if(source[i]!=="{"){
+  let end=i;
+  while(end<source.length&&!/[\s_^]/.test(source[end]))end++;
+  return {value:source.slice(i,end),next:end};
+ }
+ let depth=0;
+ for(let j=i;j<source.length;j++){
+  if(source[j]==="{")depth++;
+  else if(source[j]==="}"){
+   depth--;
+   if(depth===0)return {value:source.slice(i+1,j),next:j+1};
+  }
+ }
  throw new Error("Kurung kurawal LaTeX belum lengkap");
 }
 function latexExpressionToAscii(source:string):string{
  let out="",i=0;
- const commands:Record<string,string>={theta:"theta",vartheta:"theta",omega:"omega",alpha:"alpha",beta:"beta",gamma:"gamma",delta:"delta",epsilon:"epsilon",varepsilon:"epsilon",phi:"phi",varphi:"phi",psi:"psi",mu:"mu",sigma:"sigma",rho:"rho",lambda:"lambda",nu:"nu",xi:"xi",tau:"tau",pi:"pi",sin:"sin",cos:"cos",tan:"tan",arcsin:"asin",arccos:"acos",arctan:"atan",sinh:"sinh",cosh:"cosh",tanh:"tanh",ln:"ln",log:"log",exp:"exp",cdot:"*",times:"*",div:"/",pm:"+",mp:"-",leq:"<=",geq:">=",neq:"!=",infty:"infinity"};
+ const commands:Record<string,string>={
+  theta:"theta",vartheta:"theta",omega:"omega",alpha:"alpha",beta:"beta",gamma:"gamma",
+  delta:"delta",epsilon:"epsilon",varepsilon:"epsilon",phi:"phi",varphi:"phi",psi:"psi",
+  mu:"mu",sigma:"sigma",rho:"rho",lambda:"lambda",nu:"nu",xi:"xi",tau:"tau",pi:"pi",
+  sin:"sin",cos:"cos",tan:"tan",arcsin:"asin",arccos:"acos",arctan:"atan",
+  sinh:"sinh",cosh:"cosh",tanh:"tanh",ln:"ln",log:"log",exp:"exp",
+  cdot:"*",times:"*",div:"/",pm:"+",mp:"-",leq:"<=",geq:">=",neq:"!=",infty:"infinity"
+ };
  while(i<source.length){
   const ch=source[i];
   if(ch==="\\"){
    const match=source.slice(i+1).match(/^[a-zA-Z]+/);
    if(!match){i++;if(source[i]===","||source[i]===";"||source[i]==="!")i++;continue;}
    const name=match[0];i+=name.length+1;
-   if(name==="left"||name==="right"||name==="displaystyle"||name==="textstyle")continue;
+   if(name==="left"||name==="right"||name==="displaystyle"||name==="textstyle"||name==="quad"||name==="qquad")continue;
    if(name==="frac"){
-    const a=readLatexGroup(source,i);const b=readLatexGroup(source,a.next);out+="("+latexExpressionToAscii(a.value)+")/("+latexExpressionToAscii(b.value)+")";i=b.next;continue;
+    const top=readLatexGroup(source,i),bottom=readLatexGroup(source,top.next);
+    out+="("+latexExpressionToAscii(top.value)+")/("+latexExpressionToAscii(bottom.value)+")";i=bottom.next;continue;
    }
    if(name==="sqrt"||name==="cbrt"){
     let index="";if(source[i]==="["){const end=source.indexOf("]",i);if(end>i){index=source.slice(i+1,end);i=end+1;}}
-    const a=readLatexGroup(source,i);out+=(index==="3"?"cbrt(":"sqrt(")+latexExpressionToAscii(a.value)+")";i=a.next;continue;
+    const body=readLatexGroup(source,i);
+    out+=(index==="3"?"cbrt(":"sqrt(")+latexExpressionToAscii(body.value)+")";i=body.next;continue;
    }
    if(name==="mathrm"||name==="operatorname"||name==="text"){
-    const a=readLatexGroup(source,i);out+=a.value.replace(/[^a-zA-Z0-9_]/g,"");i=a.next;continue;
+    const body=readLatexGroup(source,i);out+=body.value.replace(/[^a-zA-Z0-9_]/g,"");i=body.next;continue;
    }
-   if(name==="quad"||name==="qquad"||name===", "||name===";"||name==="!"){continue;}
+   if(name==="int"||name==="sum"||name==="prod"){out+=name;continue;}
    out+=commands[name]??name;continue;
   }
   if(ch==="_"||ch==="^"){
-   const op=ch;i++;
-   if(source[i]==="{"){const a=readLatexGroup(source,i);const value=latexExpressionToAscii(a.value);out+=op==="^"?"^("+value+")":"_"+value;i=a.next;continue;}
-   const a=readLatexGroup(source,i);out+=op==="^"?"^("+a.value+")":"_"+a.value;i=a.next;continue;
+   const op=ch,body=readLatexGroup(source,i+1),value=latexExpressionToAscii(body.value);
+   out+=op==="^"?"^("+value+")":"_"+value;i=body.next;continue;
   }
   if(ch==="{"){out+="(";i++;continue;}
   if(ch==="}"){out+=")";i++;continue;}
-  if(ch==="\\n"||ch==="\\r"||ch==="\\t"){out+=" ";i++;continue;}
-  if(ch==="\\u00a0"){out+=" ";i++;continue;}
-  if(ch==="\\u2062"||ch==="\\u2061"){i++;continue;}
-  if(ch==="\\u2212"){out+="-";i++;continue;}
-  if(ch==="\\u00d7"){out+="*";i++;continue;}
-  if(ch==="\\u00f7"){out+="/";i++;continue;}
+  if(ch==="\n"||ch==="\r"||ch==="\t"||ch==="\u00a0"){out+=" ";i++;continue;}
+  if(ch==="\u2062"||ch==="\u2061"){i++;continue;}
+  if(ch==="−"){out+="-";i++;continue;}
+  if(ch==="×"){out+="*";i++;continue;}
+  if(ch==="÷"){out+="/";i++;continue;}
   out+=ch;i++;
  }
- return out.replace(/\\s+/g," ").trim();
+ return out.replace(/\s+/g," ").trim();
 }
 function mathLiveToExpression(ascii:string,latex:string):string{
  const source=latex||ascii;
@@ -230,28 +249,27 @@ function mathLiveToExpression(ascii:string,latex:string):string{
   const at=findOperator(name);if(at<0)continue;
   const prefix=source.slice(0,at),afterOperator=at+name.length+1;
   let cursor=afterOperator,lower="",upper="";
-  while(cursor<source.length&&/\\s/.test(source[cursor]))cursor++;
+  while(cursor<source.length&&/\s/.test(source[cursor]))cursor++;
   if(source[cursor]==="_"){const group=readLatexGroup(source,cursor+1);lower=group.value;cursor=group.next;}
-  while(cursor<source.length&&/\\s/.test(source[cursor]))cursor++;
+  while(cursor<source.length&&/\s/.test(source[cursor]))cursor++;
   if(source[cursor]==="^"){const group=readLatexGroup(source,cursor+1);upper=group.value;cursor=group.next;}
   const tail=source.slice(cursor);
   if(name==="int"){
-   const differential=tail.match(/\\,?\\s*(?:\\\\mathrm\\{d\\}|d)\\s*([a-zA-Z])\\s*$/);
+   const differential=tail.match(/\\,?\s*(?:\\mathrm\s*\{\s*d\s*\}|d)\s*([a-zA-Z])\s*$/);
    if(!differential)break;
    const body=tail.slice(0,differential.index).trim(),variable=differential[1];
    const args=lower&&upper?","+variable+","+latexExpressionToAscii(lower)+","+latexExpressionToAscii(upper):","+variable;
    return prefix+"int("+latexExpressionToAscii(body)+args+")";
   }
-  const assignment=lower.match(/^\\s*([a-zA-Z][a-zA-Z0-9_]*)\\s*=\\s*(.+)$/);
+  const assignment=lower.match(/^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
   if(!assignment||!upper)break;
   const body=tail.trim(),variable=assignment[1],start=latexExpressionToAscii(assignment[2]),end=latexExpressionToAscii(upper);
   return prefix+name+"("+latexExpressionToAscii(body)+","+variable+","+start+","+end+")";
  }
- // A simple first derivative: d/dx of the following expression.
- const derivative=source.match(/^\\s*\\\\frac\\s*\\{d\\}\\s*\\{d\\s*([a-zA-Z])\\}\\s*(.*)$/);
+ const derivative=source.match(/^\s*\\frac\s*\{\s*d\s*\}\s*\{\s*d\s*([a-zA-Z])\s*\}\s*(.*)$/);
  if(derivative)return "diff("+latexExpressionToAscii(derivative[2])+","+derivative[1]+")";
  const simple=ascii?.trim();
- if(simple)return simple.replace(/\\bint_\\(([^)]*)\\)\\^\\(([^)]*)\\)/g,"int($1,$2)");
+ if(simple)return simple;
  return latexExpressionToAscii(source);
 }
 function equationToLatex(source:string){

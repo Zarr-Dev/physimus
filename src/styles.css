@@ -2178,3 +2178,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .sandbox-equation-editor .sandbox-equation-preview{display:none}
 .sandbox-equation-row input{min-width:0}
 @media(max-width:560px){.sandbox-equation-row .sandbox-mathfield{font-size:15px;min-height:40px;padding:6px}}
+
+/* KaTeX-rendered quick examples use the same typography as the equation editor. */
+.sandbox-example-math{display:block;max-width:100%;overflow-x:auto;padding:2px 0;color:#477aa8;font-size:14px;line-height:1.65}
+.sandbox-example-math .katex{white-space:normal}
+.sandbox-example-math .katex-display{margin:.2em 0;text-align:left}
+.app-root[data-theme="dark"] .sandbox-example-math{color:#9ac9f2}

@@ -919,30 +919,15 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
     return {prompt:en?"Determine the velocity after the stated time.":"Tentukan kecepatan setelah selang waktu tersebut.",given:"v₀ = "+v0+" m/s, a = "+a+" m/s², t = "+t+" s",formula:"v=v_0+at",answer,unit:"m/s",resultLabel:en?"Final velocity":"Kecepatan akhir",steps:["v="+v0+"+("+a+")("+t+")","v="+f(answer)+"\\;\\mathrm{m/s}"]};
   }
   if(id==="circular"){
-    const omega=r(.5,4,.5),radius=r(1,8,1);
-    if(variant){
-      const answer=omega*radius;
-      return {prompt:en?"Calculate the tangential speed of the rotating object.":"Hitung kelajuan tangensial benda yang bergerak melingkar.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"v=\\omega r",answer,unit:"m/s",resultLabel:en?"Tangential speed":"Kelajuan tangensial",steps:["v=("+omega+")("+radius+")","v="+f(answer)+"\\;\\mathrm{m/s}"]};
-    }
-    const answer=omega*omega*radius;
-    return {prompt:en?"Calculate the centripetal acceleration.":"Hitung percepatan sentripetal benda.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"a_c=\\omega^2r",answer,unit:"m/s²",resultLabel:en?"Centripetal acceleration":"Percepatan sentripetal",steps:["a_c=("+omega+")^2("+radius+")","a_c="+f(answer)+"\\;\\mathrm{m/s^2}"]};
-  }
-  if(id==="energy"){
-    const g=9.81;
-    if(variant){
-      const m=r(1,5,.5),h=r(1,12,.5),answer=m*g*h;
-      return {prompt:en?"Calculate the gravitational potential energy relative to the ground.":"Hitung energi potensial gravitasi benda terhadap permukaan tanah.",given:"m = "+m+" kg, h = "+h+" m, g = 9.81 m/s²",formula:"E_p=mgh",answer,unit:"J",resultLabel:en?"Gravitational potential energy":"Energi potensial gravitasi",steps:["E_p=("+m+")("+g+")("+h+")","E_p="+f(answer)+"\\;\\mathrm{J}"]};
-    }
-    const h=r(1,15,.5),answer=Math.sqrt(2*g*h);
-    return {prompt:en?"Find the speed after a frictionless drop from rest.":"Tentukan kelajuan setelah benda turun tanpa gesekan dari keadaan diam.",given:"Δh = "+h+" m, v₀ = 0, g = 9.81 m/s²",formula:"v=\\sqrt{2g\\Delta h}",answer,unit:"m/s",resultLabel:en?"Speed":"Kelajuan",steps:["\\frac12mv^2=mg\\Delta h","v=\\sqrt{2(9.81)("+h+")}","v="+f(answer)+"\\;\\mathrm{m/s}"]};
-  }
-  if(id==="incline"){
-    if(variant){
-      const mu=r(.15,.65,.01),answer=Math.atan(mu)*180/Math.PI;
-      return {prompt:en?"Find the critical incline angle at which a block is just about to slide from rest.":"Tentukan sudut kritis bidang miring saat balok tepat akan mulai meluncur dari diam.",given:"μₛ = "+mu.toFixed(2),formula:"\\tan\\theta_c=\\mu_s",answer,unit:"°",resultLabel:en?"Critical angle":"Sudut kritis",steps:["\\theta_c=\\arctan("+mu.toFixed(2)+")","\\theta_c="+f(answer)+"^\\circ"]};
-    }
-    const angle=r(28,55,1),mu=r(.05,.2,.01),g=9.81,rad=angle*Math.PI/180,answer=g*(Math.sin(rad)-mu*Math.cos(rad));
-    return {prompt:en?"A block is already sliding downhill. Find its acceleration.":"Balok sudah meluncur menuruni bidang. Hitung percepatannya.",given:"θ = "+angle+"°, μₖ = "+mu.toFixed(2)+", g = 9.81 m/s²",formula:"a=g(\\sin\\theta-\\mu_k\\cos\\theta)",answer,unit:"m/s²",resultLabel:en?"Down-slope acceleration":"Percepatan turun bidang",steps:["a=9.81(\\sin "+angle+"^\\circ-"+mu.toFixed(2)+"\\cos "+angle+"^\\circ)","a="+f(answer)+"\\;\\mathrm{m/s^2}"]};
+   const r=v.radius??0,omega=v.omega??0,phase=(v.phaseDegrees??0)*Math.PI/180;
+   return [
+    "x=r\\cos(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.x,"m"),
+    "y=r\\sin(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.y,"m"),
+    "v=\\omega r=("+n(omega)+"\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+qty(p.speed,"m/s"),
+    omega>0?"T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/omega,"s"):"T=\\frac{2\\pi}{0}=\\text{undefined for }\\omega=0",
+    "\\omega="+qty(omega,"rad/s"),
+    "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
+   ][index];
   }
   if(id==="collision"){
     const m1=r(1,4,.5),m2=r(1,4,.5),u1=r(5,10,.5),u2=r(-2,2,.5),e=r(0,1,.1);

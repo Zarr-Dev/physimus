@@ -892,26 +892,13 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
   const f=(x:number)=>Number(x.toFixed(2));
   const en=language==="EN",variant=Math.random()<.5;
   if(id==="projectile"){
-   const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,x0=v.x0??0,beta=Math.max(0,v.dragBeta??0),v0x=v0*Math.cos(theta),v0y=v0*Math.sin(theta);
-   const peakTime=beta>1e-8&&v0y>0?Math.log(1+beta*v0y/g)/beta:v0y/g;
-   const peak=beta>1e-8?projectileStateAt(Math.max(0,peakTime),v).y:h0+v0y*v0y/(2*g);
-   const range=p.x-x0;
-   if(beta>1e-8)return [
-    "x(t)=x_0+\\\\frac{v_0\\\\cos\\\\theta}{\\\\beta}(1-e^{-\\\\beta t})="+qty(x0,"m")+"+\\\\frac{("+n(v0)+"\\\\,\\\\mathrm{m/s})\\\\cos("+n(angle)+"^\\\\circ)}{"+n(beta)+"\\\\,\\\\mathrm{s^{-1}}}(1-e^{-("+n(beta)+"\\\\,\\\\mathrm{s^{-1}})("+n(time)+"\\\\,\\\\mathrm{s})})="+qty(p.x,"m"),
-    "y(t)=h_0+\\\\frac{v_0\\\\sin\\\\theta+g/\\\\beta}{\\\\beta}(1-e^{-\\\\beta t})-\\\\frac{gt}{\\\\beta}="+qty(p.y,"m"),
-    "v_x=v_0\\\\cos\\\\theta\\\\,e^{-\\\\beta t}="+qty(p.vx,"m/s")+"\\\\quad v_y=(v_0\\\\sin\\\\theta+g/\\\\beta)e^{-\\\\beta t}-g/\\\\beta="+qty(p.vy,"m/s"),
-    "R=x(t_f)-x_0="+qty(range,"m"),
-    "t_{\\\\max}=\\\\frac{1}{\\\\beta}\\\\ln(1+\\\\frac{\\\\beta v_0\\\\sin\\\\theta}{g})="+qty(Math.max(0,peakTime),"s")+"\\\\quad H_{\\\\max}="+qty(peak,"m"),
-    "y(t_f)=0\\\\quad\\\\text{(akar dicari numerik dengan bisection)}\\\\quad t_f="+qty(tf,"s")
-   ][index];
-   return [
-    "x(t)=x_0+v_0\\\\cos\\\\theta\\\\,t="+qty(x0,"m")+"+("+qty(v0,"m/s")+")\\\\cos("+n(angle)+"^\\\\circ)("+n(time)+"\\\\,\\\\mathrm{s})="+qty(p.x,"m"),
-    "y(t)=h_0+v_0\\\\sin\\\\theta\\\\,t-\\\\frac12gt^2="+qty(h0,"m")+"+("+qty(v0,"m/s")+")\\\\sin("+n(angle)+"^\\\\circ)("+n(time)+"\\\\,\\\\mathrm{s})-\\\\frac12("+n(g)+"\\\\,\\\\mathrm{m/s^2})("+n(time)+"\\\\,\\\\mathrm{s})^2="+qty(p.y,"m"),
-    "v=\\\\sqrt{v_x^2+v_y^2}=\\\\sqrt{("+n(p.vx)+"\\\\,\\\\mathrm{m/s})^2+("+n(p.vy)+"\\\\,\\\\mathrm{m/s})^2}="+qty(p.speed,"m/s"),
-    "R=v_0\\\\cos\\\\theta\\\\,t_f=("+n(v0)+"\\\\,\\\\mathrm{m/s})\\\\cos("+n(angle)+"^\\\\circ)("+n(tf)+"\\\\,\\\\mathrm{s})="+qty(range,"m"),
-    "H_{\\\\max}=h_0+\\\\frac{v_0^2\\\\sin^2\\\\theta}{2g}="+qty(peak,"m"),
-    "t_f=\\\\frac{v_0\\\\sin\\\\theta+\\\\sqrt{(v_0\\\\sin\\\\theta)^2+2gh_0}}{g}="+qty(tf,"s")
-   ][index];
+    const g=9.81;
+    if(variant){
+      const v=r(14,28,1),angle=r(25,65,1),rad=angle*Math.PI/180,answer=v*v*Math.sin(2*rad)/g;
+      return {prompt:en?"A projectile lands at the same height from which it was launched. Calculate its horizontal range.":"Sebuah benda ditembakkan dan mendarat pada ketinggian yang sama. Hitung jangkauan horizontalnya.",given:"v₀ = "+v+" m/s, θ = "+angle+"°, g = 9.81 m/s²",formula:"R=\\frac{v_0^2\\sin(2\\theta)}{g}",answer,unit:"m",resultLabel:en?"Horizontal range":"Jangkauan horizontal",steps:["R=\\frac{("+v+")^2\\sin(2\\times"+angle+"^\\circ)}{9.81}","R="+f(answer)+"\\;\\mathrm{m}"]};
+    }
+    const v=r(14,28,1),angle=r(25,65,1),rad=angle*Math.PI/180,answer=v*v*Math.sin(rad)**2/(2*g);
+    return {prompt:en?"Find the rise above launch point at maximum height.":"Hitung kenaikan ketinggian maksimum dari titik peluncuran.",given:"v₀ = "+v+" m/s, θ = "+angle+"°, g = 9.81 m/s²",formula:"\\Delta h_{max}=\\frac{v_0^2\\sin^2\\theta}{2g}",answer,unit:"m",resultLabel:en?"Maximum rise":"Kenaikan maksimum",steps:["\\Delta h=\\frac{("+v+")^2\\sin^2("+angle+"^\\circ)}{2(9.81)}","\\Delta h="+f(answer)+"\\;\\mathrm{m}"]};
   }
   if(id==="mru"){
     const v=r(3,18,1),t=r(2,12,1);
@@ -932,15 +919,13 @@ function makePracticeQuestion(id:LabId,language:Language):PracticeQuestion {
     return {prompt:en?"Determine the velocity after the stated time.":"Tentukan kecepatan setelah selang waktu tersebut.",given:"v₀ = "+v0+" m/s, a = "+a+" m/s², t = "+t+" s",formula:"v=v_0+at",answer,unit:"m/s",resultLabel:en?"Final velocity":"Kecepatan akhir",steps:["v="+v0+"+("+a+")("+t+")","v="+f(answer)+"\\;\\mathrm{m/s}"]};
   }
   if(id==="circular"){
-   const r=v.radius??0,omega=v.omega??0,phase=(v.phaseDegrees??0)*Math.PI/180;
-   return [
-    "x=r\\cos(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.x,"m"),
-    "y=r\\sin(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.y,"m"),
-    "v=\\omega r=("+n(omega)+"\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+qty(p.speed,"m/s"),
-    omega>0?"T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/omega,"s"):"T=\\frac{2\\pi}{0}=\\text{undefined for }\\omega=0",
-    "\\omega="+qty(omega,"rad/s"),
-    "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
-   ][index];
+    const omega=r(.5,4,.5),radius=r(1,8,1);
+    if(variant){
+      const answer=omega*radius;
+      return {prompt:en?"Calculate the tangential speed of the rotating object.":"Hitung kelajuan tangensial benda yang bergerak melingkar.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"v=\\omega r",answer,unit:"m/s",resultLabel:en?"Tangential speed":"Kelajuan tangensial",steps:["v=("+omega+")("+radius+")","v="+f(answer)+"\\;\\mathrm{m/s}"]};
+    }
+    const answer=omega*omega*radius;
+    return {prompt:en?"Calculate the centripetal acceleration.":"Hitung percepatan sentripetal benda.",given:"ω = "+omega+" rad/s, r = "+radius+" m",formula:"a_c=\\omega^2r",answer,unit:"m/s²",resultLabel:en?"Centripetal acceleration":"Percepatan sentripetal",steps:["a_c=("+omega+")^2("+radius+")","a_c="+f(answer)+"\\;\\mathrm{m/s^2}"]};
   }
   if(id==="collision"){
     const m1=r(1,4,.5),m2=r(1,4,.5),u1=r(5,10,.5),u2=r(-2,2,.5),e=r(0,1,.1);

@@ -69,10 +69,10 @@ const labs: Lab[] = [
     ], duration: 8, color:"#8b6bd6"
   },
   {
-    id: "energy", category: "DINAMIKA & ENERGI", title: "Kekekalan Energi Mekanik", subtitle: "Mechanical Energy",
-    description: "Ikuti perubahan energi potensial gravitasi menjadi energi kinetik saat benda meluncur menuruni bidang miring. Gesekan dapat diatur.",
-    formula: String.raw`E_m=E_k+E_p=\frac12mv^2+mgh`,
-    question: "Apakah energi mekanik tetap ketika ada gaya gesek? Ke mana energi mekanik berpindah?",
+    id: "energy", category: "DINAMIKA & ENERGI", title: "Usaha dan Energi", subtitle: "Work and Energy",
+    description: "Analisis usaha oleh gaya, perubahan energi kinetik, energi potensial, dan neraca energi ketika gesekan atau gaya nonkonservatif bekerja.",
+    formula: String.raw`W_{\\mathrm{net}}=\\Delta K,\\quad E_{m,f}=E_{m,i}+W_{\\mathrm{nc}}`,
+    question: "Bagaimana usaha total mengubah energi kinetik, dan ke mana energi mekanik berpindah ketika gesekan bekerja?",
     params: [
       {key:"mass",label:"Massa benda",min:.5,max:20,step:.5,unit:"kg",initial:2},
       {key:"height",label:"Ketinggian awal",min:1,max:20,step:.5,unit:"m",initial:8},
@@ -119,6 +119,18 @@ const labs: Lab[] = [
     ], duration: 8, color:"#8b6bd6"
   }
 ];
+
+// Basic parameters are the high-impact controls. Advanced exposes all base values plus model-specific controls.
+const basicParamKeys:Record<LabId,string[]>={projectile:["speed","angle","height"],mru:["speed"],mrua:["speed","acceleration"],circular:["radius","omega"],energy:["mass","height"],incline:["mass","angle"],collision:["mass1","mass2","velocity1","velocity2"],spring:["mass","spring","amplitude"]};
+const advancedParams:Record<LabId,Param[]>={
+ projectile:[{key:"x0",label:"Posisi horizontal awal",min:-50,max:50,step:.1,unit:"m",initial:0},{key:"dragBeta",label:"Koefisien hambatan linear per massa β",min:0,max:1,step:.01,unit:"s⁻¹",initial:0}],mru:[],mrua:[],
+ circular:[{key:"phaseDegrees",label:"Sudut fase awal",min:-360,max:360,step:1,unit:"°",initial:0}],
+ energy:[{key:"inclineAngle",label:"Sudut bidang miring",min:0,max:60,step:1,unit:"°",initial:30},{key:"initialSpeed",label:"Kelajuan awal sepanjang bidang",min:0,max:15,step:.1,unit:"m/s",initial:0}],
+ incline:[{key:"appliedForce",label:"Gaya luar sejajar bidang (+ menuruni bidang)",min:-100,max:100,step:.5,unit:"N",initial:0}],
+ collision:[{key:"impactDuration",label:"Durasi kontak tumbukan",min:.005,max:.5,step:.005,unit:"s",initial:.05}],
+ spring:[{key:"phaseDegrees",label:"Fase awal",min:-360,max:360,step:1,unit:"°",initial:0},{key:"dampingRatio",label:"Rasio redaman ζ",min:0,max:.95,step:.01,unit:"—",initial:0}]
+};
+function allLabParams(lab:Lab):Param[]{return [...lab.params,...advancedParams[lab.id]];}
 
 type EquationEntry = { id:string; titleID:string; titleEN:string; formula:string; noteID:string; noteEN:string };
 const equationLibrary: Record<LabId, EquationEntry[]> = {
@@ -385,8 +397,8 @@ function parameterText(language:Language,key:string,fallback:string) {
   if(language==="ID") return fallback;
   const en:Record<string,string> = {
     speed:"Initial speed",x0:"Initial position",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
-    acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",
-    friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
+    acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",x0:"Initial horizontal position",dragBeta:"Linear drag coefficient per unit mass β",phaseDegrees:"Initial phase angle",inclineAngle:"Incline angle",initialSpeed:"Initial speed along the plane",appliedForce:"External force along the plane (+ downhill)",impactDuration:"Collision contact duration",dampingRatio:"Damping ratio ζ",
+    friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude
   };
   return en[key]??fallback;
 }
@@ -522,9 +534,11 @@ function Discover({language,onOpen}:{language:Language;onOpen:(id:LabId)=>void})
 }
 
 function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:number)=>void}) {
-  const digits=param.step<1? (String(param.step).split(".")[1]?.length??1):0;
+  const digits=param.step<1?(String(param.step).split(".")[1]?.length??1):0;
+  const set=(raw:string)=>{if(raw.trim()==="")return;const parsed=Number(raw);if(Number.isFinite(parsed))onChange(Math.max(param.min,Math.min(param.max,parsed)));};
   return <label className="slider-control">
-    <span className="slider-heading"><span>{param.label}</span><strong>{value.toFixed(digits)} <small>{param.unit}</small></strong></span>
+    <span className="slider-heading"><span>{param.label}</span><strong><small>{param.unit}</small></strong></span>
+    <div className="parameter-entry-row"><input className="parameter-number-input" type="number" inputMode="decimal" min={param.min} max={param.max} step={param.step} value={Number.isFinite(value)?Number(value.toFixed(Math.max(0,digits))):param.initial} onChange={e=>set(e.currentTarget.value)} aria-label={param.label}/></div>
     <input type="range" min={param.min} max={param.max} step={param.step} value={value} onChange={e=>onChange(Number(e.target.value))}/>
     <span className="slider-limits"><span>{param.min}</span><span>{param.max}</span></span>
   </label>;
@@ -532,27 +546,45 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
 
 function collisionResults(v:Record<string,number>){
   const m1=v.mass1??2,m2=v.mass2??2,u1=v.velocity1??6,u2=v.velocity2??0,e=Math.max(0,Math.min(1,v.restitution??1));
-  const separation=v.separation??6,contactDistance=0.8;
+  const separation=v.separation??6,contactDistance=0.8,impactDuration=v.impactDuration??.05;
   const relative=u1-u2,collisionTime=relative>0?Math.max(0,separation-contactDistance)/relative:Infinity;
   const v1=((m1-e*m2)*u1+(1+e)*m2*u2)/(m1+m2);
   const v2=((1+e)*m1*u1+(m2-e*m1)*u2)/(m1+m2);
-  return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,v1,v2,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
+  const impulseMagnitude=Math.abs(m1*(v1-u1));
+  return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,impactDuration,v1,v2,impulseMagnitude,meanContactForce:impulseMagnitude/impactDuration,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
 }
 
+function projectileStateAt(time:number,values:Record<string,number>){
+  const v0=values.speed??0,theta=(values.angle??0)*Math.PI/180,g=values.gravity??9.81,h0=values.height??0,x0=values.x0??0,beta=Math.max(0,values.dragBeta??0);
+  if(beta<1e-8)return {x:x0+v0*Math.cos(theta)*time,y:h0+v0*Math.sin(theta)*time-.5*g*time*time,vx:v0*Math.cos(theta),vy:v0*Math.sin(theta)-g*time};
+  const decay=Math.exp(-beta*time),oneMinus=-Math.expm1(-beta*time);
+  return {x:x0+v0*Math.cos(theta)*oneMinus/beta,y:h0+(v0*Math.sin(theta)+g/beta)*oneMinus/beta-g*time/beta,vx:v0*Math.cos(theta)*decay,vy:(v0*Math.sin(theta)+g/beta)*decay-g/beta};
+}
+function projectileFlightTime(values:Record<string,number>){
+  const v0=values.speed??0,theta=(values.angle??0)*Math.PI/180,g=values.gravity??9.81,h0=values.height??0,beta=Math.max(0,values.dragBeta??0);
+  if(beta<1e-8){const vy=v0*Math.sin(theta);return Math.max(0,(vy+Math.sqrt(vy*vy+2*g*h0))/g);}
+  if(h0<=0&&v0*Math.sin(theta)<=0)return 0;
+  let lo=0,hi=Math.max(1,(v0*Math.sin(theta)+Math.sqrt((v0*Math.sin(theta))**2+2*g*h0))/g);
+  for(let i=0;i<40&&projectileStateAt(hi,values).y>0;i++)hi*=2;
+  if(!Number.isFinite(hi)||hi>1e6)return 0;
+  for(let i=0;i<80;i++){const mid=(lo+hi)/2;if(projectileStateAt(mid,values).y>0)lo=mid;else hi=mid;}
+  return (lo+hi)/2;
+}
 function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const p=(key:string)=>values[key]??0;
   const g=p("gravity")||9.81;
   let duration=lab.duration;
-  if(lab.id==="projectile") {
-    const a=p("angle")*Math.PI/180, vy=p("speed")*Math.sin(a);
-    duration=(vy+Math.sqrt(vy*vy+2*g*p("height")))/g;
-  }
-  if(lab.id==="circular") duration=2*Math.PI/p("omega");
-  const energyAngle=Math.PI/6;
+  if(lab.id==="projectile") duration=projectileFlightTime(values);
+  if(lab.id==="circular"&&p("omega")>0) duration=2*Math.PI/p("omega");
+  const energyAngle=(p("inclineAngle")||30)*Math.PI/180;
   const energyStaticHolds=Math.tan(energyAngle)<=p("staticFriction");
   const energyAcceleration=energyStaticHolds?0:g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
-  if(lab.id==="energy"&&energyAcceleration>0) duration=Math.sqrt(2*(p("height")/Math.sin(energyAngle))/energyAcceleration);
-  if(lab.id==="spring") duration=2*Math.PI/Math.sqrt(p("spring")/p("mass"))*2;
+  if(lab.id==="energy"){
+    const distance=p("height")/Math.max(Math.sin(energyAngle),1e-6),u=p("initialSpeed");
+    if(energyAcceleration>1e-9)duration=Math.max(.1,(-u+Math.sqrt(u*u+2*energyAcceleration*distance))/energyAcceleration);
+    else if(u>1e-9)duration=Math.max(.1,distance/u);
+  }
+  if(lab.id==="spring") duration=4*Math.PI/Math.max(Math.sqrt(p("spring")/p("mass"))*Math.sqrt(1-Math.max(0,Math.min(.95,p("dampingRatio")))**2),.05);
   if(lab.id==="collision"){
     const collision=collisionResults(values);
     if(Number.isFinite(collision.collisionTime))duration=Math.max(duration,collision.collisionTime+Math.max(2,Math.min(8,1/Math.max(Math.abs(collision.v2-collision.v1),.5))));
@@ -561,27 +593,25 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const points:Point[]=[];
   const angle=p("angle")*Math.PI/180;
   const omega=lab.id==="spring"?Math.sqrt(p("spring")/p("mass")):p("omega");
-  const inclineAngle=lab.id==="energy"?Math.PI/6:angle;
-  const totalDistance=lab.id==="energy"?p("height")/Math.sin(inclineAngle):0;
-  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&Math.tan(inclineAngle)<=p("staticFriction");
-  const accel=lab.id==="incline"&&!staticHolds?Math.max(0,g*(Math.sin(angle)-p("friction")*Math.cos(angle))):0;
+  const inclineAngle=lab.id==="energy"?energyAngle:angle;
+  const totalDistance=lab.id==="energy"?p("height")/Math.max(Math.sin(inclineAngle),1e-6):0;
+  const parallelGravity=lab.id==="incline"?g*Math.sin(angle)+(p("appliedForce")/Math.max(p("mass"),1e-9)):0;
+  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&(lab.id==="energy"?Math.tan(inclineAngle)<=p("staticFriction"):Math.abs(parallelGravity)<=p("staticFriction")*g*Math.cos(angle));
+  const accel=lab.id==="incline"&&!staticHolds?(parallelGravity-Math.sign(parallelGravity||1)*p("friction")*g*Math.cos(angle)):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
     let x=0,y=0,vx=0,vy=0,kinetic=0,potential=0,x2:number|undefined,vx2:number|undefined;
     const mass=p("mass")||1;
     if(lab.id==="projectile") {
-      const v=p("speed"),theta=angle;
-      vx=v*Math.cos(theta);vy=v*Math.sin(theta)-g*time;
-      x=v*Math.cos(theta)*time;
-      y=Math.max(0,p("height")+v*Math.sin(theta)*time-.5*g*time*time);
-      const h=p("height")+v*Math.sin(theta)*time-.5*g*time*time;
-      kinetic=.5*mass*(vx*vx+vy*vy);potential=mass*g*Math.max(0,h);
+      const state=projectileStateAt(time,values);
+      vx=state.vx;vy=state.vy;x=state.x;y=Math.max(0,state.y);
+      kinetic=.5*mass*(vx*vx+vy*vy);potential=mass*g*Math.max(0,state.y);
     } else if(lab.id==="mru") {
       vx=p("speed");x=p("x0")+vx*time;kinetic=.5*mass*vx*vx;
     } else if(lab.id==="mrua") {
       vx=p("speed")+p("acceleration")*time;x=p("x0")+p("speed")*time+.5*p("acceleration")*time*time;kinetic=.5*mass*vx*vx;
     } else if(lab.id==="circular") {
-      const theta=omega*time,r=p("radius");
+      const theta=omega*time+(p("phaseDegrees")*Math.PI/180),r=p("radius");
       x=r*Math.cos(theta);y=r*Math.sin(theta);
       vx=-r*omega*Math.sin(theta);vy=r*omega*Math.cos(theta);kinetic=.5*mass*(r*omega)**2;
     } else if(lab.id==="collision") {
@@ -594,17 +624,18 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       }
       kinetic=.5*c.m1*vx*vx+.5*c.m2*(vx2??0)**2;
     } else if(lab.id==="energy") {
-      const s=Math.min(totalDistance,.5*Math.max(0,energyAcceleration)*time*time);
+      const u=p("initialSpeed"),a=staticHolds?0:Math.max(0,energyAcceleration);
+      const s=Math.min(totalDistance,Math.max(0,u*time+.5*a*time*time));
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
-      const v=Math.max(0,energyAcceleration)*time;
+      const v=Math.max(0,u+a*time);
       x=s*Math.cos(inclineAngle);y=h;vx=v*Math.cos(inclineAngle);vy=-v*Math.sin(inclineAngle);kinetic=.5*mass*v*v;potential=mass*g*h;
     } else if(lab.id==="incline") {
       const a=accel;
       const distance=.5*a*time*time;
-      x=distance*Math.cos(angle);y=-distance*Math.sin(angle);vx=a*time*Math.cos(angle);vy=-a*time*Math.sin(angle);kinetic=.5*mass*vx*vx/(Math.cos(angle)**2||1);potential=0;
+      x=distance*Math.cos(angle);y=-distance*Math.sin(angle);vx=a*time*Math.cos(angle);vy=-a*time*Math.sin(angle);kinetic=.5*mass*(vx*vx+vy*vy);potential=0;
     } else if(lab.id==="spring") {
-      const a=p("amplitude"),w=omega;
-      x=a*Math.cos(w*time);vx=-a*w*Math.sin(w*time);
+      const a=p("amplitude"),zeta=Math.max(0,Math.min(.95,p("dampingRatio"))),omega0=omega,omegaD=omega0*Math.sqrt(1-zeta*zeta),beta=zeta*omega0,phase=p("phaseDegrees")*Math.PI/180,argument=omegaD*time+phase,decay=Math.exp(-beta*time);
+      x=a*decay*Math.cos(argument);vx=a*decay*(-beta*Math.cos(argument)-omegaD*Math.sin(argument));
       y=0;kinetic=.5*mass*vx*vx;potential=.5*p("spring")*x*x;
     }
     points.push({x,y,t:time,vx,vy,speed:Math.hypot(vx,vy),kinetic,potential,...(lab.id==="collision"?{x2,vx2,collisionOccurred:Number.isFinite(collisionResults(values).collisionTime)&&time>=collisionResults(values).collisionTime}:{})});
@@ -641,12 +672,13 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
       [language==="ID"?"Momentum total":"Total momentum",c.initialMomentum,"kg·m/s"],
       [language==="ID"?"Energi kinetik sistem":"System kinetic energy",point.kinetic,"J"],
       [language==="ID"?"Impuls benda 1":"Impulse on body 1",c.m1*(v1-c.u1),"N·s"],
-      [language==="ID"?"Waktu tumbukan":"Collision time",Number.isFinite(c.collisionTime)?c.collisionTime:NaN,"s"]
+      [language==="ID"?"Waktu tumbukan":"Collision time",Number.isFinite(c.collisionTime)?c.collisionTime:NaN,"s"],
+      [language==="ID"?"Gaya kontak rata-rata":"Mean contact force",c.meanContactForce,"N"]
     ] as [string,number,string][];
   }
   if(lab.id==="energy") return [
     [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
-    [language==="ID"?"Energi terdisipasi":"Dissipated energy",Math.max(0,mass*g*values.height-total),"J"],
+    [language==="ID"?"Energi yang berpindah ke lingkungan":"Energy transferred to surroundings",Math.max(0,mass*g*values.height+.5*mass*(values.initialSpeed??0)**2-total),"J"],
     [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
   ] as [string,number,string][];
   if(lab.id==="incline") {
@@ -964,6 +996,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const [showTrail,setShowTrail]=useState(true);
   const [notice,setNotice]=useState("");
   const [drawerTab,setDrawerTab]=useState<"model"|"parameters"|"equations"|"tools">("parameters");
+  const [parameterLevel,setParameterLevel]=useState<"basic"|"advanced">("basic");
   const [showRuler,setShowRuler]=useState(false);
   const [showTangent,setShowTangent]=useState(false);
   const [graphMode,setGraphMode]=useState<"trajectory"|"position-time"|"velocity-time"|"acceleration-time">("trajectory");
@@ -985,7 +1018,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const objectOrientation=lab.id==="energy"?Math.PI/6:lab.id==="incline"?(values.angle??0)*Math.PI/180:(lab.id==="projectile"||lab.id==="circular")?Math.atan2(-current.vy,current.vx):0;
 
   useEffect(()=>{
-    const initial=Object.fromEntries(lab.params.map(p=>[p.key,p.initial]));
+    const initial=Object.fromEntries(allLabParams(lab).map(p=>[p.key,p.initial]));
     setValues(initial);setSelectedObject(objectOptionsFor(lab.id,language)[0].value);setSelectedObject2(objectOptionsFor(lab.id,language)[1]?.value??objectOptionsFor(lab.id,language)[0].value);setTime(0);timeRef.current=0;setPlaying(false);setNotice("");
   },[lab.id]);
 
@@ -1250,7 +1283,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         const data=JSON.parse(String(reader.result)) as {format?:string;labId?:string;values?:Record<string,number>};
         if(data.format!=="physimus-lab-v1"||data.labId!==lab.id||!data.values)throw new Error("Invalid");
         const next:Record<string,number>={};
-        for(const param of lab.params){
+        for(const param of allLabParams(lab)){
           const n=data.values[param.key];
           if(typeof n!=="number"||!Number.isFinite(n))throw new Error("Invalid parameter");
           next[param.key]=Math.max(param.min,Math.min(param.max,n));
@@ -1302,7 +1335,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
           <button className={drawerTab==="model"?"selected":""} onClick={()=>setDrawerTab("model")} title={w.question}><CircleHelp/><span>{language==="ID"?"Model":"Model"}</span></button>
         </nav>
         <div className="drawer-content">
-          {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-list">{lab.params.map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
+          {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-mode-switch" role="group" aria-label={language==="ID"?"Tingkat parameter":"Parameter level"}><button type="button" className={parameterLevel==="basic"?"active":""} aria-pressed={parameterLevel==="basic"} onClick={()=>setParameterLevel("basic")}>{language==="ID"?"Dasar":"Basic"}</button><button type="button" className={parameterLevel==="advanced"?"active":""} aria-pressed={parameterLevel==="advanced"} onClick={()=>setParameterLevel("advanced")}>{language==="ID"?"Lanjutan":"Advanced"}</button></div><p className="parameter-mode-help">{parameterLevel==="basic"?(language==="ID"?"Variabel utama untuk memahami pengaruh dasar pada eksperimen.":"Core variables for exploring the main effects."):(language==="ID"?"Seluruh parameter, termasuk kondisi awal dan model spesifik yang mengubah perhitungan serta grafik.":"All parameters, including initial conditions and model-specific settings that change calculations and graphs.")}</p><div className="parameter-list">{(parameterLevel==="basic"?lab.params.filter(param=>basicParamKeys[lab.id].includes(param.key)):allLabParams(lab)).map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]??param.initial} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
           {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"MODEL UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={lab.formula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
           {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button disabled={graphMode==="trajectory"} className={showTangent?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTangent(v=>!v)}>{language==="ID"?"Garis singgung & gradien":"Tangent & slope"}<span>{showTangent?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
           {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><p className="drawer-help">{language==="ID"?assumptions[lab.id].id:assumptions[lab.id].en}</p></>}

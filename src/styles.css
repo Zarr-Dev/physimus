@@ -2163,3 +2163,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .sandbox-equation-editor{grid-template-columns:minmax(0,1fr)}
 }
 @media(prefers-reduced-motion:reduce){.parameter-mode-switch button,.lesson-page.is-focused *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+/* In-place MathLive editor: keep structured math inside the editing surface. */
+.sandbox-equation-editor{display:block;min-width:0;margin:8px 0 5px;padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--panel-soft,#f7f9fc)}
+.sandbox-equation-editor .sandbox-equation-row{grid-template-columns:20px 27px minmax(0,1fr) 24px}
+.sandbox-equation-row .sandbox-mathfield{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:7px 9px;border:1px solid #dce6ef;border-radius:7px;background:var(--panel,#fff);color:#315d89;font-size:17px;line-height:1.5;--caret-color:var(--blue,#347fd5);--selection-background-color:#dceeff;--contains-highlight-background-color:#f0f6fc}
+.sandbox-equation-row .sandbox-mathfield:focus-within{outline:2px solid color-mix(in srgb,var(--blue,#347fd5) 25%,transparent);border-color:var(--blue,#347fd5)}
+.sandbox-equation-editor .sandbox-equation-row .sandbox-mathfield{grid-column:3;grid-row:1}
+.sandbox-editor-fallback-note{margin:6px 2px 0;color:var(--muted);font-size:10px;line-height:1.5}
+.sandbox-math-suggestions{z-index:3}
+.app-root[data-theme="dark"] .sandbox-equation-row .sandbox-mathfield{background:#0e1a27;border-color:#354a5e;color:#d5e8f8;--selection-background-color:#24496b;--contains-highlight-background-color:#1c3144}
+.app-root[data-theme="dark"] .sandbox-equation-editor{background:#101b28;border-color:#35495d}
+.sandbox-equation-editor .sandbox-equation-preview{display:none}
+.sandbox-equation-row input{min-width:0}
+@media(max-width:560px){.sandbox-equation-row .sandbox-mathfield{font-size:15px;min-height:40px;padding:6px}}

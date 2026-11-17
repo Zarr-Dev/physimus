@@ -541,9 +541,9 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
   const [draft,setDraft]=useState(format(value));
   const inputRef=useRef<HTMLInputElement>(null);
   const signed=param.min<0;
-  const validCharacters=signed?/^-?[0-9]*\\.?[0-9]*$/:/^[0-9]*\\.?[0-9]*$/;
+  const validCharacters=signed?/^-?[0-9]*\.?[0-9]*$/:/^[0-9]*\.?[0-9]*$/;
   useEffect(()=>{if(document.activeElement!==inputRef.current)setDraft(format(value));},[value,param.initial,digits]);
-  const commit=()=>{const parsed=Number(draft);if(!draft.trim()||draft==="-"||draft==="."||draft==="-. "||!validCharacters.test(draft)||!Number.isFinite(parsed)){setDraft(format(value));return;}const next=Math.max(param.min,Math.min(param.max,parsed));onChange(next);setDraft(format(next));};
+  const commit=()=>{const parsed=Number(draft);if(!draft.trim()||draft==="-"||draft==="."||draft==="-."||!validCharacters.test(draft)||!Number.isFinite(parsed)){setDraft(format(value));return;}const next=Math.max(param.min,Math.min(param.max,parsed));onChange(next);setDraft(format(next));};
   return <label className="slider-control">
     <span className="slider-heading"><span>{param.label}</span><strong><small>{param.unit}</small></strong></span>
     <div className="parameter-entry-row"><input ref={inputRef} className="parameter-number-input" type="text" inputMode="decimal" value={draft} onChange={e=>{const raw=e.currentTarget.value;if(validCharacters.test(raw))setDraft(raw);}} onBlur={commit} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();e.currentTarget.blur();return;}if(e.key.length===1&&!/[0-9.\\-]/.test(e.key))e.preventDefault();if(e.key==="-"&&(!signed||e.currentTarget.selectionStart!==0||draft.includes("-")))e.preventDefault();if(e.key==="."&&draft.includes("."))e.preventDefault();}} aria-label={param.label} aria-invalid={!validCharacters.test(draft)|| (draft.trim()!==""&&draft!=="-"&&draft!=="."&&draft!=="-."&&(Number(draft)<param.min||Number(draft)>param.max))}/></div>
@@ -658,6 +658,8 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   return points;
 }
 
+function energyAccelerationFor(values:Record<string,number>){const alpha=(values.inclineAngle??30)*Math.PI/180,g=values.gravity??9.81,mass=values.mass??1,drive=g*Math.sin(alpha)+(values.appliedWorkForce??0)/Math.max(mass,1e-9),staticHold=(values.initialSpeed??0)<=1e-9&&Math.abs(drive)<=(values.staticFriction??0)*g*Math.cos(alpha);return staticHold?0:drive-(values.friction??0)*g*Math.cos(alpha);}
+
 function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[],language:Language) {
   const labels=language==="ID"
     ? {x:"Posisi x",y:"Posisi y",speed:"Kelajuan",range:"Jangkauan",max:"Tinggi maksimum",flight:"Waktu terbang",position:"Posisi",velocity:"Kecepatan",acceleration:lab.id==="projectile"?"Percepatan vertikal":"Percepatan",time:"Waktu",period:"Periode",omega:"Kecepatan sudut",centripetal:"Percepatan sentripetal",kinetic:"Energi kinetik",potential:"Energi potensial",mechanical:"Energi mekanik",height:"Ketinggian",initial:"Energi awal",net:"Resultan gaya",distance:"Jarak",mass:"Massa"}
@@ -691,11 +693,15 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
       [language==="ID"?"Gaya kontak rata-rata":"Mean contact force",c.meanContactForce,"N"]
     ] as [string,number,string][];
   }
-  if(lab.id==="energy") return [
-    [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
-    [language==="ID"?"Usaha nonkonservatif":"Non-conservative work",total-(mass*g*values.height+.5*mass*(values.initialSpeed??0)**2),"J"],
-    [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
-  ] as [string,number,string][];
+  if(lab.id==="energy") {
+    const alpha=(values.inclineAngle??30)*Math.PI/180,travel=Math.hypot(point.x,values.height-point.y),normal=mass*g*Math.cos(alpha),appliedWork=(values.appliedWorkForce??0)*travel,frictionWork=-values.friction*normal*travel,modelAcceleration=energyAccelerationFor(values),stopTime=modelAcceleration< -1e-9?(values.initialSpeed??0)/(-modelAcceleration):Infinity,instantAcceleration=point.t>=stopTime?0:modelAcceleration;
+    return [
+      [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
+      [language==="ID"?"Usaha nonkonservatif":"Non-conservative work",total-(mass*g*values.height+.5*mass*(values.initialSpeed??0)**2),"J"],
+      [language==="ID"?"Usaha gaya luar":"Applied-force work",appliedWork,"J"],[language==="ID"?"Usaha gesekan":"Friction work",frictionWork,"J"],
+      [language==="ID"?"Daya resultan":"Net power",mass*instantAcceleration*point.speed,"W"],[labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
+    ] as [string,number,string][];
+  }
   if(lab.id==="incline") {
     const angle=values.angle*Math.PI/180;
     const parallel=values.gravity*Math.sin(angle)+(values.appliedForce??0)/Math.max(mass,1e-9),normal=mass*values.gravity*Math.cos(angle);
@@ -803,17 +809,20 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="energy"){
-  const h0=v.height??0,mu=v.friction??0,alpha=(v.inclineAngle??30)*Math.PI/180,external=v.appliedWorkForce??0,parallel=g*Math.sin(alpha)+external/Math.max(m,1e-9),staticHolds=(v.initialSpeed??0)<=1e-9&&Math.abs(parallel)<=(v.staticFriction??0)*g*Math.cos(alpha),a=staticHolds?0:parallel-mu*g*Math.cos(alpha),stopTime=a< -1e-9?(v.initialSpeed??0)/(-a):Infinity,activeTime=Math.min(time,stopTime),distance=Math.hypot(p.x,h0-p.y),nonConservativeWork=p.kinetic+p.potential-(.5*m*(v.initialSpeed??0)**2+m*g*h0);
-  return [
-   "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
-   "E_p=mgh=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})("+n(p.y)+"\\,\\mathrm{m})="+qty(p.potential,"J"),
-   "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
-   "W_{\\mathrm{nc}}=E_{m,f}-E_{m,i}=W_{\\mathrm{applied}}+W_{\\mathrm{friction}}=F_{\\parallel}s-\\mu_kmg\\cos\\alpha\\,s="+qty(nonConservativeWork,"J"),
-   "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin("+n(v.inclineAngle??30)+"^\\circ)="+qty(p.y,"m"),
-   "v=v_0+at_{\\mathrm{active}}=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(a)+"\\,\\mathrm{m/s^2})("+n(activeTime)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
-  ][index];
- }
- if(id==="incline"){
+   const h0=v.height??0,mu=v.friction??0,alpha=(v.inclineAngle??30)*Math.PI/180,external=v.appliedWorkForce??0,parallel=g*Math.sin(alpha)+external/Math.max(m,1e-9),staticHolds=(v.initialSpeed??0)<=1e-9&&Math.abs(parallel)<=(v.staticFriction??0)*g*Math.cos(alpha),a=staticHolds?0:parallel-mu*g*Math.cos(alpha),stopTime=a< -1e-9?(v.initialSpeed??0)/(-a):Infinity,activeTime=Math.min(time,stopTime),distance=Math.hypot(p.x,h0-p.y),normal=m*g*Math.cos(alpha),nonConservativeWork=p.kinetic+p.potential-(.5*m*(v.initialSpeed??0)**2+m*g*h0),appliedWork=external*distance,frictionWork=-mu*normal*distance,activeAcceleration=time>=stopTime?0:a;
+   return [
+    "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
+    "E_p=mgh=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})("+n(p.y)+"\\,\\mathrm{m})="+qty(p.potential,"J"),
+    "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
+    "W_{\\mathrm{nc}}=E_{m,f}-E_{m,i}=W_{\\mathrm{applied}}+W_{\\mathrm{friction}}="+qty(appliedWork,"J")+"+("+qty(frictionWork,"J")+")="+qty(nonConservativeWork,"J"),
+    "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin("+n(v.inclineAngle??30)+"^\\circ)="+qty(p.y,"m"),
+    "v=v_0+at_{\\mathrm{active}}=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(a)+"\\,\\mathrm{m/s^2})("+n(activeTime)+"\\,\\mathrm{s})="+qty(p.speed,"m/s"),
+    "W_{\\mathrm{applied}}=F_{\\parallel}s=("+n(external)+"\\,\\mathrm{N})("+n(distance)+"\\,\\mathrm{m})="+qty(appliedWork,"J"),
+    "W_{\\mathrm{friction}}=-\\mu_kNs=-("+n(mu)+")("+qty(normal,"N")+")("+n(distance)+"\\,\\mathrm{m})="+qty(frictionWork,"J"),
+    "P_{\\mathrm{net}}=F_{\\mathrm{net}}v=ma v=("+n(m)+"\\,\\mathrm{kg})("+n(activeAcceleration)+"\\,\\mathrm{m/s^2})("+n(p.speed)+"\\,\\mathrm{m/s})="+qty(m*activeAcceleration*p.speed,"W")
+   ][index];
+  }
+  if(id==="incline"){
   const mu=v.friction??0,muS=v.staticFriction??0,external=v.appliedForce??0,parallel=m*g*Math.sin(theta)+external,staticHolds=Math.abs(parallel)<=muS*m*g*Math.cos(theta)/Math.max(m,1e-9);
   const a=staticHolds?0:parallel/m-Math.sign(parallel||1)*mu*g*Math.cos(theta);
   const normal=m*g*Math.cos(theta),friction=staticHolds?Math.abs(parallel):mu*normal;
@@ -1321,7 +1330,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   const springZeta=values.dampingRatio??0;
   const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\beta t},\quad v_y=(v_{0y}+g/\beta)e^{-\beta t}-g/\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\zeta\omega_0t}\cos(\omega_dt+\phi),\quad \omega_d=\omega_0\sqrt{1-\zeta^2}`:lab.id==="circular"&&(values.phaseDegrees??0)!==0?String.raw`\theta(t)=\theta_0+\omega t,\quad \theta_0=${((values.phaseDegrees??0)*Math.PI/180).toFixed(3)}\,\mathrm{rad}`:((lab.id==="incline"&&(values.appliedForce??0)!==0)||(lab.id==="energy"&&(values.appliedWorkForce??0)!==0))?String.raw`a=g\sin\theta+\frac{F_{\parallel}}{m}-\operatorname{sgn}(mg\sin\theta+F_{\parallel})\mu_k g\cos\theta`:lab.formula;
   const assumptions:Record<LabId,{id:string;en:string}> = {
-    projectile:{id:"Lintasan 2D ideal tanpa hambatan udara; gravitasi konstan dan permukaan tanah datar.",en:"Ideal 2D trajectory without air drag; gravity is constant and the ground is level."},
+    projectile:{id:"Gravitasi konstan dan permukaan tanah datar. "+((values.dragBeta??0)>0?"Model hambatan linear F_d=−mβv aktif; ini bukan model hambatan kuadratik yang lengkap.":"Hambatan udara diabaikan."),en:"Gravity is constant and the ground is level. "+((values.dragBeta??0)>0?"Linear drag F_d=−mβv is active; this is not a full quadratic drag model.":"Air resistance is neglected.")},
     mru:{id:"Gerak satu dimensi pada lintasan lurus; kecepatan konstan dan resultan gaya nol.",en:"One-dimensional straight-line motion; velocity is constant and net force is zero."},
     mrua:{id:"Gerak satu dimensi dengan percepatan konstan; gaya resultan konstan.",en:"One-dimensional motion with constant acceleration; net force is constant."},
     circular:{id:"Gerak melingkar beraturan: jari-jari dan kecepatan sudut konstan; percepatan sentripetal menuju pusat.",en:"Uniform circular motion: fixed radius and angular speed; centripetal acceleration points inward."},

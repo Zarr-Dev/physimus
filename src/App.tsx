@@ -471,37 +471,37 @@ function Equation({ value, display = false }: { value: string; display?: boolean
 }
 
 type PhysicsSegment = { text: string; latex?: string };
-const physicsBase = String.raw`(?:[0-9]+(?:[.,][0-9]+)?|[½¼¾](?:[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ∥̈̇]*)?|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψΣ∑∫√][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ∥̈̇_]*(?:\\([^()]*\\)[A-Za-z0-9₀-₉⁰-⁹]*)?)(?:\\([^()]*\\)[A-Za-z0-9₀-₉⁰-⁹]*)?`;
-const physicsTrig = String.raw`(?:sin|cos|tan|sqrt|ln|log)\\s*(?:\\([^()]*\\)|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹]*)`;
-const physicsTerm = String.raw`(?:${physicsTrig}|${physicsBase}|\\([^()]*\\)[A-Za-z0-9₀-₉⁰-⁹]*)(?:\\s+${physicsTrig})?`;
-const physicsExpr = String.raw`${physicsTerm}(?:\\s*(?:\\+|−|-|×|·|/|\\*|=|≤|≥|<|>|≈|≠|∝)\\s*[+−-]?${physicsTerm})*`;
-const physicsEquation = String.raw`${physicsExpr}\\s*(?:=|≤|≥|<|>|≈|≠|∝)\\s*[+−-]?${physicsExpr}`;
-const physicsProduct = String.raw`${physicsTerm}\\s*(?:·|×|/|\\*)\\s*${physicsTerm}`;
+const physicsBase = String.raw`(?:[0-9]+(?:[.,][0-9]+)?|[½¼¾](?:[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ]*)?|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψΣ∑∫√][A-Za-z0-9₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ∥̈̇_]*(?:\([^()]*\)[A-Za-z0-9₀-₉⁰-⁹]*)?)(?:\([^()]*\)[A-Za-z0-9₀-₉⁰-⁹]*)?`;
+const physicsTrig = String.raw`(?:sin|cos|tan|sqrt|ln|log)\s*(?:\([^()]*\)|[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9₀-₉⁰-⁹]*)`;
+const physicsTerm = String.raw`(?:${physicsTrig}|${physicsBase}|\([^()]*\)[A-Za-z0-9₀-₉⁰-⁹]*)(?:\s+${physicsTrig})?`;
+const physicsExpr = String.raw`${physicsTerm}(?:\s*(?:\+|−|-|×|·|/|\*|=|≤|≥|<|>|≈|≠|∝)\s*[+−-]?${physicsTerm})*`;
+const physicsEquation = String.raw`${physicsExpr}\s*(?:=|≤|≥|<|>|≈|≠|∝)\s*[+−-]?${physicsExpr}`;
+const physicsProduct = String.raw`${physicsTerm}\s*(?:·|×|/|\*)\s*${physicsTerm}`;
 const physicsDecorated = String.raw`(?:[A-Za-zΔδθωαβγδεζηκλμνξπρστφχψ][A-Za-z0-9]*[₀-₉⁰-⁹²³⁴⁺⁻ₖₛₓₘₚₜₐᵦᵢᵣᵥ]+|(?:[0-9]+)?π|[ẍẋ])`;
-const physicsPattern = new RegExp(`(${physicsEquation}|${physicsProduct}|${physicsTrig}|${physicsDecorated})`, "g");
+const physicsPattern = new RegExp("(" + physicsEquation + "|" + physicsProduct + "|" + physicsTrig + "|" + physicsDecorated + ")", "g");
 
 function physicsLatex(source: string): string {
   const greek: Record<string,string> = {
-    "θ":"\\\\theta","ω":"\\\\omega","α":"\\\\alpha","β":"\\\\beta","γ":"\\\\gamma","δ":"\\\\delta",
-    "ε":"\\\\epsilon","ζ":"\\\\zeta","η":"\\\\eta","κ":"\\\\kappa","λ":"\\\\lambda","μ":"\\\\mu",
-    "ν":"\\\\nu","ξ":"\\\\xi","π":"\\\\pi","ρ":"\\\\rho","σ":"\\\\sigma","τ":"\\\\tau",
-    "φ":"\\\\phi","χ":"\\\\chi","ψ":"\\\\psi","Δ":"\\\\Delta","Σ":"\\\\sum","∑":"\\\\sum","∫":"\\\\int"
+    "θ":"\\theta","ω":"\\omega","α":"\\alpha","β":"\\beta","γ":"\\gamma","δ":"\\delta",
+    "ε":"\\epsilon","ζ":"\\zeta","η":"\\eta","κ":"\\kappa","λ":"\\lambda","μ":"\\mu",
+    "ν":"\\nu","ξ":"\\xi","π":"\\pi","ρ":"\\rho","σ":"\\sigma","τ":"\\tau",
+    "φ":"\\phi","χ":"\\chi","ψ":"\\psi","Δ":"\\Delta","Σ":"\\sum","∑":"\\sum","∫":"\\int"
   };
   const sub: Record<string,string> = {"₀":"0","₁":"1","₂":"2","₃":"3","₄":"4","₅":"5","₆":"6","₇":"7","₈":"8","₉":"9","ₖ":"k","ₛ":"s","ₓ":"x","ₘ":"m","ₚ":"p","ₜ":"t","ₐ":"a","ᵦ":"b","ᵢ":"i","ᵣ":"r","ᵥ":"v"};
   const sup: Record<string,string> = {"⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5","⁶":"6","⁷":"7","⁸":"8","⁹":"9","⁺":"+","⁻":"-"};
   return source
-    .replace(/ẍ/g, "\\\\ddot{x}").replace(/ẋ/g, "\\\\dot{x}")
-    .replace(/√\\(([^()]*)\\)/g, (_m,inner:string)=>"\\\\sqrt{"+inner+"}")
-    .replace(/√([A-Za-z0-9]+)/g, (_m,inner:string)=>"\\\\sqrt{"+inner+"}")
-    .replace(/\\bsqrt\\s*\\(([^()]*)\\)/g, (_m,inner:string)=>"\\\\sqrt{"+inner+"}")
-    .replace(/½/g, "\\\\frac{1}{2}").replace(/¼/g, "\\\\frac{1}{4}").replace(/¾/g, "\\\\frac{3}{4}")
+    .replace(/ẍ/g, "\\ddot{x}").replace(/ẋ/g, "\\dot{x}")
+    .replace(/√\(([^()]*)\)/g, (_m,inner:string)=>"\\sqrt{"+inner+"}")
+    .replace(/√([A-Za-z0-9]+)/g, (_m,inner:string)=>"\\sqrt{"+inner+"}")
+    .replace(/\bsqrt\s*\(([^()]*)\)/g, (_m,inner:string)=>"\\sqrt{"+inner+"}")
+    .replace(/½/g, "\\frac{1}{2}").replace(/¼/g, "\\frac{1}{4}").replace(/¾/g, "\\frac{3}{4}")
     .replace(/[θωαβγδεζηκλμνξπρστφχψΔΣ∑∫]/g, char=>greek[char]??char)
     .replace(/[₀₁₂₃₄₅₆₇₈₉ₖₛₓₘₚₜₐᵦᵢᵣᵥ]+/g, chars=>"_{"+[...chars].map(char=>sub[char]??char).join("")+"}")
     .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+/g, chars=>"^{"+[...chars].map(char=>sup[char]??char).join("")+"}")
-    .replace(/−/g,"-").replace(/·/g,"\\\\cdot ").replace(/×/g,"\\\\times ")
-    .replace(/≤/g,"\\\\leq ").replace(/≥/g,"\\\\geq ").replace(/≈/g,"\\\\approx ")
-    .replace(/≠/g,"\\\\ne ").replace(/∝/g,"\\\\propto ").replace(/∥/g,"\\\\parallel ")
-    .replace(/°/g,"^{\\\\circ}");
+    .replace(/−/g,"-").replace(/·/g,"\\cdot ").replace(/×/g,"\\times ")
+    .replace(/≤/g,"\\leq ").replace(/≥/g,"\\geq ").replace(/≈/g,"\\approx ")
+    .replace(/≠/g,"\\ne ").replace(/∝/g,"\\propto ").replace(/∥/g,"\\parallel ")
+    .replace(/°/g,"^{\\circ}");
 }
 
 function PhysicsCopy({ value }: { value: string }) {
@@ -523,7 +523,6 @@ function PhysicsCopy({ value }: { value: string }) {
     ? <Equation key={index} value={segment.latex}/>
     : <Fragment key={index}>{segment.text}</Fragment>)}</span>;
 }
-
 function Brand() {
   return <span className="brand"><span className="brand-mark"><Atom size={22}/></span><span>physimus<span>.</span></span></span>;
 }

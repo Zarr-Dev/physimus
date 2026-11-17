@@ -125,7 +125,7 @@ const basicParamKeys:Record<LabId,string[]>={projectile:["speed","angle","height
 const advancedParams:Record<LabId,Param[]>={
  projectile:[{key:"x0",label:"Posisi horizontal awal",min:-50,max:50,step:.1,unit:"m",initial:0},{key:"dragBeta",label:"Koefisien hambatan linear per massa β",min:0,max:1,step:.01,unit:"s⁻¹",initial:0}],mru:[],mrua:[],
  circular:[{key:"phaseDegrees",label:"Sudut fase awal",min:-360,max:360,step:1,unit:"°",initial:0}],
- energy:[{key:"inclineAngle",label:"Sudut bidang miring",min:1,max:60,step:1,unit:"°",initial:30},{key:"initialSpeed",label:"Kelajuan awal sepanjang bidang",min:0,max:15,step:.1,unit:"m/s",initial:0}],
+ energy:[{key:"inclineAngle",label:"Sudut bidang miring",min:1,max:60,step:1,unit:"°",initial:30},{key:"initialSpeed",label:"Kelajuan awal sepanjang bidang",min:0,max:15,step:.1,unit:"m/s",initial:0},{key:"appliedWorkForce",label:"Gaya luar sejajar bidang (+ menuruni bidang)",min:-100,max:100,step:.5,unit:"N",initial:0}],
  incline:[{key:"appliedForce",label:"Gaya luar sejajar bidang (+ menuruni bidang)",min:-100,max:100,step:.5,unit:"N",initial:0}],
  collision:[{key:"impactDuration",label:"Durasi kontak tumbukan",min:.005,max:.5,step:.005,unit:"s",initial:.05}],
  spring:[{key:"phaseDegrees",label:"Fase awal",min:-360,max:360,step:1,unit:"°",initial:0},{key:"dampingRatio",label:"Rasio redaman ζ",min:0,max:.95,step:.01,unit:"—",initial:0}]
@@ -399,7 +399,7 @@ function parameterText(language:Language,key:string,fallback:string) {
   if(language==="ID") return fallback;
   const en:Record<string,string> = {
     speed:"Initial speed",mass1:"Mass of body 1",mass2:"Mass of body 2",velocity1:"Initial velocity of body 1",velocity2:"Initial velocity of body 2",separation:"Initial separation",restitution:"Coefficient of restitution",angle:"Launch angle",height:"Initial height",gravity:"Gravity",
-    acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",x0:"Initial horizontal position",dragBeta:"Linear drag coefficient per unit mass β",phaseDegrees:"Initial phase angle",inclineAngle:"Incline angle",initialSpeed:"Initial speed along the plane",appliedForce:"External force along the plane (+ downhill)",impactDuration:"Collision contact duration",dampingRatio:"Damping ratio ζ",
+    acceleration:"Acceleration",radius:"Radius",omega:"Angular velocity",mass:"Mass",x0:"Initial horizontal position",dragBeta:"Linear drag coefficient per unit mass β",phaseDegrees:"Initial phase angle",inclineAngle:"Incline angle",initialSpeed:"Initial speed along the plane",appliedForce:"External force along the plane (+ downhill)",impactDuration:"Collision contact duration",dampingRatio:"Damping ratio ζ",appliedWorkForce:"External force along the plane (+ downhill)",
     friction:"Kinetic friction coefficient",staticFriction:"Static friction coefficient",spring:"Spring constant",amplitude:"Amplitude"
   };
   return en[key]??fallback;
@@ -580,11 +580,11 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   let duration=lab.duration;
   if(lab.id==="projectile") duration=projectileFlightTime(values);
   if(lab.id==="circular"&&p("omega")>0) duration=2*Math.PI/p("omega");
-  const energyAngle=(p("inclineAngle")??30)*Math.PI/180;
-  const energyStaticHolds=p("initialSpeed")<=1e-9&&Math.tan(energyAngle)<=p("staticFriction");
-  const energyAcceleration=energyStaticHolds?0:g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
+  const energyAngle=(p("inclineAngle")??30)*Math.PI/180,energyParallel=g*Math.sin(energyAngle)+p("appliedWorkForce")/Math.max(p("mass"),1e-9);
+  const energyStaticHolds=p("initialSpeed")<=1e-9&&Math.abs(energyParallel)<=p("staticFriction")*g*Math.cos(energyAngle);
+  const energyAcceleration=energyStaticHolds?0:energyParallel-g*p("friction")*Math.cos(energyAngle);
   if(lab.id==="energy"){
-    const distance=p("height")/Math.max(Math.sin(energyAngle),1e-6),u=p("initialSpeed"),a=energyStaticHolds?0:energyAcceleration,discriminant=u*u+2*a*distance;
+    const distance=p("height")/Math.max(Math.sin(energyAngle),1e-6),u=p("initialSpeed"),a=energyAcceleration,discriminant=u*u+2*a*distance;
     if(a>1e-9)duration=Math.max(.1,(-u+Math.sqrt(discriminant))/a);
     else if(a< -1e-9)duration=Math.max(.1,discriminant>0?(-u+Math.sqrt(discriminant))/a:u/(-a));
     else if(u>1e-9)duration=Math.max(.1,distance/u);
@@ -601,7 +601,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const inclineAngle=lab.id==="energy"?energyAngle:angle;
   const totalDistance=lab.id==="energy"?p("height")/Math.max(Math.sin(inclineAngle),1e-6):0;
   const parallelGravity=lab.id==="incline"?g*Math.sin(angle)+(p("appliedForce")/Math.max(p("mass"),1e-9)):0;
-  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&(lab.id==="energy"?(p("initialSpeed")<=1e-9&&Math.tan(inclineAngle)<=p("staticFriction")):Math.abs(parallelGravity)<=p("staticFriction")*g*Math.cos(angle));
+  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&(lab.id==="energy"?energyStaticHolds:Math.abs(parallelGravity)<=p("staticFriction")*g*Math.cos(angle));
   const accel=lab.id==="incline"&&!staticHolds?(parallelGravity-Math.sign(parallelGravity||1)*p("friction")*g*Math.cos(angle)):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
@@ -636,7 +636,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       }
       kinetic=.5*c.m1*vx*vx+.5*c.m2*(vx2??0)**2;
     } else if(lab.id==="energy") {
-      const u=p("initialSpeed"),a=staticHolds?0:energyAcceleration,stopTime=a< -1e-9?u/(-a):Infinity,activeTime=Math.min(time,stopTime),rawDistance=u*activeTime+.5*a*activeTime*activeTime,s=Math.min(totalDistance,Math.max(0,rawDistance));
+      const u=p("initialSpeed"),a=energyAcceleration,stopTime=a< -1e-9?u/(-a):Infinity,activeTime=Math.min(time,stopTime),rawDistance=u*activeTime+.5*a*activeTime*activeTime,s=Math.min(totalDistance,Math.max(0,rawDistance));
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
       const v=Math.max(0,u+a*activeTime);
       x=s*Math.cos(inclineAngle);y=h;vx=v*Math.cos(inclineAngle);vy=-v*Math.sin(inclineAngle);kinetic=.5*mass*v*v;potential=mass*g*h;

@@ -71,7 +71,7 @@ const labs: Lab[] = [
   {
     id: "energy", category: "DINAMIKA & ENERGI", title: "Usaha dan Energi", subtitle: "Work and Energy",
     description: "Analisis usaha oleh gaya, perubahan energi kinetik, energi potensial, dan neraca energi ketika gesekan atau gaya nonkonservatif bekerja.",
-    formula: String.raw`W_{\\mathrm{net}}=\\Delta K,\\quad E_{m,f}=E_{m,i}+W_{\\mathrm{nc}}`,
+    formula: String.raw`W_{\mathrm{net}}=\Delta K,\quad E_{m,f}=E_{m,i}+W_{\mathrm{nc}}`,
     question: "Bagaimana usaha total mengubah energi kinetik, dan ke mana energi mekanik berpindah ketika gesekan bekerja?",
     params: [
       {key:"mass",label:"Massa benda",min:.5,max:20,step:.5,unit:"kg",initial:2},
@@ -580,8 +580,9 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const energyStaticHolds=p("initialSpeed")<=1e-9&&Math.tan(energyAngle)<=p("staticFriction");
   const energyAcceleration=energyStaticHolds?0:g*(Math.sin(energyAngle)-p("friction")*Math.cos(energyAngle));
   if(lab.id==="energy"){
-    const distance=p("height")/Math.max(Math.sin(energyAngle),1e-6),u=p("initialSpeed");
-    if(energyAcceleration>1e-9)duration=Math.max(.1,(-u+Math.sqrt(u*u+2*energyAcceleration*distance))/energyAcceleration);
+    const distance=p("height")/Math.max(Math.sin(energyAngle),1e-6),u=p("initialSpeed"),a=energyStaticHolds?0:energyAcceleration,discriminant=u*u+2*a*distance;
+    if(a>1e-9)duration=Math.max(.1,(-u+Math.sqrt(discriminant))/a);
+    else if(a< -1e-9)duration=Math.max(.1,discriminant>0?(-u+Math.sqrt(discriminant))/a:u/(-a));
     else if(u>1e-9)duration=Math.max(.1,distance/u);
   }
   if(lab.id==="spring") duration=4*Math.PI/Math.max(Math.sqrt(p("spring")/p("mass"))*Math.sqrt(1-Math.max(0,Math.min(.95,p("dampingRatio")))**2),.05);
@@ -596,7 +597,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const inclineAngle=lab.id==="energy"?energyAngle:angle;
   const totalDistance=lab.id==="energy"?p("height")/Math.max(Math.sin(inclineAngle),1e-6):0;
   const parallelGravity=lab.id==="incline"?g*Math.sin(angle)+(p("appliedForce")/Math.max(p("mass"),1e-9)):0;
-  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&(lab.id==="energy"?Math.tan(inclineAngle)<=p("staticFriction"):Math.abs(parallelGravity)<=p("staticFriction")*g*Math.cos(angle));
+  const staticHolds=(lab.id==="incline"||lab.id==="energy")&&(lab.id==="energy"?(p("initialSpeed")<=1e-9&&Math.tan(inclineAngle)<=p("staticFriction")):Math.abs(parallelGravity)<=p("staticFriction")*g*Math.cos(angle));
   const accel=lab.id==="incline"&&!staticHolds?(parallelGravity-Math.sign(parallelGravity||1)*p("friction")*g*Math.cos(angle)):0;
   for(let i=0;i<=count;i++) {
     const time=duration*i/count;
@@ -624,7 +625,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       }
       kinetic=.5*c.m1*vx*vx+.5*c.m2*(vx2??0)**2;
     } else if(lab.id==="energy") {
-      const u=p("initialSpeed"),a=staticHolds?0:Math.max(0,energyAcceleration);
+      const u=p("initialSpeed"),a=staticHolds?0:energyAcceleration;
       const s=Math.min(totalDistance,Math.max(0,u*time+.5*a*time*time));
       const h=Math.max(0,p("height")-s*Math.sin(inclineAngle));
       const v=Math.max(0,u+a*time);
@@ -773,37 +774,37 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  }
  if(id==="energy"){
   const h0=v.height??0,mu=v.friction??0,alpha=(v.inclineAngle??30)*Math.PI/180,staticHolds=(v.initialSpeed??0)<=1e-9&&Math.tan(alpha)<=(v.staticFriction??0),a=staticHolds?0:g*(Math.sin(alpha)-mu*Math.cos(alpha)),distance=Math.hypot(p.x,h0-p.y);
-  const dissipated=Math.max(0,m*g*h0-p.kinetic-p.potential);
+  const dissipated=Math.max(0,m*g*h0+.5*m*(v.initialSpeed??0)**2-p.kinetic-p.potential);
   return [
    "E_k=\\frac12mv^2=\\frac12("+n(m)+"\\,\\mathrm{kg})("+n(p.speed)+"\\,\\mathrm{m/s})^2="+qty(p.kinetic,"J"),
    "E_p=mgh=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})("+n(p.y)+"\\,\\mathrm{m})="+qty(p.potential,"J"),
    "E_m=E_k+E_p="+n(p.kinetic)+"\\,\\mathrm{J}+"+n(p.potential)+"\\,\\mathrm{J}="+qty(p.kinetic+p.potential,"J"),
-   "E_{diss}=mgh_0-E_m=("+qty(m,"kg")+")("+qty(g,"m/s^2")+")("+qty(h0,"m")+")-("+qty(p.kinetic+p.potential,"J")+")="+qty(dissipated,"J"),
-   "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin(30^\\circ)="+qty(p.y,"m"),
+   "W_{\\mathrm{nc}}=E_{m,f}-E_{m,i}=("+qty(p.kinetic+p.potential,"J")+")-("+qty(.5*m*(v.initialSpeed??0)**2+m*g*h0,"J")+")=-"+qty(dissipated,"J"),
+   "h=h_0-s\\sin\\alpha="+qty(h0,"m")+"-("+qty(distance,"m")+")\\sin("+n(v.inclineAngle??30)+"^\\circ)="+qty(p.y,"m"),
    "v=v_0+at=("+n(v.initialSpeed??0)+"\\,\\mathrm{m/s})+("+n(Math.max(0,a))+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s")
   ][index];
  }
  if(id==="incline"){
-  const mu=v.friction??0,muS=v.staticFriction??0,staticHolds=Math.tan(theta)<=muS;
-  const a=staticHolds?0:Math.max(0,g*(Math.sin(theta)-mu*Math.cos(theta)));
-  const normal=m*g*Math.cos(theta),friction=staticHolds?m*g*Math.sin(theta):mu*normal;
+  const mu=v.friction??0,muS=v.staticFriction??0,external=v.appliedForce??0,parallel=m*g*Math.sin(theta)+external,staticHolds=Math.abs(parallel)<=muS*m*g*Math.cos(theta)/Math.max(m,1e-9);
+  const a=staticHolds?0:parallel/m-Math.sign(parallel||1)*mu*g*Math.cos(theta);
+  const normal=m*g*Math.cos(theta),friction=staticHolds?Math.abs(parallel):mu*normal;
   const frictionFormula=staticHolds
    ?"f_s=mg\\sin\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\sin("+n(v.angle??0)+"^\\circ)="+qty(friction,"N")
    :"f_k=\\mu_kN=("+n(mu)+")("+n(normal)+"\\,\\mathrm{N})="+qty(friction,"N");
   return [
-   staticHolds?"a=0\\quad(\\tan\\theta\\leq\\mu_s)":"a=g(\\sin\\theta-\\mu_k\\cos\\theta)=("+n(g)+")[\\sin("+n(v.angle??0)+"^\\circ)-("+n(mu)+")\\cos("+n(v.angle??0)+"^\\circ)]="+qty(a,"m/s^2"),
+   staticHolds?"a=0\\quad(\\text{static friction})":"a=\\frac{mg\\sin\\theta+F_{\\parallel}}{m}-\\mu_k g\\cos\\theta="+qty(a,"m/s^2"),
    "\\sum F_{\\parallel}=ma=("+n(m)+"\\,\\mathrm{kg})("+n(a)+"\\,\\mathrm{m/s^2})="+qty(m*a,"N"),
    "N=mg\\cos\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
    frictionFormula,
-   "v=at=("+n(a)+"\\,\\mathrm{m/s^2})("+n(time)+"\\,\\mathrm{s})="+qty(p.speed,"m/s"),
+   "v=v_0+at=("+n(v.appliedForce??0)+"\\,\\mathrm{N})= "+qty(p.speed,"m/s"),
    "s=\\frac12at^2=\\frac12("+qty(a,"m/s^2")+")("+qty(time,"s")+")^2="+qty(Math.hypot(p.x,p.y),"m")
   ][index];
  }
- const k=v.spring??0,A=v.amplitude??0,omega=Math.sqrt(k/Math.max(m,.01)),acceleration=-omega*omega*p.x;
+ const k=v.spring??0,A=v.amplitude??0,omega=Math.sqrt(k/Math.max(m,.01)),zeta=v.dampingRatio??0,beta=zeta*omega,phase=(v.phaseDegrees??0)*Math.PI/180,omegaD=omega*Math.sqrt(1-zeta*zeta),acceleration=-omega*omega*p.x-2*beta*p.vx;
  return [
-  "x(t)=A\\cos(\\omega t)=("+n(A)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.x,"m"),
-  "v(t)=-A\\omega\\sin(\\omega t)=-("+qty(A,"m")+")("+n(omega)+"\\,\\mathrm{rad/s})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+qty(time,"s")+"))="+qty(p.vx,"m/s"),
-  "a(t)=-\\omega^2x=-("+n(omega)+"\\,\\mathrm{rad/s})^2("+qty(p.x,"m")+")="+qty(acceleration,"m/s^2"),
+  "x(t)=Ae^{-\\beta t}\\cos(\\omega_d t+\\phi)=("+n(A)+"\\,\\mathrm{m})e^{-("+n(beta)+"\\,\\mathrm{s^{-1}})("+n(time)+"\\,\\mathrm{s})}\\cos(("+n(omegaD)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.x,"m"),
+  "v(t)=Ae^{-\\beta t}[-\\beta\\cos(\\omega_dt+\\phi)-\\omega_d\\sin(\\omega_dt+\\phi)]="+qty(p.vx,"m/s"),
+  "a(t)=-\\omega_0^2x-2\\beta v="+qty(acceleration,"m/s^2"),
   "E_k=\\frac12mv^2=\\frac12("+qty(m,"kg")+")("+qty(p.speed,"m/s")+")^2="+qty(p.kinetic,"J"),
   "E_p=\\frac12kx^2=\\frac12("+qty(k,"N/m")+")("+qty(p.x,"m")+")^2="+qty(p.potential,"J"),
   k>0?"T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+qty(m,"kg")+"}{"+qty(k,"N/m")+"}}="+qty(2*Math.PI*Math.sqrt(m/k),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0"
@@ -1298,15 +1299,17 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     reader.readAsText(file);
   };
   const activeLabLabel=tLabel(language,lab);
+  const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springZeta=values.dampingRatio??0,springBeta=springZeta*springOmega0,springOmegaD=springOmega0*Math.sqrt(1-springZeta*springZeta);
+  const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\\beta t},\\quad v_y=(v_{0y}+g/\\beta)e^{-\\beta t}-g/\\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\\zeta\\omega_0t}\\cos(\\omega_dt+\\phi),\\quad \\omega_d=\\omega_0\\sqrt{1-\\zeta^2}`:lab.formula;
   const assumptions:Record<LabId,{id:string;en:string}> = {
     projectile:{id:"Lintasan 2D ideal tanpa hambatan udara; gravitasi konstan dan permukaan tanah datar.",en:"Ideal 2D trajectory without air drag; gravity is constant and the ground is level."},
     mru:{id:"Gerak satu dimensi pada lintasan lurus; kecepatan konstan dan resultan gaya nol.",en:"One-dimensional straight-line motion; velocity is constant and net force is zero."},
     mrua:{id:"Gerak satu dimensi dengan percepatan konstan; gaya resultan konstan.",en:"One-dimensional motion with constant acceleration; net force is constant."},
     circular:{id:"Gerak melingkar beraturan: jari-jari dan kecepatan sudut konstan; percepatan sentripetal menuju pusat.",en:"Uniform circular motion: fixed radius and angular speed; centripetal acceleration points inward."},
-    energy:{id:"Bidang miring 30°; benda mulai diam. Gesekan statis menentukan apakah benda mulai bergerak, lalu gesekan kinetis berlaku saat meluncur. Hambatan udara diabaikan.",en:"A 30° incline; the object starts from rest. Static friction determines whether it starts moving, then kinetic friction applies while sliding. Air drag is ignored."},
+    energy:{id:"Balok meluncur pada bidang dengan sudut dan kelajuan awal yang dapat diatur. Gesekan statis menentukan apakah balok yang diam mulai bergerak; setelah meluncur, gesekan kinetis bekerja. Hambatan udara dan rotasi diabaikan.",en:"A block slides on an incline with adjustable angle and initial speed. Static friction determines whether a resting block starts moving; kinetic friction acts during sliding. Air drag and rotation are omitted."},
     incline:{id:"Balok pada bidang miring; gesekan statis menentukan ambang gerak, gesekan kinetis berlaku selama meluncur. Hambatan udara diabaikan.",en:"A block on an inclined plane; static friction sets the motion threshold, and kinetic friction applies while sliding. Air drag is ignored."},
-    collision:{id:"Tumbukan satu dimensi terisolasi: impuls eksternal diabaikan dan kontak dimodelkan seketika. Grafik percepatan menandai waktu tumbukan; gaya puncak selama kontak tidak dimodelkan.",en:"Isolated one-dimensional collision: external impulse is neglected and contact is modeled as instantaneous. The acceleration plot marks impact time; peak contact force is not modeled."},
-    spring:{id:"Osilator massa–pegas ideal: pegas linear, tanpa redaman, dan tanpa gaya luar.",en:"Ideal mass–spring oscillator: linear spring, no damping, and no external driving force."}
+    collision:{id:"Tumbukan satu dimensi; impuls eksternal selama kontak diabaikan. Kecepatan akhir dihitung dari momentum dan koefisien restitusi. Gaya kontak yang ditampilkan adalah gaya rata-rata selama durasi kontak, bukan gaya puncak.",en:"One-dimensional collision; external impulse during contact is neglected. Final velocities follow from momentum and restitution. Contact force is the mean over contact duration, not peak force."},
+    spring:{id:"Pegas dianggap linear dengan redaman viskos linier. Model dibatasi pada redaman kurang (ζ < 1), tanpa gesekan kering, histeresis, atau gaya luar periodik.",en:"The spring is linear with viscous damping. The model is restricted to the underdamped regime (ζ < 1), with no dry friction, hysteresis, or periodic driving force."}
   };
 
   const modelKnowledge:Record<LabId,{qID:string;aID:string;qEN:string;aEN:string;factID:string;factEN:string}>={
@@ -1349,7 +1352,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         </nav>
         <div className="drawer-content">
           {drawerTab==="parameters"&&<><div className="panel-title"><span>01</span><h2>{w.parameters}</h2></div><div className="parameter-mode-switch" role="group" aria-label={language==="ID"?"Tingkat parameter":"Parameter level"}><button type="button" className={parameterLevel==="basic"?"active":""} aria-pressed={parameterLevel==="basic"} onClick={()=>setParameterLevel("basic")}>{language==="ID"?"Dasar":"Basic"}</button><button type="button" className={parameterLevel==="advanced"?"active":""} aria-pressed={parameterLevel==="advanced"} onClick={()=>setParameterLevel("advanced")}>{language==="ID"?"Lanjutan":"Advanced"}</button></div><p className="parameter-mode-help">{parameterLevel==="basic"?(language==="ID"?"Variabel utama untuk memahami pengaruh dasar pada eksperimen.":"Core variables for exploring the main effects."):(language==="ID"?"Seluruh parameter, termasuk kondisi awal dan model spesifik yang mengubah perhitungan serta grafik.":"All parameters, including initial conditions and model-specific settings that change calculations and graphs.")}</p><div className="parameter-list">{(parameterLevel==="basic"?lab.params.filter(param=>basicParamKeys[lab.id].includes(param.key)):allLabParams(lab)).map(param=><Slider key={param.key} param={{...param,label:parameterText(language,param.key,param.label)}} value={values[param.key]??param.initial} onChange={v=>changeParam(param.key,v)}/>)}</div></>}
-          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"MODEL UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={lab.formula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
+          {drawerTab==="equations"&&<><div className="panel-title"><span>02</span><h2>{w.expr}</h2></div><div className="equation-feature"><span className="eyebrow">{language==="ID"?"MODEL UTAMA":"MAIN MODEL"}</span><div className="formula-box"><Equation value={activeMainFormula} display/></div><p>{language==="ID"?"Model inti yang digunakan untuk membangun simulasi ini.":"Core model used to build this simulation."}</p></div><div className="equation-list">{equationLibrary[lab.id].map((eq,index)=><article className="equation-card" key={eq.id}><div className="equation-card-head"><span>{String(index+1).padStart(2,"0")}</span><strong>{language==="ID"?eq.titleID:eq.titleEN}</strong><button title={language==="ID"?"Salin LaTeX":"Copy LaTeX"} onClick={()=>{void navigator.clipboard?.writeText(eq.formula);setNotice(language==="ID"?"LaTeX disalin":"LaTeX copied");}}><Copy size={15}/></button></div><div className="equation-math"><Equation value={eq.formula} display/></div><p>{language==="ID"?eq.noteID:eq.noteEN}</p></article>)}</div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div></>}
           {drawerTab==="tools"&&<><div className="panel-title"><span>03</span><h2>{language==="ID"?"Alat grafik":"Graph tools"}</h2></div><label className="tool-select-label">{language==="ID"?"Jenis grafik":"Graph type"}<select value={graphMode} onChange={e=>setGraphMode(e.target.value as typeof graphMode)}><option value="trajectory">{language==="ID"?"Lintasan / bidang":"Trajectory / plane"}</option><option value="position-time">{language==="ID"?"Posisi–waktu (x–t)":"Position–time (x–t)"}</option><option value="velocity-time">{language==="ID"?"Kecepatan–waktu (v–t)":"Velocity–time (v–t)"}</option><option value="acceleration-time">{language==="ID"?"Percepatan–waktu (a–t)":"Acceleration–time (a–t)"}</option></select></label><button className={showRuler?"drawer-tool active": "drawer-tool"} onClick={()=>setShowRuler(v=>!v)}>{language==="ID"?"Penggaris koordinat":"Coordinate ruler"}<span>{showRuler?"ON":"OFF"}</span></button><button disabled={graphMode==="trajectory"} className={showTangent?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTangent(v=>!v)}>{language==="ID"?"Garis singgung & gradien":"Tangent & slope"}<span>{showTangent?"ON":"OFF"}</span></button><button className={showGrid?"drawer-tool active":"drawer-tool"} onClick={()=>setShowGrid(v=>!v)}>{w.grid}<span>{showGrid?"ON":"OFF"}</span></button><button className={showVectors?"drawer-tool active":"drawer-tool"} onClick={()=>setShowVectors(v=>!v)}>{w.vectors}<span>{showVectors?"ON":"OFF"}</span></button><button className={showTrail?"drawer-tool active":"drawer-tool"} onClick={()=>setShowTrail(v=>!v)}>{w.trail}<span>{showTrail?"ON":"OFF"}</span></button><p className="drawer-help">{language==="ID"?"Penggaris menampilkan garis bantu dan koordinat titik saat ini. Grafik waktu memakai sumbu horizontal t.":"The ruler shows guide lines and the current point coordinates. Time plots use t on the horizontal axis."}</p></>}
           {drawerTab==="model"&&<><div className="panel-title"><span>04</span><h2>{w.assumptions}</h2></div><div className="question-box"><span><CircleHelp size={17}/>{w.question}</span><p>{activeLabLabel.question}</p></div><div className="model-assumption-card"><strong>{language==="ID"?"Batas dan asumsi model":"Model assumptions and limits"}</strong><p>{language==="ID"?assumptions[lab.id].id:assumptions[lab.id].en}</p></div><section className="model-qa-section"><h3>{language==="ID"?"Pertanyaan umum":"Common questions"}</h3><details className="model-qa-item" open><summary>{language==="ID"?modelKnowledge[lab.id].qID:modelKnowledge[lab.id].qEN}</summary><p>{language==="ID"?modelKnowledge[lab.id].aID:modelKnowledge[lab.id].aEN}</p></details></section><aside className="model-fact-card"><span><Sparkles size={14}/>{language==="ID"?"FAKTA FISIKA":"PHYSICS FACT"}</span><p>{language==="ID"?modelKnowledge[lab.id].factID:modelKnowledge[lab.id].factEN}</p></aside></>}
         </div>

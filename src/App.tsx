@@ -227,6 +227,7 @@ const calculatorDefinitions: Record<LabId, CalcDefinition[]> = {
   {id:"frequency",titleID:"Frekuensi sudut",titleEN:"Angular frequency",formula:"\\omega=\\sqrt{\\frac{k}{m}}",noteID:"Frekuensi sudut bertambah saat pegas lebih kaku dan berkurang saat massa diperbesar.",noteEN:"Angular frequency rises with stiffness and falls as mass increases.",fields:[{key:"m",labelID:"Massa",labelEN:"Mass",unit:"kg",initial:1,min:.01,step:.1},{key:"k",labelID:"Konstanta pegas",labelEN:"Spring constant",unit:"N/m",initial:25,min:.01,step:.1}],evaluate:v=>({substitution:"ω = √("+v.k.toFixed(2)+" / "+v.m.toFixed(2)+")",value:Math.sqrt(v.k/v.m).toFixed(3),unit:"rad/s"})}
   ,{id:"restoringForce",titleID:"Gaya pemulih pegas",titleEN:"Spring restoring force",formula:"F=-kx",noteID:"Tanda negatif menunjukkan gaya selalu berlawanan arah dengan simpangan dari posisi setimbang.",noteEN:"The negative sign means the force always acts opposite to displacement from equilibrium.",fields:[{key:"k",labelID:"Konstanta pegas",labelEN:"Spring constant",unit:"N/m",initial:25,min:.01,step:.1},{key:"x",labelID:"Simpangan",labelEN:"Displacement",unit:"m",initial:.2,step:.01}],evaluate:v=>({substitution:"F = −("+v.k.toFixed(2)+")("+v.x.toFixed(3)+")",value:(-v.k*v.x).toFixed(3),unit:"N"})}
 
+ ]
 };
 
 function calcVariableSymbol(key:string) {

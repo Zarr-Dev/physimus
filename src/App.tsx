@@ -676,7 +676,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
     [labels.period,2*Math.PI/values.omega,"s"],[labels.omega,values.omega,"rad/s"],[labels.centripetal,values.omega**2*values.radius,"m/s²"],[language==="ID"?"Gaya sentripetal":"Centripetal force",mass*values.omega**2*values.radius,"N"]
   ] as [string,number,string][];
   if(lab.id==="collision"){
-    const c=collisionResults(values),occurred=point.collisionOccurred??false,v1=point.vx,v2=point.vx2??c.u2;
+    const c=collisionResults(values),v1=point.vx,v2=point.vx2??c.u2;
     return [
       [language==="ID"?"Kecepatan benda 1":"Body 1 velocity",v1,"m/s"],
       [language==="ID"?"Kecepatan benda 2":"Body 2 velocity",v2,"m/s"],
@@ -717,7 +717,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
  const qty=(x:number,unit:string)=>"("+n(x)+")\\,\\mathrm{"+unit+"}";
  const m=v.mass??1,g=v.gravity??9.81,theta=(v.angle??0)*Math.PI/180;
  if(id==="projectile"){
-  const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,x0=v.x0??0,beta=Math.max(0,v.dragBeta??0),v0x=v0*Math.cos(theta),v0y=v0*Math.sin(theta);
+  const v0=v.speed??0,h0=v.height??0,angle=v.angle??0,tf=duration,x0=v.x0??0,beta=Math.max(0,v.dragBeta??0),v0y=v0*Math.sin(theta);
   const peakTime=beta>1e-8&&v0y>0?Math.log(1+beta*v0y/g)/beta:v0y/g;
   const peak=beta>1e-8?projectileStateAt(Math.max(0,peakTime),v).y:h0+v0y*v0y/(2*g);
   const range=p.x-x0;
@@ -1313,7 +1313,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     reader.readAsText(file);
   };
   const activeLabLabel=tLabel(language,lab);
-  const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springZeta=values.dampingRatio??0,springBeta=springZeta*springOmega0,springOmegaD=springOmega0*Math.sqrt(1-springZeta*springZeta);
+  const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springZeta=values.dampingRatio??0;
   const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\beta t},\quad v_y=(v_{0y}+g/\beta)e^{-\beta t}-g/\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\zeta\omega_0t}\cos(\omega_dt+\phi),\quad \omega_d=\omega_0\sqrt{1-\zeta^2}`:lab.id==="circular"&&(values.phaseDegrees??0)!==0?String.raw`\theta(t)=\theta_0+\omega t,\quad \theta_0=${((values.phaseDegrees??0)*Math.PI/180).toFixed(3)}\,\mathrm{rad}`:lab.id==="incline"&&(values.appliedForce??0)!==0?String.raw`a=g\sin\theta+\frac{F_{\parallel}}{m}-\operatorname{sgn}(mg\sin\theta+F_{\parallel})\mu_k g\cos\theta`:lab.formula;
   const assumptions:Record<LabId,{id:string;en:string}> = {
     projectile:{id:"Lintasan 2D ideal tanpa hambatan udara; gravitasi konstan dan permukaan tanah datar.",en:"Ideal 2D trajectory without air drag; gravity is constant and the ground is level."},

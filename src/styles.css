@@ -2184,3 +2184,165 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .sandbox-example-math .katex{white-space:normal}
 .sandbox-example-math .katex-display{margin:.2em 0;text-align:left}
 .app-root[data-theme="dark"] .sandbox-example-math{color:#9ac9f2}
+
+
+/* Layout repair: the workspace may shrink at browser zoom and narrow desktops. */
+.page-shell,.workspace-page,.secondary-page,.sandbox-workspace,.lesson-page,
+.lab-studio,.sandbox-studio,.sandbox-editor,.sandbox-equations,.sandbox-equation-item,
+.sandbox-equation-editor,.sandbox-equation-row,.sandbox-canvas-wrap,
+.equation-calculator-card,.equation-calc-fields,.lesson-layout,.lesson-content {
+  min-width:0;
+  max-width:100%;
+}
+.sandbox-workspace {width:100%;margin-inline:auto;overflow-x:clip}
+.sandbox-studio {grid-template-columns:minmax(260px,350px) minmax(0,1fr)}
+.sandbox-editor {min-width:0;overflow-x:hidden}
+.sandbox-equation-item {width:100%;overflow:visible}
+.sandbox-equation-editor {
+  display:block;
+  width:100%;
+  min-width:0;
+  margin:8px 0 6px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.sandbox-equation-editor .sandbox-equation-row {
+  display:grid;
+  grid-template-columns:18px 28px minmax(0,1fr) 28px;
+  align-items:center;
+  gap:6px;
+  width:100%;
+  min-width:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.sandbox-equation-row .sandbox-mathfield,
+.sandbox-equation-row input:not([type="button"]) {
+  display:block;
+  grid-column:3;
+  grid-row:1;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:46px;
+  padding:8px 11px;
+  border:1px solid #dce6ef;
+  border-radius:8px;
+  background:var(--panel,#fff);
+  color:var(--ink,#315d89);
+  font:500 15px/1.45 "DM Sans",sans-serif;
+  overflow-x:auto;
+}
+.sandbox-equation-row .sandbox-mathfield {
+  --caret-color:var(--blue,#347fd5);
+  --selection-background-color:#dceeff;
+  --contains-highlight-background-color:#f0f6fc;
+}
+.sandbox-equation-row .sandbox-mathfield:focus-within,
+.sandbox-equation-row input:focus {
+  outline:2px solid color-mix(in srgb,var(--blue,#347fd5) 25%,transparent);
+  outline-offset:1px;
+  border-color:var(--blue,#347fd5);
+}
+.sandbox-equation-row>button {min-width:26px;justify-self:center}
+.sandbox-equation-editor .sandbox-equation-row .sandbox-mathfield {grid-column:3;grid-row:1}
+.sandbox-editor-fallback-note {margin:6px 2px 0;line-height:1.55}
+.sandbox-math-suggestions {width:min(100%,420px);max-width:100%;overflow-x:hidden}
+.sandbox-math-suggestions button {min-width:0;max-width:100%;white-space:normal}
+.sandbox-math-suggestions button small {overflow-wrap:anywhere}
+.sandbox-variable-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+.sandbox-variable-grid label,.sandbox-variable-grid label>div {min-width:0}
+.sandbox-variable-grid input {box-sizing:border-box;width:100%;min-width:0}
+.sandbox-toolbar,.sandbox-playback {min-width:0;flex-wrap:wrap}
+.sandbox-canvas-wrap {min-width:0;width:100%;height:clamp(360px,56vh,650px)}
+.sandbox-canvas-wrap canvas {display:block;width:100%;height:100%;max-width:100%}
+.sandbox-analysis,.sandbox-analysis-grid,.sandbox-measurement,.sandbox-scalar-result {min-width:0}
+.sandbox-analysis-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}
+.sandbox-measurement>b,.sandbox-scalar-result>strong {max-width:100%;overflow-wrap:anywhere}
+.physics-copy {display:inline}
+.physics-copy .math-inline {display:inline-block;vertical-align:baseline;max-width:100%;white-space:normal}
+.physics-copy .katex {font-size:1em}
+.physics-copy .katex-display {margin:.15em 0}
+
+/* Do not retain a 720px desktop canvas when browser zoom reduces the CSS viewport. */
+@media (max-width:1050px) {
+  .sandbox-studio {grid-template-columns:minmax(0,1fr)}
+  .sandbox-editor {border-right:0;border-bottom:1px solid var(--line);max-height:none;overflow:visible}
+  .sandbox-equations {max-height:320px;overflow-y:auto;overflow-x:hidden}
+  .sandbox-canvas-wrap {height:clamp(340px,52vh,520px)}
+  .sandbox-variable-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:900px) {
+  .lab-studio {grid-template-columns:minmax(0,1fr);min-height:0}
+  .control-drawer {order:2;grid-column:1;grid-row:2;border-right:0;border-top:1px solid var(--line);grid-template-columns:minmax(0,1fr)}
+  .drawer-rail {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:7px;border-right:0;border-bottom:1px solid var(--line)}
+  .drawer-rail button {width:auto;min-width:0;min-height:48px}
+  .drawer-content {max-height:none;overflow:visible}
+  .graph-panel {order:1;grid-column:1;grid-row:1;min-width:0}
+  .canvas-area {height:clamp(360px,55vh,620px);min-height:340px}
+}
+@media (max-width:760px) {
+  .sandbox-studio {grid-template-columns:minmax(0,1fr)}
+  .sandbox-editor {padding:16px 13px}
+  .sandbox-toolbar {align-items:stretch;gap:8px}
+  .sandbox-toolbar-options {min-width:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sandbox-canvas-wrap {height:clamp(330px,54vh,480px);min-height:320px}
+  .sandbox-playback {gap:8px}
+  .sandbox-playback label {flex:1 1 90px;min-width:0}
+  .sandbox-playback label input,.sandbox-playback label select {width:100%;min-width:0}
+  .lesson-layout {grid-template-columns:minmax(0,1fr)}
+  .lesson-topic-nav,.lesson-experiment {position:static;max-height:none}
+  .lesson-experiment {grid-column:auto}
+  .lesson-content {grid-column:1}
+}
+@media (max-width:560px) {
+  .page-shell,.workspace-page,.secondary-page,.sandbox-workspace {
+    width:100%;min-width:0!important;max-width:100%;
+  }
+  .page-shell {padding-inline:14px}
+  .workspace-page {padding:18px 10px 32px}
+  .secondary-page {padding:35px 15px 55px}
+  .sandbox-workspace {padding:16px 10px 26px;overflow-x:clip}
+  .topbar {height:auto;min-height:66px;flex-wrap:wrap;padding:10px 13px;gap:8px}
+  .brand {font-size:21px}
+  .main-nav {order:3;width:100%;height:42px;justify-content:space-between;gap:3px}
+  .nav-link {height:38px;min-width:0;padding:0 7px;font-size:11px}
+  .topbar-tools {margin-left:auto;gap:5px}
+  .workspace-heading {align-items:flex-start;flex-direction:column;gap:14px}
+  .workspace-actions {width:100%;flex-wrap:wrap}
+  .workspace-actions>.secondary-button {flex:1 1 auto}
+  .sandbox-heading {align-items:flex-start;flex-direction:column;gap:12px}
+  .sandbox-heading-actions {width:100%;display:flex;flex-wrap:wrap;gap:7px}
+  .sandbox-heading-actions .secondary-button {flex:1 1 auto}
+  .sandbox-top-tabs {max-width:100%;overflow-x:auto}
+  .sandbox-top-tabs button {flex:0 0 auto}
+  .sandbox-editor {padding:14px 10px}
+  .sandbox-equation-row {grid-template-columns:17px 25px minmax(0,1fr) 25px;gap:4px}
+  .sandbox-equation-row .sandbox-mathfield,.sandbox-equation-row input:not([type="button"]) {
+    min-height:43px;padding:7px 8px;font-size:14px
+  }
+  .sandbox-variable-grid {grid-template-columns:minmax(0,1fr)}
+  .sandbox-canvas-wrap {height:390px;min-height:330px}
+  .sandbox-analysis {padding:13px}
+  .sandbox-analysis-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .sandbox-measurement,.sandbox-scalar-result {padding:10px}
+  .sandbox-measurement>b,.sandbox-scalar-result>strong {font-size:13px}
+  .sandbox-playback .sandbox-timeline {flex:1 1 100%;order:3;min-width:0}
+  .sandbox-playback label {flex:1 1 90px}
+  .measurement-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .graph-header {align-items:flex-start;flex-direction:column}
+  .graph-tools {width:100%;flex-wrap:wrap}
+  .lesson-page.is-focused {width:100%;min-width:0;padding:12px}
+}
+@media (max-width:380px) {
+  .nav-link {padding:0 4px;font-size:10px}
+  .sandbox-analysis-grid {grid-template-columns:minmax(0,1fr)}
+  .sandbox-equation-row {grid-template-columns:15px 23px minmax(0,1fr) 23px;gap:3px}
+}
+@media (prefers-reduced-motion:reduce) {
+  .sandbox-workspace * {scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}

@@ -121,7 +121,7 @@ const labs: Lab[] = [
 ];
 
 // Basic parameters are the high-impact controls. Advanced exposes all base values plus model-specific controls.
-const basicParamKeys:Record<LabId,string[]>={projectile:["speed","angle","height"],mru:["speed"],mrua:["speed","acceleration"],circular:["radius","omega"],energy:["mass","height"],incline:["mass","angle"],collision:["mass1","mass2","velocity1","velocity2"],spring:["mass","spring","amplitude"]};
+const basicParamKeys:Record<LabId,string[]>={projectile:["speed","angle","height","gravity"],mru:["x0","speed"],mrua:["x0","speed","acceleration"],circular:["radius","omega","mass"],energy:["mass","height","friction","staticFriction"],incline:["mass","angle","friction","staticFriction"],collision:["mass1","mass2","velocity1","velocity2","restitution"],spring:["mass","spring","amplitude"]};
 const advancedParams:Record<LabId,Param[]>={
  projectile:[{key:"x0",label:"Posisi horizontal awal",min:-50,max:50,step:.1,unit:"m",initial:0},{key:"dragBeta",label:"Koefisien hambatan linear per massa β",min:0,max:1,step:.01,unit:"s⁻¹",initial:0}],mru:[],mrua:[],
  circular:[{key:"phaseDegrees",label:"Sudut fase awal",min:-360,max:360,step:1,unit:"°",initial:0}],
@@ -812,10 +812,10 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   const a=staticHolds?0:parallel/m-Math.sign(parallel||1)*mu*g*Math.cos(theta);
   const normal=m*g*Math.cos(theta),friction=staticHolds?Math.abs(parallel):mu*normal;
   const frictionFormula=staticHolds
-   ?"f_s=mg\\sin\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\sin("+n(v.angle??0)+"^\\circ)="+qty(friction,"N")
+   ?"f_s=|mg\\sin\\theta+F_{\\parallel}|="+qty(friction,"N")
    :"f_k=\\mu_kN=("+n(mu)+")("+n(normal)+"\\,\\mathrm{N})="+qty(friction,"N");
   return [
-   staticHolds?"a=0\\quad(\\text{static friction})":"a=\\frac{mg\\sin\\theta+F_{\\parallel}}{m}-\\mu_k g\\cos\\theta="+qty(a,"m/s^2"),
+   staticHolds?"a=0\\quad(\\text{static friction})":"a=\\frac{mg\\sin\\theta+F_{\\parallel}}{m}-\\operatorname{sgn}(mg\\sin\\theta+F_{\\parallel})\\mu_k g\\cos\\theta="+qty(a,"m/s^2"),
    "\\sum F_{\\parallel}=ma=("+n(m)+"\\,\\mathrm{kg})("+n(a)+"\\,\\mathrm{m/s^2})="+qty(m*a,"N"),
    "N=mg\\cos\\theta=("+n(m)+"\\,\\mathrm{kg})("+n(g)+"\\,\\mathrm{m/s^2})\\cos("+n(v.angle??0)+"^\\circ)="+qty(normal,"N"),
    frictionFormula,
@@ -830,7 +830,7 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   "a(t)=-\\omega_0^2x-2\\beta v="+qty(acceleration,"m/s^2"),
   "E_k=\\frac12mv^2=\\frac12("+qty(m,"kg")+")("+qty(p.speed,"m/s")+")^2="+qty(p.kinetic,"J"),
   "E_p=\\frac12kx^2=\\frac12("+qty(k,"N/m")+")("+qty(p.x,"m")+")^2="+qty(p.potential,"J"),
-  k>0?"T=2\\pi\\sqrt{\\frac{m}{k}}=2\\pi\\sqrt{\\frac{"+qty(m,"kg")+"}{"+qty(k,"N/m")+"}}="+qty(2*Math.PI*Math.sqrt(m/k),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0"
+  k>0?"T_d=\\frac{2\\pi}{\\omega_d}=\\frac{2\\pi}{"+n(omegaD)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/Math.max(omegaD,1e-12),"s"):"T=2\\pi\\sqrt{\\frac{m}{0}}=\\text{undefined for }k=0
  ][index];
 }
 function objectOptionsFor(id:LabId,language:Language):{value:string;label:string}[] {
@@ -1298,7 +1298,10 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         const next:Record<string,number>={};
         for(const param of allLabParams(lab)){
           const n=data.values[param.key];
-          if(typeof n!=="number"||!Number.isFinite(n))throw new Error("Invalid parameter");
+          if(typeof n!=="number"||!Number.isFinite(n)){
+            if(advancedParams[lab.id].some(extra=>extra.key===param.key)){next[param.key]=param.initial;continue;}
+            throw new Error("Invalid parameter");
+          }
           next[param.key]=Math.max(param.min,Math.min(param.max,n));
         }
         if((lab.id==="incline"||lab.id==="energy")&&typeof next.friction==="number"&&typeof next.staticFriction==="number"&&next.friction>next.staticFriction)next.friction=next.staticFriction;
@@ -1310,7 +1313,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
   };
   const activeLabLabel=tLabel(language,lab);
   const springOmega0=Math.sqrt((values.spring??0)/Math.max(values.mass??1,.01)),springZeta=values.dampingRatio??0,springBeta=springZeta*springOmega0,springOmegaD=springOmega0*Math.sqrt(1-springZeta*springZeta);
-  const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\beta t},\quad v_y=(v_{0y}+g/\beta)e^{-\beta t}-g/\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\zeta\omega_0t}\cos(\omega_dt+\phi),\quad \omega_d=\omega_0\sqrt{1-\zeta^2}`:lab.id==="circular"&&(values.phaseDegrees??0)!==0?String.raw`\theta(t)=\theta_0+\omega t,\quad \theta_0=\mathrm{phaseDegrees}`:lab.id==="incline"&&(values.appliedForce??0)!==0?String.raw`a= g\sin\theta+\frac{F_{\parallel}}{m}-\mu_k g\cos\theta`:lab.formula;
+  const activeMainFormula=lab.id==="projectile"&&(values.dragBeta??0)>0?String.raw`v_x=v_{0x}e^{-\beta t},\quad v_y=(v_{0y}+g/\beta)e^{-\beta t}-g/\beta`:lab.id==="spring"&&springZeta>0?String.raw`x(t)=Ae^{-\zeta\omega_0t}\cos(\omega_dt+\phi),\quad \omega_d=\omega_0\sqrt{1-\zeta^2}`:lab.id==="circular"&&(values.phaseDegrees??0)!==0?String.raw`\theta(t)=\theta_0+\omega t,\quad \theta_0=${((values.phaseDegrees??0)*Math.PI/180).toFixed(3)}\,\mathrm{rad}`:lab.id==="incline"&&(values.appliedForce??0)!==0?String.raw`a=g\sin\theta+\frac{F_{\parallel}}{m}-\operatorname{sgn}(mg\sin\theta+F_{\parallel})\mu_k g\cos\theta`:lab.formula;
   const assumptions:Record<LabId,{id:string;en:string}> = {
     projectile:{id:"Lintasan 2D ideal tanpa hambatan udara; gravitasi konstan dan permukaan tanah datar.",en:"Ideal 2D trajectory without air drag; gravity is constant and the ground is level."},
     mru:{id:"Gerak satu dimensi pada lintasan lurus; kecepatan konstan dan resultan gaya nol.",en:"One-dimensional straight-line motion; velocity is constant and net force is zero."},

@@ -689,7 +689,7 @@ function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Poin
   }
   if(lab.id==="energy") return [
     [labels.kinetic,point.kinetic,"J"],[labels.potential,point.potential,"J"],[labels.mechanical,total,"J"],
-    [language==="ID"?"Energi yang berpindah ke lingkungan":"Energy transferred to surroundings",Math.max(0,mass*g*values.height+.5*mass*(values.initialSpeed??0)**2-total),"J"],
+    [language==="ID"?"Usaha nonkonservatif":"Non-conservative work",total-(mass*g*values.height+.5*mass*(values.initialSpeed??0)**2),"J"],
     [labels.height,point.y,"m"],[labels.speed,point.speed,"m/s"]
   ] as [string,number,string][];
   if(lab.id==="incline") {
@@ -762,16 +762,17 @@ function metricFormulaFor(id:LabId,index:number,v:Record<string,number>,p:Point,
   ][index];
  }
  if(id==="circular"){
-  const r=v.radius??0,omega=v.omega??0;
+  const r=v.radius??0,omega=v.omega??0,phase=(v.phaseDegrees??0)*Math.PI/180;
   return [
-   "x=r\\cos(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.x,"m"),
-   "y=r\\sin(\\omega t)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s}))="+qty(p.y,"m"),
+   "x=r\\cos(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\cos(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.x,"m"),
+   "y=r\\sin(\\omega t+\\theta_0)=("+n(r)+"\\,\\mathrm{m})\\sin(("+n(omega)+"\\,\\mathrm{rad/s})("+n(time)+"\\,\\mathrm{s})+"+n(phase)+"\\,\\mathrm{rad})="+qty(p.y,"m"),
    "v=\\omega r=("+n(omega)+"\\,\\mathrm{rad/s})("+n(r)+"\\,\\mathrm{m})="+qty(p.speed,"m/s"),
    omega>0?"T=\\frac{2\\pi}{\\omega}=\\frac{2\\pi}{"+n(omega)+"\\,\\mathrm{rad/s}}="+qty(2*Math.PI/omega,"s"):"T=\\frac{2\\pi}{0}=\\text{undefined for }\\omega=0",
    "\\omega="+qty(omega,"rad/s"),
    "a_c=\\omega^2r=("+n(omega)+"\\,\\mathrm{rad/s})^2("+n(r)+"\\,\\mathrm{m})="+qty(omega*omega*r,"m/s^2")
   ][index];
  }
+
  if(id==="collision"){
   const c=collisionResults(v),occurred=p.collisionOccurred??false,v1=p.vx,v2=p.vx2??c.u2;
   const impulse=occurred?c.m1*(v1-c.u1):0;

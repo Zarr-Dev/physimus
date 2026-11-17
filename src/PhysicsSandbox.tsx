@@ -557,6 +557,8 @@ function motionAt(list:Compiled[],t:number,vars:Vars):Motion|null {
 }
 function arrow(ctx:CanvasRenderingContext2D,x1:number,y1:number,x2:number,y2:number,color:string,label?:string){const a=Math.atan2(y2-y1,x2-x1);ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2.7;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-10*Math.cos(a-.45),y2-10*Math.sin(a-.45));ctx.lineTo(x2-10*Math.cos(a+.45),y2-10*Math.sin(a+.45));ctx.closePath();ctx.fill();if(label){ctx.font="700 13px DM Sans";ctx.lineWidth=3;ctx.strokeStyle=getComputedStyle(ctx.canvas).getPropertyValue("--plot-bg").trim()||"#fff";ctx.strokeText(label,x2+7,y2-7);ctx.fillStyle=color;ctx.fillText(label,x2+7,y2-7);}}
 
+function SandboxMath({value}:{value:string}){return <span className="sandbox-example-math" dangerouslySetInnerHTML={{__html:katex.renderToString(value,{throwOnError:false,strict:"ignore",trust:false})}}/>;}
+
 export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{language:Language;theme:"light"|"dark";motionLevel:"low"|"medium"|"high";renderMode:"auto"|"performance"|"detail"}){
  const w=copy[language];
  const [mathLiveReady,setMathLiveReady]=useState(()=>typeof customElements!=="undefined"&&!!customElements.get("math-field"));
@@ -844,42 +846,42 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
       <div className="sandbox-editor-heading"><strong>{w.examples}</strong></div>
       <p className="sandbox-section-intro">{language==="ID"?"Pilih contoh untuk memuat persamaan, variabel, dan kondisi awal.":"Load a starter model with equations, variables and initial conditions."}</p>
       <div className="sandbox-example-list">
-        <button onClick={()=>preset("circle")}><strong>01 · {language==="ID"?"Gerak melingkar beraturan":"Uniform circular motion"}</strong><code>x(t)=A cos(ωt), y(t)=A sin(ωt)</code></button>
-        <button onClick={()=>preset("projectile")}><strong>02 · {language==="ID"?"Gerak parabola":"Projectile motion"}</strong><code>x(t)=v₀ cos(θ)t, y(t)=v₀ sin(θ)t − ½gt²</code></button>
-        <button onClick={()=>preset("spring")}><strong>03 · {language==="ID"?"Osilasi harmonik pegas":"Mass–spring SHM"}</strong><code>x(t)=A cos(√(k/m)t)</code></button>
-        <button onClick={()=>preset("mru")}><strong>04 · {language==="ID"?"Gerak lurus beraturan":"Uniform linear motion"}</strong><code>x(t)=x₀+v₀t</code></button>
-        <button onClick={()=>preset("mrua")}><strong>05 · {language==="ID"?"Gerak lurus berubah beraturan":"Constant acceleration"}</strong><code>x(t)=x₀+v₀t+½at²</code></button>
-        <button onClick={()=>preset("pendulum")}><strong>06 · {language==="ID"?"Bandul sudut kecil":"Small-angle pendulum"}</strong><code>x(t)=L sin(θ cos(√(g/L)t))</code></button>
-        <button onClick={()=>preset("incline")}><strong>07 · {language==="ID"?"Balok pada bidang miring":"Block on an incline"}</strong><code>a=g(sin θ−μ cos θ)</code></button>
-        <button onClick={()=>preset("energy")}><strong>08 · {language==="ID"?"Energi pada bidang miring":"Energy on an incline"}</strong><code>Eₘ=Eₖ+Eₚ</code></button>
-        <button onClick={()=>preset("curve")}><strong>09 · {language==="ID"?"Kurva fungsi kuadrat":"Quadratic function"}</strong><code>y=0.2x²−2</code></button>
-        <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><code>y=∫₀ˣ u² du</code></button>
-        <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><code>y=Σᵢ₌₁ⁿ i²</code></button>
-        <button onClick={()=>preset("product")}><strong>12 · {language==="ID"?"Perkalian berindeks pi":"Indexed product operator"}</strong><code>y=∏ᵢ₌₁ⁿ i</code></button>
-        <button onClick={()=>preset("derivative")}><strong>12 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><code>y=d(sin x)/dx</code></button>
-        <button onClick={()=>preset("newton")}><strong>13 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><code>F=ma</code></button>
-        <button onClick={()=>preset("weight")}><strong>14 · {language==="ID"?"Berat benda":"Weight"}</strong><code>w=mg</code></button>
-        <button onClick={()=>preset("momentum")}><strong>15 · {language==="ID"?"Momentum linear":"Linear momentum"}</strong><code>p=mv</code></button>
-        <button onClick={()=>preset("work")}><strong>16 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><code>W=F d cos(θ)</code></button>
-        <button onClick={()=>preset("kinetic")}><strong>17 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><code>Eₖ=½mv²</code></button>
-        <button onClick={()=>preset("springforce")}><strong>18 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><code>F=−kx</code></button>
-        <button onClick={()=>preset("centripetal")}><strong>19 · {language==="ID"?"Gaya sentripetal":"Centripetal force"}</strong><code>F_c=mω²r</code></button>
-        <button onClick={()=>preset("potential")}><strong>20 · {language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy"}</strong><code>U=mgh</code></button>
-        <button onClick={()=>preset("impulse")}><strong>21 · {language==="ID"?"Impuls dan perubahan momentum":"Impulse and momentum change"}</strong><code>J=FΔt</code></button>
-        <button onClick={()=>preset("torque")}><strong>22 · {language==="ID"?"Momen gaya / torsi":"Torque"}</strong><code>τ=Iα</code></button>
-        <button onClick={()=>preset("rotation")}><strong>23 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><code>Kᵣₒₜ=½Iω²</code></button>
-        <button onClick={()=>preset("springenergy")}><strong>24 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><code>Uₛ=½kx²</code></button>
-        <button onClick={()=>preset("friction")}><strong>25 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><code>fₖ=μₖN, N=mg cos θ</code></button>
-        <button onClick={()=>preset("components")}><strong>26 · {language==="ID"?"Komponen gaya":"Force components"}</strong><code>Fₓ=F cos θ, Fᵧ=F sin θ</code></button>
-        <button onClick={()=>preset("torricelli")}><strong>27 · {language==="ID"?"Persamaan Torricelli":"Torricelli equation"}</strong><code>v=√(v₀²+2as)</code></button>
-        <button onClick={()=>preset("power")}><strong>28 · {language==="ID"?"Daya mekanik":"Mechanical power"}</strong><code>P=Fv</code></button>
-        <button onClick={()=>preset("gravitation")}><strong>29 · {language==="ID"?"Hukum gravitasi Newton":"Newtonian gravitation"}</strong><code>F=Gm₁m₂/r²</code></button>
-        <button onClick={()=>preset("angularmomentum")}><strong>30 · {language==="ID"?"Momentum sudut":"Angular momentum"}</strong><code>H=Iω</code></button>
-        <button onClick={()=>preset("damped")}><strong>31 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><code>x=Ae^(−βt) cos(ωᵈt)</code></button>
-        <button onClick={()=>preset("workenergy")}><strong>32 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><code>Wₙₑₜ=½m(v²−v₀²)</code></button>
-        <button onClick={()=>preset("dampedforce")}><strong>33 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><code>Fᵈ=−cv</code></button>
-        <button onClick={()=>preset("staticfriction")}><strong>34 · {language==="ID"?"Batas gaya gesek statis":"Maximum static friction"}</strong><code>fₛ,max=μₛN</code></button>
-        <button onClick={()=>preset("angularkinematics")}><strong>35 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><code>ω=ω₀+αt</code></button>
+        <button onClick={()=>preset("circle")}><strong>01 · {language==="ID"?"Gerak melingkar beraturan":"Uniform circular motion"}</strong><SandboxMath value={String.raw`x(t)=A\cos(\omega t),\quad y(t)=A\sin(\omega t)`}/></button>
+        <button onClick={()=>preset("projectile")}><strong>02 · {language==="ID"?"Gerak parabola":"Projectile motion"}</strong><SandboxMath value={String.raw`x(t)=v_0\cos\theta\,t,\quad y(t)=v_0\sin\theta\,t-\frac12gt^2`}/></button>
+        <button onClick={()=>preset("spring")}><strong>03 · {language==="ID"?"Osilasi harmonik pegas":"Mass–spring SHM"}</strong><SandboxMath value={String.raw`x(t)=A\cos\left(\sqrt{\frac{k}{m}}\,t\right)`}/></button>
+        <button onClick={()=>preset("mru")}><strong>04 · {language==="ID"?"Gerak lurus beraturan":"Uniform linear motion"}</strong><SandboxMath value={String.raw`x(t)=x_0+v_0t`}/></button>
+        <button onClick={()=>preset("mrua")}><strong>05 · {language==="ID"?"Gerak lurus berubah beraturan":"Constant acceleration"}</strong><SandboxMath value={String.raw`x(t)=x_0+v_0t+\frac12at^2`}/></button>
+        <button onClick={()=>preset("pendulum")}><strong>06 · {language==="ID"?"Bandul sudut kecil":"Small-angle pendulum"}</strong><SandboxMath value={String.raw`x(t)=L\sin\left(\theta_0\cos\left(\sqrt{\frac{g}{L}}\,t\right)\right)`}/></button>
+        <button onClick={()=>preset("incline")}><strong>07 · {language==="ID"?"Balok pada bidang miring":"Block on an incline"}</strong><SandboxMath value={String.raw`a=g(\sin\theta-\mu_k\cos\theta)`}/></button>
+        <button onClick={()=>preset("energy")}><strong>08 · {language==="ID"?"Energi pada bidang miring":"Energy on an incline"}</strong><SandboxMath value={String.raw`E_m=E_k+E_p`}/></button>
+        <button onClick={()=>preset("curve")}><strong>09 · {language==="ID"?"Kurva fungsi kuadrat":"Quadratic function"}</strong><SandboxMath value={String.raw`y=0.2x^2-2`}/></button>
+        <button onClick={()=>preset("integral")}><strong>10 · {language==="ID"?"Integral tentu akumulasi":"Definite integral accumulation"}</strong><SandboxMath value={String.raw`y=\int_0^x u^2\,du`}/></button>
+        <button onClick={()=>preset("summation")}><strong>11 · {language==="ID"?"Jumlah deret sigma":"Sigma series"}</strong><SandboxMath value={String.raw`y=\sum_{i=1}^{n}i^2`}/></button>
+        <button onClick={()=>preset("product")}><strong>12 · {language==="ID"?"Perkalian berindeks pi":"Indexed product operator"}</strong><SandboxMath value={String.raw`y=\prod_{i=1}^{n}i`}/></button>
+        <button onClick={()=>preset("derivative")}><strong>12 · {language==="ID"?"Turunan fungsi sinus":"Derivative of sine"}</strong><SandboxMath value={String.raw`y=\frac{d}{dx}\sin x`}/></button>
+        <button onClick={()=>preset("newton")}><strong>13 · {language==="ID"?"Hukum II Newton":"Newton's second law"}</strong><SandboxMath value={String.raw`F=ma`}/></button>
+        <button onClick={()=>preset("weight")}><strong>14 · {language==="ID"?"Berat benda":"Weight"}</strong><SandboxMath value={String.raw`w=mg`}/></button>
+        <button onClick={()=>preset("momentum")}><strong>15 · {language==="ID"?"Momentum linear":"Linear momentum"}</strong><SandboxMath value={String.raw`p=mv`}/></button>
+        <button onClick={()=>preset("work")}><strong>16 · {language==="ID"?"Usaha oleh gaya":"Work by a force"}</strong><SandboxMath value={String.raw`W=Fd\cos\theta`}/></button>
+        <button onClick={()=>preset("kinetic")}><strong>17 · {language==="ID"?"Energi kinetik":"Kinetic energy"}</strong><SandboxMath value={String.raw`E_k=\frac12mv^2`}/></button>
+        <button onClick={()=>preset("springforce")}><strong>18 · {language==="ID"?"Gaya pemulih pegas":"Spring restoring force"}</strong><SandboxMath value={String.raw`F=-kx`}/></button>
+        <button onClick={()=>preset("centripetal")}><strong>19 · {language==="ID"?"Gaya sentripetal":"Centripetal force"}</strong><SandboxMath value={String.raw`F_c=m\omega^2r`}/></button>
+        <button onClick={()=>preset("potential")}><strong>20 · {language==="ID"?"Energi potensial gravitasi":"Gravitational potential energy"}</strong><SandboxMath value={String.raw`U=mgh`}/></button>
+        <button onClick={()=>preset("impulse")}><strong>21 · {language==="ID"?"Impuls dan perubahan momentum":"Impulse and momentum change"}</strong><SandboxMath value={String.raw`J=F\Delta t`}/></button>
+        <button onClick={()=>preset("torque")}><strong>22 · {language==="ID"?"Momen gaya / torsi":"Torque"}</strong><SandboxMath value={String.raw`\tau=I\alpha`}/></button>
+        <button onClick={()=>preset("rotation")}><strong>23 · {language==="ID"?"Energi kinetik rotasi":"Rotational kinetic energy"}</strong><SandboxMath value={String.raw`K_{\mathrm{rot}}=\frac12I\omega^2`}/></button>
+        <button onClick={()=>preset("springenergy")}><strong>24 · {language==="ID"?"Energi potensial pegas":"Spring potential energy"}</strong><SandboxMath value={String.raw`U_s=\frac12kx^2`}/></button>
+        <button onClick={()=>preset("friction")}><strong>25 · {language==="ID"?"Gaya gesek pada bidang miring":"Friction on an incline"}</strong><SandboxMath value={String.raw`f_k=\mu_kN,\quad N=mg\cos\theta`}/></button>
+        <button onClick={()=>preset("components")}><strong>26 · {language==="ID"?"Komponen gaya":"Force components"}</strong><SandboxMath value={String.raw`F_x=F\cos\theta,\quad F_y=F\sin\theta`}/></button>
+        <button onClick={()=>preset("torricelli")}><strong>27 · {language==="ID"?"Persamaan Torricelli":"Torricelli equation"}</strong><SandboxMath value={String.raw`v=\sqrt{v_0^2+2as}`}/></button>
+        <button onClick={()=>preset("power")}><strong>28 · {language==="ID"?"Daya mekanik":"Mechanical power"}</strong><SandboxMath value={String.raw`P=Fv`}/></button>
+        <button onClick={()=>preset("gravitation")}><strong>29 · {language==="ID"?"Hukum gravitasi Newton":"Newtonian gravitation"}</strong><SandboxMath value={String.raw`F=G\frac{m_1m_2}{r^2}`}/></button>
+        <button onClick={()=>preset("angularmomentum")}><strong>30 · {language==="ID"?"Momentum sudut":"Angular momentum"}</strong><SandboxMath value={String.raw`H=I\omega`}/></button>
+        <button onClick={()=>preset("damped")}><strong>31 · {language==="ID"?"Osilasi teredam":"Damped oscillation"}</strong><SandboxMath value={String.raw`x=Ae^{-\beta t}\cos(\omega_dt)`}/></button>
+        <button onClick={()=>preset("workenergy")}><strong>32 · {language==="ID"?"Teorema usaha–energi":"Work–energy theorem"}</strong><SandboxMath value={String.raw`W_{\mathrm{net}}=\frac12m(v^2-v_0^2)`}/></button>
+        <button onClick={()=>preset("dampedforce")}><strong>33 · {language==="ID"?"Gaya redaman viskos":"Viscous damping force"}</strong><SandboxMath value={String.raw`F_d=-cv`}/></button>
+        <button onClick={()=>preset("staticfriction")}><strong>34 · {language==="ID"?"Batas gaya gesek statis":"Maximum static friction"}</strong><SandboxMath value={String.raw`f_{s,\max}=\mu_sN`}/></button>
+        <button onClick={()=>preset("angularkinematics")}><strong>35 · {language==="ID"?"Kinematika rotasi":"Rotational kinematics"}</strong><SandboxMath value={String.raw`\omega=\omega_0+\alpha t`}/></button>
       </div>
     </>}
     {editorTab==="graph"&&<>

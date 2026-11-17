@@ -124,22 +124,22 @@ type EquationEntry = { id:string; titleID:string; titleEN:string; formula:string
 const equationLibrary: Record<LabId, EquationEntry[]> = {
  projectile:[
   {id:"components",titleID:"Komponen kecepatan",titleEN:"Velocity components",formula:String.raw`v_x=v_0\cos\theta,\quad v_y=v_0\sin\theta-gt`,noteID:"Komponen horizontal tetap, sedangkan komponen vertikal berubah karena gravitasi.",noteEN:"The horizontal component stays constant while the vertical component changes under gravity."},
-  {id:"coordinates",titleID:"Persamaan posisi",titleEN:"Position equations",formula:String.raw`x(t)=x_0+v_0\cos\theta\,t,\quad y(t)=h_0+v_0\sin\theta\,t-\frac12gt^2`,noteID:"Posisi diperoleh dengan mengintegralkan komponen kecepatan terhadap waktu.",noteEN:"Position follows by integrating each velocity component over time."},
+  {id:"coordinates",titleID:"Posisi",titleEN:"Position",formula:String.raw`x(t)=x_0+v_0\cos\theta\,t,\quad y(t)=h_0+v_0\sin\theta\,t-\frac12gt^2`,noteID:"Posisi diperoleh dengan mengintegralkan komponen kecepatan terhadap waktu.",noteEN:"Position follows by integrating each velocity component over time."},
   {id:"flight",titleID:"Waktu hingga menyentuh tanah",titleEN:"Time to reach the ground",formula:String.raw`t_f=\frac{v_0\sin\theta+\sqrt{(v_0\sin\theta)^2+2gh_0}}{g}`,noteID:"Akar positif dipilih karena waktu fisik tidak negatif.",noteEN:"Choose the positive root because physical flight time cannot be negative."},
   {id:"peak",titleID:"Tinggi maksimum",titleEN:"Maximum height",formula:String.raw`H_{\max}=h_0+\frac{v_0^2\sin^2\theta}{2g}`,noteID:"Di titik tertinggi, kecepatan vertikal sesaat sama dengan nol.",noteEN:"At the apex, vertical velocity is momentarily zero."},
   {id:"range",titleID:"Jangkauan horizontal",titleEN:"Horizontal range",formula:String.raw`R=v_0\cos\theta\,t_f`,noteID:"Bentuk ini berlaku untuk ketinggian awal umum, termasuk h₀ bukan nol.",noteEN:"This form supports a nonzero launch height."}
 
  ],
  mru:[
-  {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw`x(t)=x_0+vt`,noteID:"Grafik x–t berupa garis lurus; gradiennya adalah kecepatan.",noteEN:"The x–t graph is a straight line whose slope is velocity."},
+  {id:"position",titleID:"Posisi",titleEN:"Position",formula:String.raw`x(t)=x_0+vt`,noteID:"Grafik x–t berupa garis lurus; gradiennya adalah kecepatan.",noteEN:"The x–t graph is a straight line whose slope is velocity."},
   {id:"velocity",titleID:"Kecepatan konstan",titleEN:"Constant velocity",formula:String.raw`v=\frac{\Delta x}{\Delta t}=\text{konstan}`,noteID:"Perpindahan per selang waktu selalu sama.",noteEN:"Displacement per time interval remains constant."},
   {id:"acceleration",titleID:"Percepatan",titleEN:"Acceleration",formula:String.raw`a=\frac{\Delta v}{\Delta t}=0`,noteID:"Karena kecepatan tidak berubah, percepatannya nol.",noteEN:"Since velocity does not change, acceleration is zero."}
 
  ],
  mrua:[
-  {id:"position",titleID:"Persamaan posisi",titleEN:"Position equation",formula:String.raw`x=x_0+v_0t+\frac12at^2`,noteID:"Grafik posisi terhadap waktu berbentuk parabola jika percepatan tidak nol.",noteEN:"Position versus time is parabolic when acceleration is nonzero."},
-  {id:"velocity",titleID:"Persamaan kecepatan",titleEN:"Velocity equation",formula:String.raw`v=v_0+at`,noteID:"Gradien grafik v–t sama dengan percepatan.",noteEN:"The slope of a velocity–time graph equals acceleration."},
-  {id:"torricelli",titleID:"Persamaan tanpa waktu",titleEN:"Time-independent equation",formula:String.raw`v^2=v_0^2+2a(x-x_0)`,noteID:"Berguna ketika waktu tidak diketahui atau tidak diperlukan.",noteEN:"Useful when time is unknown or not needed."},
+  {id:"position",titleID:"Posisi",titleEN:"Position",formula:String.raw`x=x_0+v_0t+\frac12at^2`,noteID:"Grafik posisi terhadap waktu berbentuk parabola jika percepatan tidak nol.",noteEN:"Position versus time is parabolic when acceleration is nonzero."},
+  {id:"velocity",titleID:"Kecepatan",titleEN:"Velocity",formula:String.raw`v=v_0+at`,noteID:"Gradien grafik v–t sama dengan percepatan.",noteEN:"The slope of a velocity–time graph equals acceleration."},
+  {id:"torricelli",titleID:"Relasi tanpa waktu",titleEN:"Time-independent relation",formula:String.raw`v^2=v_0^2+2a(x-x_0)`,noteID:"Berguna ketika waktu tidak diketahui atau tidak diperlukan.",noteEN:"Useful when time is unknown or not needed."},
   {id:"displacement",titleID:"Kecepatan rata-rata",titleEN:"Average velocity",formula:String.raw`\Delta x=\frac{v_0+v}{2}\,t`,noteID:"Berlaku untuk percepatan konstan satu dimensi.",noteEN:"Valid for constant one-dimensional acceleration."}
 
  ],
@@ -175,7 +175,7 @@ const equationLibrary: Record<LabId, EquationEntry[]> = {
  ],
  spring:[
   {id:"hooke",titleID:"Hukum Hooke",titleEN:"Hooke's law",formula:String.raw`F=-kx`,noteID:"Tanda negatif menunjukkan gaya pegas mengarah menuju posisi setimbang.",noteEN:"The negative sign means spring force points toward equilibrium."},
-  {id:"motion",titleID:"Persamaan gerak",titleEN:"Motion equation",formula:String.raw`x(t)=A\cos(\omega t+\phi)`,noteID:"Fase awal φ menentukan posisi dan arah gerak pada t = 0.",noteEN:"Initial phase φ determines position and direction at t = 0."},
+  {id:"motion",titleID:"Gerak",titleEN:"Motion",formula:String.raw`x(t)=A\cos(\omega t+\phi)`,noteID:"Fase awal φ menentukan posisi dan arah gerak pada t = 0.",noteEN:"Initial phase φ determines position and direction at t = 0."},
   {id:"frequency",titleID:"Frekuensi sudut",titleEN:"Angular frequency",formula:String.raw`\omega=\sqrt{\frac{k}{m}}`,noteID:"Pegas lebih kaku meningkatkan frekuensi; massa lebih besar menurunkannya.",noteEN:"A stiffer spring increases frequency; a larger mass decreases it."},
   {id:"period",titleID:"Periode dan frekuensi",titleEN:"Period and frequency",formula:String.raw`T=2\pi\sqrt{\frac{m}{k}},\quad f=\frac1T`,noteID:"Periode adalah waktu satu osilasi penuh pada model pegas ideal.",noteEN:"The period is the time for one full oscillation in the ideal spring model."},
   {id:"energy",titleID:"Energi osilasi",titleEN:"Oscillation energy",formula:String.raw`E=\frac12mv^2+\frac12kx^2=\frac12kA^2`,noteID:"Tanpa redaman, energi mekanik total tetap.",noteEN:"Without damping, total mechanical energy remains constant."}
@@ -283,24 +283,24 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
     : `Check the allowed range for ${invalidField.labelEN} (${invalidField.min!==undefined?"min. "+invalidField.min:""}${invalidField.min!==undefined&&invalidField.max!==undefined?", ":""}${invalidField.max!==undefined?"max. "+invalidField.max:""}).`
   : calculationFailed?(language==="ID"?"Hasil tidak terdefinisi. Periksa kembali nilai variabel.":"Result is undefined. Check the variable values."):null;
  const reset=()=>setInputs(old=>({...old,[active.id]:Object.fromEntries(active.fields.map(field=>[field.key,String(field.initial)]))}));
- return <section className="equation-calculator-panel" aria-label={language==="ID"?"Kalkulator persamaan mekanika":"Mechanics equation calculator"}>
+ return <section className="equation-calculator-panel" aria-label={language==="ID"?"Kalkulator mekanika":"Mechanics calculator"}>
   <div className="equation-calculator-heading">
-   <div><span className="eyebrow">MECHANICS / FORMULA WORKBENCH</span><h2>{language==="ID"?"Kalkulator Persamaan":"Equation Calculator"}</h2></div>
-   <p>{language==="ID"?"Pilih satu persamaan. Variabel, substitusi, dan hasil akan menyesuaikan secara otomatis.":"Choose one equation. Its variables, substitution, and result update automatically."}</p>
+   <div><span className="eyebrow">MECHANICS / FORMULA WORKBENCH</span><h2>{language==="ID"?"Kalkulator Mekanika":"Mechanics Calculator"}</h2></div>
+   <p>{language==="ID"?"Pilih model dan ubah variabel. Perhitungan serta hasil akan diperbarui otomatis.":"Choose a model and adjust its variables. Calculations and results update automatically."}</p>
   </div>
   <div className="equation-calculator-workspace">
    <div className="equation-calc-selector">
-    <label htmlFor="mechanics-equation-select">{language==="ID"?"PILIH PERSAMAAN":"SELECT AN EQUATION"}</label>
+    <label htmlFor="mechanics-equation-select">{language==="ID"?"PILIH PERHITUNGAN":"SELECT A CALCULATION"}</label>
     <select id="mechanics-equation-select" value={active.id} onChange={event=>setSelectedId(event.target.value)}>
      {definitions.map((def,index)=><option key={def.id} value={def.id}>{String(index+1).padStart(2,"0")} · {language==="ID"?def.titleID:def.titleEN}</option>)}
     </select>
-    <span>{String(activeIndex+1).padStart(2,"0")} / {String(definitions.length).padStart(2,"0")} {language==="ID"?"PERSAMAAN":"EQUATIONS"}</span>
+    <span>{String(activeIndex+1).padStart(2,"0")} / {String(definitions.length).padStart(2,"0")}</span>
    </div>
    <article className="equation-calculator-card" key={active.id}>
-    <div className="equation-calculator-card-head"><div><span className="equation-calculator-index">{language==="ID"?"PERSAMAAN":"EQUATION"} {String(activeIndex+1).padStart(2,"0")}</span><h3>{language==="ID"?active.titleID:active.titleEN}</h3></div>
+    <div className="equation-calculator-card-head"><div><span className="equation-calculator-index">{String(activeIndex+1).padStart(2,"0")}</span><h3>{language==="ID"?active.titleID:active.titleEN}</h3></div>
      <button type="button" className="equation-calc-reset" onClick={reset} aria-label={language==="ID"?"Reset nilai":"Reset values"} title={language==="ID"?"Kembalikan nilai awal":"Restore defaults"}><RotateCcw size={15}/></button>
     </div>
-    <div className="equation-calc-formula"><span>{language==="ID"?"PERSAMAAN UMUM":"GENERAL EQUATION"}</span><div className="equation-calc-math"><Equation value={active.formula}/></div></div>
+    <div className="equation-calc-formula"><div className="equation-calc-math"><Equation value={active.formula}/></div></div>
     <div className="equation-calc-input-heading"><strong>{language==="ID"?"Variabel eksperimen":"Experiment variables"}</strong><span>{language==="ID"?"Hasil diperbarui otomatis":"Live calculation"}</span></div>
     <div className="equation-calc-fields">{active.fields.map(field=>{
      const value=raw[field.key]??String(field.initial);
@@ -311,14 +311,14 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
       {(field.min!==undefined||field.max!==undefined)&&<small className="equation-calc-range">{field.min!==undefined&&field.max!==undefined?`${field.min} – ${field.max}`:field.min!==undefined?`≥ ${field.min}`:`≤ ${field.max}`}</small>}
      </label>;
     })}</div>
-    <div className="equation-calc-substitution"><span>{language==="ID"?"SUBSTITUSI ANGKA":"NUMERIC SUBSTITUTION"}</span><div className="equation-calc-substitution-math">{result?<Equation value={calculatorMath(result.substitution)}/>:<span>{language==="ID"?"Lengkapi variabel untuk melihat substitusi.":"Complete the variables to see the substitution."}</span>}</div></div>
+    <div className="equation-calc-substitution"><div className="equation-calc-substitution-math">{result?<Equation value={calculatorMath(result.substitution)}/>:<span>{language==="ID"?"Lengkapi variabel untuk melihat perhitungan.":"Complete the variables to see the calculation."}</span>}</div></div>
     {errorText&&<p className="equation-calc-error" role="status">{errorText}</p>}
-    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL PERHITUNGAN":"CALCULATED RESULT"}</span><strong>{result?<><Equation value={result.value}/>{" "}<small>{result.unit}</small></>:"—"}</strong></div>
+    <div className={result?"equation-calc-result":"equation-calc-result is-empty"}><span>{language==="ID"?"HASIL":"RESULT"}</span><strong>{result?<><Equation value={result.value}/>{" "}<small>{result.unit}</small></>:"—"}</strong></div>
     <div className="equation-calc-explanation"><span>{language==="ID"?"PEMAHAMAN KONSEP":"CONCEPT NOTE"}</span><p>{language==="ID"?active.noteID:active.noteEN}</p></div>
    </article>
    <div className="equation-calc-navigation">
     <button type="button" onClick={()=>setSelectedId(definitions[(activeIndex-1+definitions.length)%definitions.length].id)}><ArrowLeft size={15}/>{language==="ID"?"Sebelumnya":"Previous"}</button>
-    <span>{language==="ID"?"Ganti persamaan tanpa meninggalkan kalkulator":"Switch equations without leaving the calculator"}</span>
+    <span>{language==="ID"?"Ganti perhitungan tanpa meninggalkan kalkulator":"Switch calculations without leaving the calculator"}</span>
     <button type="button" onClick={()=>setSelectedId(definitions[(activeIndex+1)%definitions.length].id)}>{language==="ID"?"Berikutnya":"Next"}<ArrowRight size={15}/></button>
    </div>
   </div>
@@ -333,7 +333,7 @@ const words = {
     openLab:"Mulai bereksperimen", browse:"Jelajahi laboratorium", featured:"LABORATORIUM MEKANIKA",
     collection:"Eksplorasi Mekanika", collectionText:"Dari gerak sederhana hingga energi dan gaya. Setiap laboratorium memiliki parameter, simulasi, grafik, dan pengukuran yang saling terhubung.",
     experiments:"laboratorium tersedia", open:"Buka laboratorium", all:"Semua", kinematics:"Kinematika", dynamics:"Dinamika & Energi", oscillation:"Getaran",
-    expr:"Persamaan model", parameters:"Parameter eksperimen", graph:"Grafik eksperimen", play:"Mulai", pause:"Jeda", reset:"Reset",
+    expr:"Model matematis", parameters:"Parameter eksperimen", graph:"Grafik eksperimen", play:"Mulai", pause:"Jeda", reset:"Reset",
     time:"Waktu simulasi", values:"Pengukuran langsung", export:"Ekspor CSV", save:"Simpan eksperimen", load:"Buka eksperimen",
     grid:"Grid", vectors:"Vektor", trail:"Jejak", model:"MODEL FISIKA", assumptions:"Asumsi model",
     learnTitle:"Pahami sebelum menghitung", learnText:"Mulai dari fenomena, lanjutkan dengan persamaan, kemudian uji prediksi melalui simulasi.",
@@ -411,8 +411,8 @@ function MeasurementDerivation({formula,value,unit,language}:{formula:string;val
  const general=hasSubstitution?parts.slice(0,2).join("="):formula;
  const substitution=hasSubstitution?parts.slice(2,-1).join("="):"";
  return <div className="measurement-derivation">
-  <div className="measurement-derivation-row"><span>{language==="ID"?"Persamaan":"Equation"}</span><div><Equation value={general}/></div></div>
-  {substitution&&<div className="measurement-derivation-row"><span>{language==="ID"?"Substitusi":"Substitution"}</span><div><Equation value={substitution}/></div></div>}
+  <div className="measurement-derivation-row"><Equation value={general}/></div>
+  {substitution&&<div className="measurement-derivation-row"><Equation value={substitution}/></div>}
   <div className="measurement-derivation-result"><span>{language==="ID"?"Hasil":"Result"}</span><strong>{Number.isFinite(value)?<><Equation value={value.toFixed(3)}/>{" "}<small>{unit}</small></>:"—"}</strong></div>
  </div>;
 }

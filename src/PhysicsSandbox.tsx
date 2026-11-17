@@ -631,6 +631,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
   update(row.id,next);setFocusedEquationId(row.id);
   restoreEquationCaret(row.id,start+prefix.length+token.length);
  };
+ useEffect(()=>{if(!mathLiveReady)return;rows.forEach(row=>{const input=equationInputsRef.current[row.id];if(input&&isMathfield(input)&&document.activeElement!==input&&input.getValue("ascii-math")!==row.text)input.value=equationToLatex(row.text);});},[rows,mathLiveReady]);
  const reset=()=>{setTime(0);timeRef.current=0;setPlaying(false);};
  const preset=(kind:string)=>{
   const data:Record<string,string[]>={

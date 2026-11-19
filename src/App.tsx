@@ -354,8 +354,8 @@ function EquationCalculatorPanel({labId,language}:{labId:LabId;language:Language
      const value=raw[field.key]??String(field.initial);
      const fieldInvalid=value.trim()===""||!Number.isFinite(Number(value))||(field.min!==undefined&&Number(value)<field.min)||(field.max!==undefined&&Number(value)>field.max);
      return <label key={field.key}>
-      <span className="equation-calc-field-label">{language==="ID"?field.labelID:field.labelEN}<Equation value={calcVariableSymbol(field.key)}/><small>{field.unit}</small></span>
-      <input type="number" inputMode="decimal" min={field.min} max={field.max} step={field.step??"any"} value={value} aria-invalid={fieldInvalid} onChange={event=>setInputs(old=>({...old,[active.id]:{...(old[active.id]??{}),[field.key]:event.target.value}}))}/>
+      <span className="equation-calc-field-label">{language==="ID"?field.labelID:field.labelEN}<Equation value={calcVariableSymbol(field.key)}/></span>
+      <div className="equation-calc-number-unit"><input type="number" inputMode="decimal" min={field.min} max={field.max} step={field.step??"any"} value={value} aria-invalid={fieldInvalid} onChange={event=>setInputs(old=>({...old,[active.id]:{...(old[active.id]??{}),[field.key]:event.target.value}}))}/><small>{field.unit}</small></div>
       {(field.min!==undefined||field.max!==undefined)&&<small className="equation-calc-range">{field.min!==undefined&&field.max!==undefined?`${field.min} – ${field.max}`:field.min!==undefined?`≥ ${field.min}`:`≤ ${field.max}`}</small>}
      </label>;
     })}</div>

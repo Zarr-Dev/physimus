@@ -1362,7 +1362,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     let frame=0,lastDraw=0;
     const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;
     const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);
-    const targetFps=reduced?8:constrainedDevice?24:renderMode==="performance"?30:motionLevel==="low"?30:motionLevel==="medium"?45:60;
+    const targetFps=reduced?8:renderMode==="performance"?24:constrainedDevice&&motionLevel==="high"?24:motionLevel==="low"?18:motionLevel==="medium"?30:36;
     const interval=1000/targetFps;
     const tick=(now:number)=>{
       if(!lastDraw||now-lastDraw>=interval){lastDraw=now;drawRef.current();}

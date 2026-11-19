@@ -1139,7 +1139,6 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     if(!playing)return;
     let frame=0,last=0,lastUi=0;
     const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;
-    const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);
     const fps=reduced?8:motionLevel==="low"?8:12;
     const interval=1000/fps;
     const tick=(now:number)=>{
@@ -1178,7 +1177,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
       let minY=Math.min(...plotted.map(p=>p.y)),maxY=Math.max(...plotted.map(p=>p.y));
       if(graphMode==="trajectory"&&lab.id==="collision"){const positions=points.flatMap(p=>[p.x,p.x2??p.x]);minX=Math.min(...positions);maxX=Math.max(...positions);minY=-1;maxY=1;}
       if(graphMode!=="trajectory"&&lab.id==="collision"){
-        const secondary=points.map(p=>graphMode==="position-renderTime"?(p.x2??0):graphMode==="velocity-renderTime"?(p.vx2??0):0);
+        const secondary=points.map(p=>graphMode==="position-time"?(p.x2??0):graphMode==="velocity-time"?(p.vx2??0):0);
         minY=Math.min(minY,...secondary);maxY=Math.max(maxY,...secondary);
       }
       if(graphMode==="trajectory"){
@@ -1229,7 +1228,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
       for(let value=yStart;value<=maxY+1e-9;value+=yStep){const gy=Y(value);ctx.fillText(value.toFixed(decimals(yStep)),left-10,gy+4);}
       ctx.fillStyle=theme==="dark"?"#d1dce8":"#60758c";ctx.font="600 13px Inter, sans-serif";ctx.textAlign="center";
       ctx.fillText(graphMode==="trajectory"?(lab.id==="circular"||lab.id==="spring"?"x (m)":lab.id==="energy"?(language==="ID"?"Jarak sepanjang bidang (m)":"Distance along slope (m)"):(language==="ID"?"Posisi / jarak (m)":"Position / distance (m)")):(language==="ID"?"Waktu (s)":"Time (s)"),left+pw/2,height-14);
-      ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(graphMode==="trajectory"?(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)")):graphMode==="position-renderTime"?(language==="ID"?"Posisi (m)":"Position (m)"):graphMode==="velocity-renderTime"?(language==="ID"?"Kecepatan (m/s)":"Velocity (m/s)"):(language==="ID"?"Percepatan (m/s²)":"Acceleration (m/s²)"),0,0);ctx.restore();
+      ctx.save();ctx.translate(19,top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(graphMode==="trajectory"?(lab.id==="energy"?(language==="ID"?"Ketinggian (m)":"Height (m)"):lab.id==="circular"?"y (m)":lab.id==="spring"?"—":(language==="ID"?"Posisi vertikal (m)":"Vertical position (m)")):graphMode==="position-time"?(language==="ID"?"Posisi (m)":"Position (m)"):graphMode==="velocity-time"?(language==="ID"?"Kecepatan (m/s)":"Velocity (m/s)"):(language==="ID"?"Percepatan (m/s²)":"Acceleration (m/s²)"),0,0);ctx.restore();
 
       if(graphMode==="trajectory"){
         ctx.save();
@@ -1269,11 +1268,11 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         ctx.strokeStyle="#c6d4e3";ctx.lineWidth=2;ctx.setLineDash([5,7]);ctx.stroke();ctx.setLineDash([]);
       }
       if(lab.id==="collision"&&graphMode!=="trajectory"){
-        const secondValues=points.map(p=>({x:p.t,y:graphMode==="position-renderTime"?(p.x2??0):graphMode==="velocity-renderTime"?(p.vx2??0):0}));
+        const secondValues=points.map(p=>({x:p.t,y:graphMode==="position-time"?(p.x2??0):graphMode==="velocity-time"?(p.vx2??0):0}));
         ctx.beginPath();secondValues.forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
         ctx.strokeStyle="#d99a46";ctx.lineWidth=2.5;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
         const second=secondValues[plottedIndex];ctx.beginPath();ctx.arc(X(second.x),Y(second.y),5.5,0,Math.PI*2);ctx.fillStyle="#d99a46";ctx.fill();
-        if(graphMode==="acceleration-renderTime"){
+        if(graphMode==="acceleration-time"){
           const collisionTime=collisionResults(values).collisionTime;
           if(Number.isFinite(collisionTime)&&collisionTime>=minX&&collisionTime<=maxX){
             ctx.strokeStyle="#d36f72";ctx.lineWidth=1.7;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(X(collisionTime),top);ctx.lineTo(X(collisionTime),top+ph);ctx.stroke();ctx.setLineDash([]);

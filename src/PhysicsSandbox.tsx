@@ -594,7 +594,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const dimensionErrors=useMemo(()=>valid.filter(equationDimensionIssue),[valid]);
  const warning=errors.length>0||badSample||(hasMotion&&!current)||dimensionErrors.length>0;
  useEffect(()=>{if(!playing)return;let frame=0,last=0,lastUi=0;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;const fps=reduced||motionLevel==="low"?8:12;const interval=1000/fps;const tick=(now:number)=>{if(!last)last=now;const next=timeRef.current+Math.min((now-last)/1000,.1);last=now;timeRef.current=Math.min(duration,next);if(now-lastUi>=interval||next>=duration){lastUi=now;setTime(timeRef.current);}if(next>=duration){setPlaying(false);return;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,duration,motionLevel]);
- useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)return;const draw=()=>{const renderTime=timeRef.current;const renderCurrent=motionAt(valid,renderTime,parameterSet);const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;const dpr=Math.min(window.devicePixelRatio||1,renderQuality.dpr),width=rect.width,height=rect.height;const backingWidth=Math.round(width*dpr),backingHeight=Math.round(height*dpr);if(canvas.width!==backingWidth||canvas.height!==backingHeight){canvas.width=backingWidth;canvas.height=backingHeight;}ctx.setTransform(dpr,0,0,dpr,0,0);const canvasStyle=getComputedStyle(canvas),plotBg=canvasStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=canvasStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf1f5"),axisColor=canvasStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#627b94");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
+ useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)return;const draw=()=>{try{const renderTime=timeRef.current;const renderCurrent=motionAt(valid,renderTime,parameterSet);const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;const dpr=Math.min(window.devicePixelRatio||1,renderQuality.dpr),width=rect.width,height=rect.height;const backingWidth=Math.round(width*dpr),backingHeight=Math.round(height*dpr);if(canvas.width!==backingWidth||canvas.height!==backingHeight){canvas.width=backingWidth;canvas.height=backingHeight;}ctx.setTransform(dpr,0,0,dpr,0,0);const canvasStyle=getComputedStyle(canvas),plotBg=canvasStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=canvasStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf1f5"),axisColor=canvasStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#627b94");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
   const spanX=(view.xmax-view.xmin)/scale,spanY=(view.ymax-view.ymin)/scale,mx=(view.xmax+view.xmin)/2,my=(view.ymax+view.ymin)/2,xmin=mx-spanX/2,xmax=mx+spanX/2,ymin=my-spanY/2,ymax=my+spanY/2;const left=58,right=20,top=22,bottom=40,pw=width-left-right,ph=height-top-bottom;const X=(x:number)=>left+(x-xmin)/(xmax-xmin)*pw,Y=(y:number)=>top+ph-(y-ymin)/(ymax-ymin)*ph;
   const nice=(span:number)=>{const raw=span/9,p=10**Math.floor(Math.log10(Math.max(raw,1e-9))),q=raw/p;return (q<=1?1:q<=2?2:q<=5?5:10)*p;};const dx=nice(xmax-xmin),dy=nice(ymax-ymin);
   if(showGrid){
@@ -656,6 +656,20 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
    }
   }
   ctx.fillStyle="#8292a4";ctx.font="11px DM Sans";ctx.textAlign="right";ctx.fillText("x (m)",width-18,height-12);ctx.save();ctx.translate(15,top+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText("y (m)",0,0);ctx.restore();
+ }catch(error){
+  console.error("[Physimus Sandbox] Canvas rendering failed",error);
+  try{
+   ctx.setTransform(1,0,0,1,0,0);
+   ctx.clearRect(0,0,canvas.width,canvas.height);
+   ctx.fillStyle=theme==="dark"?"#111d2b":"#fff";
+   ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.fillStyle=theme==="dark"?"#dce7f2":"#536b83";
+   ctx.textAlign="left";ctx.font="600 15px DM Sans";
+   ctx.fillText(language==="ID"?"Visualisasi sedang dipulihkan":"Restoring visualization",18,30);
+   ctx.font="12px DM Sans";
+   ctx.fillText(language==="ID"?"Panel parameter dan persamaan tetap dapat digunakan.":"The parameter and equation panels remain available.",18,52);
+  }catch(fallbackError){console.error("[Physimus Sandbox] Canvas fallback failed",fallbackError);}
+ }
  };drawRef.current=draw;draw();return()=>{if(drawRef.current===draw)drawRef.current=()=>{};};},[parsed,valid,view,scale,showGrid,showAxes,hasMotion,duration,mass,parameterSet,showTrail,showVelocity,showAcceleration,showForce,showWeight,showMomentum,gravity,showLabels,object,renderQuality.dpr,functionCurves,motionTrail,sceneObjects,selectedObjectId,theme,language]);
  useEffect(()=>{if(!playing){drawRef.current();return;}let frame=0,lastDraw=0;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;const targetFps=reduced?8:constrainedDevice||renderMode==="performance"?Math.min(renderQuality.fps,22):renderQuality.fps;const interval=1000/targetFps;const tick=(now:number)=>{if(!lastDraw||now-lastDraw>=interval){lastDraw=now;drawRef.current();}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,motionLevel,renderMode,constrainedDevice,renderQuality.fps]);
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const observer=new ResizeObserver(()=>drawRef.current());observer.observe(canvas);return()=>observer.disconnect();},[]);

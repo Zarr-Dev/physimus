@@ -1,5 +1,5 @@
-import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, CSSProperties } from "react";
+import { Component, Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, CSSProperties, ErrorInfo, ReactNode } from "react";
 import katex from "katex";
 const PhysicsSandbox = lazy(() => import("./PhysicsSandbox"));
 import {
@@ -632,7 +632,7 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
   useEffect(()=>{if(document.activeElement!==inputRef.current)setDraft(format(value));},[value,param.initial,digits]);
   const commit=()=>{const parsed=Number(draft);if(!draft.trim()||draft==="-"||draft==="."||draft==="-."||!validCharacters.test(draft)||!Number.isFinite(parsed)){setDraft(format(value));return;}const next=Math.max(param.min,Math.min(param.max,parsed));onChange(next);setDraft(format(next));};
   return <label className="slider-control">
-    <span className="slider-heading"><span>{param.label}</span><strong><small>{param.unit}</small></strong></span>
+    <span className="slider-heading"><span>{param.label}</span></span>
         <div className="parameter-entry-row">
       <input ref={inputRef} className="parameter-number-input" type="text" inputMode="decimal" value={draft} onChange={e=>{const raw=e.currentTarget.value;if(validCharacters.test(raw))setDraft(raw);}} onBlur={commit} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();e.currentTarget.blur();return;}if(e.key.length===1&&!/[0-9.-]/.test(e.key))e.preventDefault();if(e.key==="-"&&(!signed||e.currentTarget.selectionStart!==0||draft.includes("-")))e.preventDefault();if(e.key==="."&&draft.includes("."))e.preventDefault();}} aria-label={param.label+" ("+param.unit+")"} aria-invalid={!validCharacters.test(draft)|| (draft.trim()!==""&&draft!=="-"&&draft!=="."&&draft!="-."&&(Number(draft)<param.min||Number(draft)>param.max))}/>
       <small className="parameter-unit" aria-hidden="true">{param.unit}</small>
@@ -1921,6 +1921,33 @@ function Learn({language}:{language:Language}) {
  </main>;
 }
 
+type SandboxErrorBoundaryProps = { language:Language; onBack:()=>void; children:ReactNode };
+type SandboxErrorBoundaryState = { message:string|null };
+class SandboxErrorBoundary extends Component<SandboxErrorBoundaryProps,SandboxErrorBoundaryState> {
+  state:SandboxErrorBoundaryState={message:null};
+  static getDerivedStateFromError(error:unknown):SandboxErrorBoundaryState {
+    return {message:error instanceof Error?error.message:String(error)};
+  }
+  componentDidCatch(error:Error,info:ErrorInfo) {
+    console.error("[Physimus] Sandbox render failed",error,info.componentStack);
+  }
+  render() {
+    if(this.state.message!==null) return <main className="sandbox-error-shell" role="alert" aria-live="assertive">
+      <section className="sandbox-error-card">
+        <span className="eyebrow">PHYSIMUS / SANDBOX RECOVERY</span>
+        <h1>{this.props.language==="ID"?"Sandbox mengalami gangguan":"Sandbox encountered a problem"}</h1>
+        <p>{this.props.language==="ID"?"Ruang kerja utama Physimus tetap aman. Kegagalan pada Sandbox diisolasi agar tidak mengosongkan seluruh layar. Kamu dapat mencoba ulang atau kembali ke halaman utama.":"The rest of Physimus is still available. The Sandbox failure has been isolated so it cannot blank the entire app. You can retry or return to the main page."}</p>
+        <pre className="sandbox-error-detail">{this.state.message}</pre>
+        <div className="sandbox-error-actions">
+          <button type="button" onClick={()=>this.setState({message:null})}>{this.props.language==="ID"?"Coba lagi":"Try again"}</button>
+          <button type="button" onClick={this.props.onBack}>{this.props.language==="ID"?"Kembali ke beranda":"Back to home"}</button>
+        </div>
+      </section>
+    </main>;
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [page,setPage]=useState<Page>("discover");
   const [language,setLanguage]=useState<Language>("ID");
@@ -1938,6 +1965,6 @@ export default function App() {
     {page==="discover"&&<Discover language={language} onOpen={openLab}/>}
     {page==="laboratory"&&<Laboratory key={selectedLab} labId={selectedLab} language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode} onBack={()=>setPage("discover")} onChoose={openLab}/>}
     {page==="learn"&&<Learn language={language}/>}
-    {page==="sandbox"&&<Suspense fallback={<main className="sandbox-workspace sandbox-loading"><span className="eyebrow">PHYSIMUS / SANDBOX</span><p>{language==="ID"?"Menyiapkan ruang eksperimen…":"Preparing the experiment workspace…"}</p></main>}><PhysicsSandbox language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode}/></Suspense>}
+    {page==="sandbox"&&<SandboxErrorBoundary language={language} onBack={()=>setPage("discover")}><Suspense fallback={<main className="sandbox-workspace sandbox-loading"><span className="eyebrow">PHYSIMUS / SANDBOX</span><p>{language==="ID"?"Menyiapkan ruang eksperimen…":"Preparing the experiment workspace…"}</p></main>}><PhysicsSandbox language={language} theme={theme} motionLevel={motionLevel} renderMode={renderMode}/></Suspense></SandboxErrorBoundary>}
   </div>;
 }

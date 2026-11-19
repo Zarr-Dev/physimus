@@ -115,7 +115,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .slider-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#65798f;font-size:13px}
 .slider-heading strong{color:#2d4b6b;font:600 15px var(--heading);white-space:nowrap}
 .slider-heading small{color:#8a9aab;font:500 11px "DM Sans",sans-serif}
-.slider-control input{width:100%;height:6px;margin:15px 0 7px;accent-color:var(--blue);cursor:pointer}
+.slider-control input[type="range"]{display:block;box-sizing:border-box;width:100%;height:18px;margin:8px 0 4px;padding:0;accent-color:var(--blue);cursor:pointer}
 .slider-limits{display:flex;justify-content:space-between;color:#9aa8b6;font-size:10px}
 .question-box{margin-top:29px;padding:15px;border-radius:9px;background:#f5f9fd}
 .question-box>span{display:flex;align-items:center;gap:8px;color:#537ba4;font-size:12px;font-weight:700}
@@ -2346,3 +2346,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 @media (prefers-reduced-motion:reduce) {
   .sandbox-workspace * {scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+
+/* Robust numeric parameter editor: keep number fields independent from range styling. */
+.slider-control{min-width:0;}
+.slider-control .parameter-entry-row{display:flex;box-sizing:border-box;width:100%;min-width:0;align-items:center;justify-content:flex-end;margin:7px 0 2px;}
+.slider-control .parameter-number-input{display:block;box-sizing:border-box;flex:0 1 124px;width:min(100%,124px);min-width:82px;max-width:100%;height:40px;min-height:40px;margin:0;padding:0 11px;border:1px solid var(--line,#dce6ef);border-radius:8px;background:var(--surface,#fff);color:var(--ink,#263d55);font:700 14px/1.2 "DM Sans",sans-serif;font-variant-numeric:tabular-nums;text-align:right;appearance:textfield;-moz-appearance:textfield;}
+.slider-control .parameter-number-input::-webkit-outer-spin-button,.slider-control .parameter-number-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.slider-control .parameter-number-input:focus{outline:2px solid color-mix(in srgb,var(--blue,#347fd5) 25%,transparent);outline-offset:1px;border-color:var(--blue,#347fd5);}
+.slider-control .parameter-number-input[aria-invalid="true"]{border-color:#d36f72;background:color-mix(in srgb,#d36f72 6%,var(--surface,#fff));}
+.slider-control input[type="range"]:focus-visible{outline:2px solid color-mix(in srgb,var(--blue,#347fd5) 30%,transparent);outline-offset:4px;border-radius:8px;}
+@media(max-width:760px){.slider-control .parameter-number-input{flex-basis:116px;height:42px;min-height:42px;font-size:15px;}}

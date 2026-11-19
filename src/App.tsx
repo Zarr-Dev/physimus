@@ -669,6 +669,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const p=(key:string)=>values[key]??0;
   const g=p("gravity")||9.81;
   let duration=lab.duration;
+  const collision=lab.id==="collision"?collisionResults(values):null;
   if(lab.id==="projectile") duration=projectileFlightTime(values);
   if(lab.id==="circular"&&p("omega")>0) duration=2*Math.PI/p("omega");
   const energyAngle=(p("inclineAngle")??30)*Math.PI/180,energyParallel=g*Math.sin(energyAngle)+p("appliedWorkForce")/Math.max(p("mass"),1e-9);
@@ -681,10 +682,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
     else if(u>1e-9)duration=Math.max(.1,distance/u);
   }
   if(lab.id==="spring") duration=4*Math.PI/Math.max(Math.sqrt(p("spring")/p("mass"))*Math.sqrt(1-Math.max(0,Math.min(.95,p("dampingRatio")))**2),.05);
-  if(lab.id==="collision"){
-    const collision=collisionResults(values);
-    if(Number.isFinite(collision.collisionTime))duration=Math.max(duration,collision.collisionTime+Math.max(2,Math.min(8,1/Math.max(Math.abs(collision.v2-collision.v1),.5))));
-  }
+  if(collision&&Number.isFinite(collision.collisionTime))duration=Math.max(duration,collision.collisionTime+Math.max(2,Math.min(8,1/Math.max(Math.abs(collision.v2-collision.v1),.5))));
   const count=Math.min(1800,Math.max(240,Math.ceil(duration*24)));
   const points:Point[]=[];
   const angle=p("angle")*Math.PI/180;
@@ -711,7 +709,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       x=r*Math.cos(theta);y=r*Math.sin(theta);
       vx=-r*omega*Math.sin(theta);vy=r*omega*Math.cos(theta);kinetic=.5*mass*(r*omega)**2;
     } else if(lab.id==="collision") {
-      const c=collisionResults(values),elapsed=time-c.collisionTime,hasContact=Number.isFinite(c.collisionTime)&&elapsed>=0;
+      const c=collision!,elapsed=time-c.collisionTime,hasContact=Number.isFinite(c.collisionTime)&&elapsed>=0;
       if(hasContact){
         const contactX1=-c.separation/2+c.u1*c.collisionTime,contactX2=c.separation/2+c.u2*c.collisionTime,tau=Math.min(elapsed,c.impactDuration);
         if(elapsed<c.impactDuration){
@@ -740,7 +738,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
       x=a*decay*Math.cos(argument);vx=a*decay*(-beta*Math.cos(argument)-omegaD*Math.sin(argument));
       y=0;kinetic=.5*mass*vx*vx;potential=.5*p("spring")*x*x;
     }
-    points.push({x,y,t:time,vx,vy,speed:Math.hypot(vx,vy),kinetic,potential,...(lab.id==="collision"?{x2,vx2,collisionOccurred:Number.isFinite(collisionResults(values).collisionTime)&&time>=collisionResults(values).collisionTime}:{})});
+    points.push({x,y,t:time,vx,vy,speed:Math.hypot(vx,vy),kinetic,potential,...(lab.id==="collision"?{x2,vx2,collisionOccurred:!!collision&&Number.isFinite(collision.collisionTime)&&time>=collision.collisionTime}:{})});
   }
   return points;
 }
@@ -1141,8 +1139,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     if(!playing)return;
     let frame=0,last=0,lastUi=0;
     const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;
-    const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);
-    const fps=reduced?8:constrainedDevice&&motionLevel==="high"?24:motionLevel==="low"?18:motionLevel==="medium"?30:36;
+    const fps=reduced?8:motionLevel==="low"?8:12;
     const interval=1000/fps;
     const tick=(now:number)=>{
       if(!last)last=now;
@@ -1160,6 +1157,8 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     const canvas=canvasRef.current;if(!canvas)return;
     const ctx=canvas.getContext("2d");if(!ctx)return;
     const render=()=>{
+      const renderTime=timeRef.current;
+      const renderCurrent=points[Math.min(points.length-1,Math.round(renderTime/duration*(points.length-1)))]??points[0];
       const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;
       const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);const qualityCap=renderMode==="performance"?1:renderMode==="detail"?(constrainedDevice?1.5:2):(motionLevel==="low"||constrainedDevice?1:motionLevel==="medium"?1.5:2);const dpr=Math.min(window.devicePixelRatio||1,qualityCap);
       const cw=Math.round(rect.width*dpr),ch=Math.round(rect.height*dpr);
@@ -1169,8 +1168,8 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
       const pw=width-left-right,ph=height-top-bottom;
       const plotStyle=getComputedStyle(canvas),plotBg=plotStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=plotStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf2f7"),axisColor=plotStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#748ba2");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
       const plotted=plottedPoints;
-      const plottedIndex=Math.min(plotted.length-1,Math.round(time/duration*(plotted.length-1)));
-      const plottedCurrent=graphMode==="trajectory"?current:plotted[plottedIndex];
+      const plottedIndex=Math.min(plotted.length-1,Math.round(renderTime/duration*(plotted.length-1)));
+      const plottedCurrent=graphMode==="trajectory"?renderCurrent:plotted[plottedIndex];
       const slopeBefore=plotted[Math.max(0,plottedIndex-1)];
       const slopeAfter=plotted[Math.min(plotted.length-1,plottedIndex+1)];
       const localSlope=(slopeAfter.y-slopeBefore.y)/Math.max(1e-9,slopeAfter.x-slopeBefore.x);
@@ -1261,7 +1260,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
       }
       if(showTrail){
         ctx.beginPath();
-        const end=Math.max(1,Math.round(time/duration*(points.length-1)));
+        const end=Math.max(1,Math.round(renderTime/duration*(points.length-1)));
         plotted.slice(0,end+1).forEach((p,i)=>{if(i===0)ctx.moveTo(X(p.x),Y(p.y));else ctx.lineTo(X(p.x),Y(p.y));});
         ctx.strokeStyle=lab.color;ctx.lineWidth=3.5;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();
       }else if(points.length>1){
@@ -1282,7 +1281,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
         }
       }
       if(lab.id==="collision"&&graphMode==="trajectory"){
-        const end=showTrail?Math.max(1,Math.round(time/duration*(points.length-1))):points.length-1;
+        const end=showTrail?Math.max(1,Math.round(renderTime/duration*(points.length-1))):points.length-1;
         ctx.beginPath();points.slice(0,end+1).forEach((p,i)=>{const x=p.x2??p.x;if(i===0)ctx.moveTo(X(x),Y(0));else ctx.lineTo(X(x),Y(0));});
         ctx.strokeStyle="#d99a46";ctx.lineWidth=2.5;ctx.setLineDash(showTrail?[6,4]:[3,6]);ctx.stroke();ctx.setLineDash([]);
       }
@@ -1310,17 +1309,17 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
           ctx.fillStyle=color;ctx.font="700 14px DM Sans, sans-serif";ctx.textAlign="left";ctx.lineWidth=3;ctx.strokeStyle=theme==="dark"?"#111d2b":"#fff";ctx.strokeText(label,x,y);ctx.fillStyle=color;ctx.fillText(label,x,y);
         };
         if(lab.id==="projectile"){
-          vector(current.vx,0,"#347fd5",current.speed);vector(0,current.vy,"#4da786",current.speed);vector(current.vx,current.vy,"#d99a46",current.speed);
+          vector(renderCurrent.vx,0,"#347fd5",renderCurrent.speed);vector(0,renderCurrent.vy,"#4da786",renderCurrent.speed);vector(renderCurrent.vx,renderCurrent.vy,"#d99a46",renderCurrent.speed);
           vector(0,-(values.gravity??9.81),"#d36f72",values.gravity??9.81);
           tag("vₓ","#347fd5",px+12,py+18);tag("vᵧ","#4da786",px+12,py-17);tag("v","#d99a46",px+27,py-30);tag("g","#d36f72",px-23,py+34);
         }else if(lab.id==="circular"){
-          vector(current.vx,current.vy,"#347fd5",current.speed);vector(-current.x,-current.y,"#d99a46",Math.max((values.omega??0)**2*(values.radius??0),1e-6));
+          vector(renderCurrent.vx,renderCurrent.vy,"#347fd5",renderCurrent.speed);vector(-renderCurrent.x,-renderCurrent.y,"#d99a46",Math.max((values.omega??0)**2*(values.radius??0),1e-6));
           tag("v","#347fd5",px+12,py-14);tag("aᶜ","#d99a46",px-25,py+24);
         }else if(lab.id==="collision"){
-          vector(current.vx,0,"#347fd5",Math.max(Math.abs(current.vx),1e-6));
-          if(current.x2!==undefined&&current.vx2!==undefined){
-            const secondX=X(current.x2),scale=.20*Math.min(pw,ph)*Math.max(1e-8,Math.min(sx/pw,sy/ph))/Math.max(Math.abs(current.vx2),1e-7);
-            if(Math.abs(current.vx2)>1e-7)drawArrow(ctx,secondX,py,secondX+current.vx2*scale*pw/sx,py,"#d99a46");
+          vector(renderCurrent.vx,0,"#347fd5",Math.max(Math.abs(renderCurrent.vx),1e-6));
+          if(renderCurrent.x2!==undefined&&renderCurrent.vx2!==undefined){
+            const secondX=X(renderCurrent.x2),scale=.20*Math.min(pw,ph)*Math.max(1e-8,Math.min(sx/pw,sy/ph))/Math.max(Math.abs(renderCurrent.vx2),1e-7);
+            if(Math.abs(renderCurrent.vx2)>1e-7)drawArrow(ctx,secondX,py,secondX+renderCurrent.vx2*scale*pw/sx,py,"#d99a46");
             tag("v₂","#d99a46",secondX+12,py+25);
           }
           tag("v₁","#347fd5",px+12,py-14);
@@ -1339,23 +1338,39 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
           forceArrow(Math.cos(theta)*parallel,-Math.sin(theta)*parallel,"#d99a46","mg∥",5,10);
           if(friction>0)forceArrow(-Math.cos(theta)*friction,Math.sin(theta)*friction,"#8b6bd6","f",-14,12);
         }else{
-          vector(current.vx,0,"#347fd5",Math.max(current.speed,1e-6));tag("v","#347fd5",px+12,py-13);
+          vector(renderCurrent.vx,0,"#347fd5",Math.max(renderCurrent.speed,1e-6));tag("v","#347fd5",px+12,py-13);
           if(lab.id==="spring"){
-            const restoring=-(values.spring??0)*current.x/(values.mass??1);
+            const restoring=-(values.spring??0)*renderCurrent.x/(values.mass??1);
             vector(restoring,0,"#d99a46",Math.max((values.spring??0)*(values.amplitude??0),1e-6));tag("F","#d99a46",px+12,py+18);
           }else if(lab.id==="mrua"){
             vector(values.acceleration??0,0,"#d36f72",Math.max(Math.abs(values.acceleration??0),1e-6));tag("a","#d36f72",px+12,py+31);
           }
         }
       }
-      if(lab.id==="collision"&&current.x2!==undefined)drawLabObject(ctx,X(current.x2),py,selectedObject2,"#d99a46");
+      if(lab.id==="collision"&&renderCurrent.x2!==undefined)drawLabObject(ctx,X(renderCurrent.x2),py,selectedObject2,"#d99a46");
       drawLabObject(ctx,px,py,selectedObject,lab.color,objectOrientation);
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b6d3ef";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,Y(0));ctx.stroke();ctx.setLineDash([]);}
       if(graphMode==="trajectory"&&lab.id==="projectile"){ctx.strokeStyle="#b9ddcf";ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(X(0),py);ctx.stroke();ctx.setLineDash([]);}
-      ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+time.toFixed(2)+" s",left+12,top+20);
+      ctx.fillStyle="#8494a6";ctx.font="11px Inter";ctx.textAlign="left";ctx.fillText("t = "+renderTime.toFixed(2)+" s",left+12,top+20);
     };
     drawRef.current=render;render();
-  },[lab,values,points,time,current,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2,objectOrientation,theme,graphPan,graphZoom]);
+  },[lab,values,points,duration,showGrid,showVectors,showTrail,showRuler,showTangent,graphMode,selectedObject,selectedObject2,objectOrientation,theme,graphPan,graphZoom]);
+
+  // Keep canvas animation on its own frame loop; React only refreshes text/metrics at a lower rate.
+  useEffect(()=>{
+    if(!playing){drawRef.current();return;}
+    let frame=0,lastDraw=0;
+    const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;
+    const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);
+    const targetFps=reduced?8:constrainedDevice?24:renderMode==="performance"?30:motionLevel==="low"?30:motionLevel==="medium"?45:60;
+    const interval=1000/targetFps;
+    const tick=(now:number)=>{
+      if(!lastDraw||now-lastDraw>=interval){lastDraw=now;drawRef.current();}
+      frame=requestAnimationFrame(tick);
+    };
+    frame=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(frame);
+  },[playing,motionLevel,renderMode]);
 
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;

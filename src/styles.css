@@ -2384,3 +2384,22 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .app-root[data-theme="dark"] .sandbox-error-card{background:#142233;border-color:#33485e;}
 .app-root[data-theme="dark"] .sandbox-error-card h1{color:#e3edf6;}
 .app-root[data-theme="dark"] .sandbox-error-detail{background:#0e1a27;border-color:#34485e;color:#a7b9ca;}
+
+
+/* Shared inline numeric + unit layout in experiment calculator and Sandbox. */
+.equation-calc-number-unit,.sandbox-number-unit{display:flex;box-sizing:border-box;align-items:center;gap:8px;min-width:0;width:100%;}
+.equation-calc-number-unit input,.sandbox-number-unit input{box-sizing:border-box;flex:1 1 auto;min-width:0;width:100%;}
+.equation-calc-number-unit>small,.sandbox-number-unit>small{display:inline-flex;flex:0 0 auto;align-items:center;min-width:24px;color:var(--muted,#718399);font-size:11px;font-weight:650;white-space:nowrap;}
+.equation-calc-number-unit input{max-width:100%;}
+.sandbox-number-unit input{height:36px;min-height:34px;padding:0 9px;border:1px solid #dce6ef;border-radius:7px;background:var(--panel,#fff);color:var(--ink,#365875);font-size:13px;font-variant-numeric:tabular-nums;}
+.sandbox-number-unit input:focus{outline:2px solid color-mix(in srgb,var(--blue,#347fd5) 24%,transparent);outline-offset:1px;border-color:var(--blue,#347fd5);}
+.sandbox-variable-grid label>div{gap:8px;}
+.sandbox-variable-grid small{min-width:26px;color:var(--muted,#8798a8);font-size:11px;font-weight:650;white-space:nowrap;}
+.sandbox-property-grid label>span,.sandbox-viewport label>span{color:inherit;font-size:inherit;font-weight:inherit;}
+.sandbox-viewport label{grid-template-columns:minmax(0,1fr) minmax(0,128px);}
+.sandbox-playback .sandbox-number-unit{width:110px;}
+.sandbox-playback .sandbox-number-unit input{height:34px;min-height:34px;width:auto;}
+.sandbox-playback .sandbox-number-unit>small{font-size:10px;min-width:18px;}
+.app-root[data-theme="dark"] .equation-calc-number-unit>small,.app-root[data-theme="dark"] .sandbox-number-unit>small{color:#a6b8ca;}
+.app-root[data-theme="dark"] .sandbox-number-unit input{background:#0e1a27;border-color:#34495e;color:#e0eaf4;}
+@media(max-width:760px){.equation-calc-number-unit>small,.sandbox-number-unit>small,.sandbox-variable-grid small{font-size:12px;}}

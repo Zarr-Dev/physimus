@@ -275,11 +275,15 @@ function mathLiveToExpression(ascii:string,latex:string):string{
 }
 function equationToLatex(source:string){
  const clean=source.trim();
+ // MathLive mounts before the student types. Empty and partial expressions are valid editor states.
+ if(!clean)return "";
  const target=clean.match(/^(y\s*\(x\)\s*=|y\s*=|x\s*\(t\)\s*=|y\s*\(t\)\s*=)\s*(.+)$/i);
  const assignment=!target?clean.match(/^([a-zA-Z_][a-zA-Z0-9_]*(?:\s*\([^)]*\))?)\s*=\s*(.+)$/):null;
  const lhs=target?target[1].replace(/\s/g,"").replace(/([xy])\(/g,"$1\\left(").replace(/\)/g,"\\right)"):assignment?variableLatex(assignment[1].replace(/\s/g,""))+"=":"";
  const expression=target?target[2]:assignment?assignment[2]:clean;
- const root=parse(expression);
+ if(!expression.trim())return lhs;
+ let root:Node;
+ try{root=parse(expression);}catch{return clean;}
  const render=(node:Node):string=>{
   if(node.kind==="num")return String(node.n);
   if(node.kind==="var")return variableLatex(node.name);

@@ -1158,7 +1158,7 @@ function Laboratory({labId,language,onBack,onChoose,theme,motionLevel,renderMode
     const canvas=canvasRef.current;if(!canvas)return;
     const ctx=canvas.getContext("2d");if(!ctx)return;
     const render=()=>{
-      const renderTime=timeRef.renderCurrent;
+      const renderTime=timeRef.current;
       const renderCurrent=points[Math.min(points.length-1,Math.round(renderTime/duration*(points.length-1)))]??points[0];
       const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;
       const constrainedDevice=((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);const qualityCap=renderMode==="performance"?1:renderMode==="detail"?(constrainedDevice?1.5:2):(motionLevel==="low"||constrainedDevice?1:motionLevel==="medium"?1.5:2);const dpr=Math.min(window.devicePixelRatio||1,qualityCap);

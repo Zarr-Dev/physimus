@@ -17,13 +17,13 @@ type RenderMode = "auto" | "performance" | "detail";
 type LayoutDensity = "comfortable" | "compact";
 type LabId = "projectile" | "mru" | "mrua" | "circular" | "energy" | "incline" | "collision" | "spring";
 type Param = { key: string; label: string; min: number; max: number; step: number; unit: string; initial: number };
-type Point = { x: number; y: number; t: number; vx: number; vy: number; speed: number; kinetic: number; potential: number; x2?:number; vx2?:number; collisionOccurred?:boolean };
-type Lab = {
+export type Point = { x: number; y: number; t: number; vx: number; vy: number; speed: number; kinetic: number; potential: number; x2?:number; vx2?:number; collisionOccurred?:boolean };
+export type Lab = {
   id: LabId; category: string; title: string; subtitle: string; description: string;
   formula: string; question: string; params: Param[]; duration: number; color: string;
 };
 
-const labs: Lab[] = [
+export const labs: Lab[] = [
   {
     id: "projectile", category: "KINEMATIKA", title: "Gerak Parabola", subtitle: "Projectile Motion",
     description: "Pelajari gerak dua dimensi dengan memisahkan komponen horizontal dan vertikal. Ubah kecepatan, sudut, ketinggian awal, dan gravitasi.",
@@ -571,33 +571,65 @@ function Header({page,setPage,language,onLanguage,theme,onTheme,fontScale,onFont
 
 function Hero({language,onOpen}:{language:Language;onOpen:()=>void}) {
   const w=words[language];
+  const highlights=language==="ID"
+    ? [{value:"08",title:"Laboratorium",detail:"Model mekanika"},{value:"2D",title:"Simulasi visual",detail:"Eksperimen interaktif"},{value:"ID / EN",title:"Dua bahasa",detail:"Belajar lebih fleksibel"}]
+    : [{value:"08",title:"Laboratories",detail:"Mechanics models"},{value:"2D",title:"Visual simulations",detail:"Interactive experiments"},{value:"ID / EN",title:"Bilingual",detail:"Learn your way"}];
   return <section className="hero">
     <div className="hero-content">
-      <span className="eyebrow"><i/>{w.kicker}</span>
+      <div className="hero-kicker-row">
+        <span className="eyebrow"><i/>{w.kicker}</span>
+        <span className="hero-version-chip">PHYSIMUS · EXPLORE</span>
+      </div>
       <h1>{w.hero1}<br/><em>{w.hero2}</em></h1>
       <p>{w.heroText}</p>
+      <div className="hero-highlights">
+        {highlights.map(item=><div className="hero-highlight-card" key={item.value}>
+          <strong>{item.value}</strong><span><b>{item.title}</b><small>{item.detail}</small></span>
+        </div>)}
+      </div>
       <button className="primary-button" onClick={onOpen}>{w.openLab}<ArrowRight size={19}/></button>
-      <div className="hero-foot"><span>01</span><span className="hero-rule"/><span>LEARN · EXPERIMENT · DISCOVER</span></div>
+      <div className="hero-foot"><span>01</span><span className="hero-rule"/><span>{language==="ID"?"PAHAMI · UJI · TEMUKAN":"UNDERSTAND · TEST · DISCOVER"}</span></div>
     </div>
     <div className="hero-art">
-      <div className="art-caption"><span>PHYSIMUS / MECHANICS</span><span>01 — 07</span></div>
-      <svg viewBox="0 0 660 470" role="img" aria-label="Scientific illustration of a projectile and circular motion">
-        <defs><linearGradient id="pathBlue" x1="0" x2="1"><stop stopColor="#347fd5"/><stop offset="1" stopColor="#a3cdf4"/></linearGradient></defs>
-        <g className="art-grid">{Array.from({length:8},(_,i)=><line key={"h"+i} x1="35" x2="635" y1={55+i*48} y2={55+i*48}/>)}{Array.from({length:11},(_,i)=><line key={"v"+i} y1="35" y2="425" x1={45+i*57} x2={45+i*57}/>)}</g>
-        <path d="M45 390H625" className="art-axis"/>
-        <path d="M45 390 Q335 -120 625 390" className="art-curve"/>
-        <path d="M45 390L175 165" className="art-vector"/>
-        <circle cx="45" cy="390" r="7" className="art-dot"/><circle cx="335" cy="135" r="7" className="art-dot"/><circle cx="625" cy="390" r="7" className="art-dot"/>
-        <circle cx="470" cy="245" r="82" fill="none" stroke="#b7a5e8" strokeWidth="2" strokeDasharray="5 8"/>
-        <circle cx="470" cy="245" r="7" fill="#8b6bd6"/>
-        <path d="M470 245L535 195" stroke="#8b6bd6" strokeWidth="2.5" strokeLinecap="round"/>
-        <text x="350" y="115">APEX</text><text x="60" y="420">ORIGIN</text><text x="540" y="420">RANGE</text><text x="495" y="280">r</text>
-      </svg>
-      <div className="art-note"><Sparkles size={17}/> Explore. Change. Understand.</div>
+      <div className="hero-visual-shell">
+        <div className="art-caption"><span>PHYSIMUS / MECHANICS</span><span className="hero-live-label"><i/>{language==="ID"?"MODEL INTERAKTIF":"INTERACTIVE MODEL"}</span></div>
+        <svg viewBox="0 0 660 420" role="img" aria-label={language==="ID"?"Lintasan gerak parabola, vektor kecepatan, dan orbit melingkar":"Projectile trajectory, velocity vectors, and circular orbit"}>
+          <defs>
+            <linearGradient id="pathBlue" x1="0" y1="0" x2="1" y2="0"><stop stopColor="#347fd5"/><stop offset="1" stopColor="#82b9ed"/></linearGradient>
+            <radialGradient id="heroParticle"><stop stopColor="#ffffff"/><stop offset=".35" stopColor="#75b7ed"/><stop offset="1" stopColor="#347fd5"/></radialGradient>
+          </defs>
+          <g className="art-grid">{Array.from({length:8},(_,i)=><line key={"h"+i} x1="35" x2="635" y1={45+i*44} y2={45+i*44}/>)}{Array.from({length:11},(_,i)=><line key={"v"+i} y1="25" y2="365" x1={45+i*57} x2={45+i*57}/>)}</g>
+          <path d="M42 340H628" className="art-axis"/>
+          <path d="M45 340 C118 333 199 151 319 105 C425 65 537 184 615 340" className="art-curve"/>
+          <path d="M45 340 C118 333 199 151 319 105 C425 65 537 184 615 340" className="art-trajectory-glow"/>
+          <path d="M45 340L174 175" className="art-vector"/>
+          <path d="M174 175L198 168L184 190" className="art-vector-head"/>
+          <path d="M319 105V340M45 340L319 105" className="art-guide"/>
+          <circle cx="45" cy="340" r="7" className="art-dot"/>
+          <circle cx="319" cy="105" r="9" className="art-particle"/>
+          <circle cx="615" cy="340" r="7" className="art-dot"/>
+          <g className="art-orbit">
+            <circle cx="495" cy="185" r="77" fill="none" stroke="#a99ad8" strokeWidth="2" strokeDasharray="5 8"/>
+            <circle cx="495" cy="185" r="7" fill="#8b6bd6"/>
+            <path d="M495 185L552 137" stroke="#8b6bd6" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M552 137l-16 3 9 12" fill="none" stroke="#8b6bd6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </g>
+          <text x="334" y="89">APEX</text><text x="60" y="370">ORIGIN</text><text x="545" y="370">RANGE</text><text x="520" y="219">r</text><text x="185" y="160">v₀</text>
+        </svg>
+        <div className="hero-formula-card">
+          <span>{language==="ID"?"GERAK PARABOLA":"PROJECTILE MOTION"}</span>
+          <Equation value={"y(t)=h_0+v_0\\sin\\theta\\,t-\\frac12gt^2"}/>
+        </div>
+        <div className="hero-readout">
+          <div><small>v₀</small><strong>24 <i>m/s</i></strong></div>
+          <div><small>θ</small><strong>52 <i>°</i></strong></div>
+          <div><small>g</small><strong>9.81 <i>m/s²</i></strong></div>
+        </div>
+      </div>
+      <div className="art-note"><Sparkles size={17}/>{language==="ID"?"Ubah kondisi. Amati hasil. Pahami fenomena.":"Change a variable. See the result. Understand the physics."}</div>
     </div>
   </section>;
 }
-
 function LabCard({lab,language,onOpen,index}:{lab:Lab;language:Language;onOpen:(id:LabId)=>void;index:number}) {
   const label=tLabel(language,lab);
   const category=categoryText(language,lab.category);
@@ -642,7 +674,7 @@ function Slider({param,value,onChange}:{param:Param;value:number;onChange:(v:num
   </label>;
 }
 
-function collisionResults(v:Record<string,number>){
+export function collisionResults(v:Record<string,number>){
   const m1=v.mass1??2,m2=v.mass2??2,u1=v.velocity1??6,u2=v.velocity2??0,e=Math.max(0,Math.min(1,v.restitution??1));
   const separation=v.separation??6,contactDistance=0.8,impactDuration=v.impactDuration??.05;
   const relative=u1-u2,collisionTime=relative>0?Math.max(0,separation-contactDistance)/relative:Infinity;
@@ -652,13 +684,13 @@ function collisionResults(v:Record<string,number>){
   return {m1,m2,u1,u2,e,separation,contactDistance,collisionTime,impactDuration,v1,v2,impulseMagnitude,meanContactForce:Number.isFinite(collisionTime)?impulseMagnitude/impactDuration:0,initialMomentum:m1*u1+m2*u2,initialKinetic:.5*m1*u1*u1+.5*m2*u2*u2};
 }
 
-function projectileStateAt(time:number,values:Record<string,number>){
+export function projectileStateAt(time:number,values:Record<string,number>){
   const v0=values.speed??0,theta=(values.angle??0)*Math.PI/180,g=values.gravity??9.81,h0=values.height??0,x0=values.x0??0,beta=Math.max(0,values.dragBeta??0);
   if(beta<1e-8)return {x:x0+v0*Math.cos(theta)*time,y:h0+v0*Math.sin(theta)*time-.5*g*time*time,vx:v0*Math.cos(theta),vy:v0*Math.sin(theta)-g*time};
   const decay=Math.exp(-beta*time),oneMinus=-Math.expm1(-beta*time);
   return {x:x0+v0*Math.cos(theta)*oneMinus/beta,y:h0+(v0*Math.sin(theta)+g/beta)*oneMinus/beta-g*time/beta,vx:v0*Math.cos(theta)*decay,vy:(v0*Math.sin(theta)+g/beta)*decay-g/beta};
 }
-function projectileFlightTime(values:Record<string,number>){
+export function projectileFlightTime(values:Record<string,number>){
   const v0=values.speed??0,theta=(values.angle??0)*Math.PI/180,g=values.gravity??9.81,h0=values.height??0,beta=Math.max(0,values.dragBeta??0);
   if(beta<1e-8){const vy=v0*Math.sin(theta);return Math.max(0,(vy+Math.sqrt(vy*vy+2*g*h0))/g);}
   if(h0<=0&&v0*Math.sin(theta)<=0)return 0;
@@ -668,7 +700,7 @@ function projectileFlightTime(values:Record<string,number>){
   for(let i=0;i<80;i++){const mid=(lo+hi)/2;if(projectileStateAt(mid,values).y>0)lo=mid;else hi=mid;}
   return (lo+hi)/2;
 }
-function makePoints(lab:Lab,values:Record<string,number>):Point[] {
+export function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   const p=(key:string)=>values[key]??0;
   const g=p("gravity")||9.81;
   let duration=lab.duration;
@@ -746,7 +778,7 @@ function makePoints(lab:Lab,values:Record<string,number>):Point[] {
   return points;
 }
 
-function energyAccelerationFor(values:Record<string,number>){const alpha=(values.inclineAngle??30)*Math.PI/180,g=values.gravity??9.81,mass=values.mass??1,drive=g*Math.sin(alpha)+(values.appliedWorkForce??0)/Math.max(mass,1e-9),staticHold=(values.initialSpeed??0)<=1e-9&&Math.abs(drive)<=(values.staticFriction??0)*g*Math.cos(alpha);return staticHold?0:drive-(values.friction??0)*g*Math.cos(alpha);}
+export function energyAccelerationFor(values:Record<string,number>){const alpha=(values.inclineAngle??30)*Math.PI/180,g=values.gravity??9.81,mass=values.mass??1,drive=g*Math.sin(alpha)+(values.appliedWorkForce??0)/Math.max(mass,1e-9),staticHold=(values.initialSpeed??0)<=1e-9&&Math.abs(drive)<=(values.staticFriction??0)*g*Math.cos(alpha);return staticHold?0:drive-(values.friction??0)*g*Math.cos(alpha);}
 
 function metricsFor(lab:Lab,values:Record<string,number>,point:Point,points:Point[],language:Language) {
   const labels=language==="ID"

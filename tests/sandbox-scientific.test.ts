@@ -29,7 +29,7 @@ describe("Sandbox equation parser and evaluator", () => {
   it("supports Greek symbols, constants, and LaTeX fractions", () => {
     expect(calc(parse("cos(θ)"), { theta: 0 })).toBeCloseTo(1, 12);
     expect(calc(parse("sin(pi/2)"), {})).toBeCloseTo(1, 12);
-    expect(calc(parse(String.raw`\\frac{1}{2}mv^2`), { m: 2, v: 3 })).toBeCloseTo(9, 12);
+    expect(calc(parse(String.raw`\frac{1}{2}mv^2`), { m: 2, v: 3 })).toBeCloseTo(9, 12);
   });
 
   it("evaluates a polynomial integral with Simpson's rule", () => {

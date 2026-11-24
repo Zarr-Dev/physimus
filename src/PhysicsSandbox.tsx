@@ -6,12 +6,12 @@ type Language = "ID" | "EN";
 type Row = { id:number; text:string; enabled:boolean };
 type MathfieldLike = HTMLElement & {value:string;getValue:(format?:"ascii-math"|"latex")=>string;insert:(value:string,options?:unknown)=>boolean;position:number;lastOffset:number};
 type EquationInput = HTMLInputElement | MathfieldLike;
-type Vars = Record<string,number>;
+export type Vars = Record<string,number>;
 type EditorTab = "equations" | "objects" | "examples" | "graph";
 type ObjectKind = "box" | "circle" | "spring" | "rope" | "pulley" | "wheel" | "beam" | "ramp" | "pendulum" | "mass";
 type MechanicalObject = {id:number;kind:ObjectKind;x:number;y:number;mass:number;radius:number;stiffness:number;angle:number;length:number;damping:number;friction:number;elasticity:number;enabled:boolean;gravityEnabled:boolean;frictionEnabled:boolean;springEnabled:boolean;rotationEnabled:boolean;pinned:boolean;showLabel:boolean};
-type Node = { kind:"num"; n:number } | { kind:"var"; name:string } | { kind:"unary"; op:string; child:Node } | { kind:"binary"; op:string; a:Node; b:Node } | { kind:"call"; name:string; args:Node[] };
-type Compiled = { id:number; text:string; target:"y(x)"|"x(t)"|"y(t)"|"scalar"; root:Node; error?:string };
+export type Node = { kind:"num"; n:number } | { kind:"var"; name:string } | { kind:"unary"; op:string; child:Node } | { kind:"binary"; op:string; a:Node; b:Node } | { kind:"call"; name:string; args:Node[] };
+export type Compiled = { id:number; text:string; target:"y(x)"|"x(t)"|"y(t)"|"scalar"; root:Node; error?:string };
 type Motion = { x:number;y:number;vx:number;vy:number;ax:number;ay:number;speed:number;acceleration:number;energy:number;potential:number;mechanical:number;momentum:number;force:number;weight:number };
 
 const allowedFunctions = new Set(["sin","cos","tan","asin","acos","atan","atan2","sec","csc","cot","sinh","cosh","tanh","sqrt","cbrt","abs","exp","ln","log","log2","log10","min","max","floor","ceil","round","sign","mod","clamp","hypot","int","sum","prod","diff","frac"]);
@@ -20,7 +20,7 @@ const copy = {
  EN:{title:"Physimus Sandbox",subtitle:"A mechanics equation playground",hint:"Create your own equations. Shape a curve or an object's trajectory, run time, and inspect the physical quantities that emerge.",math:"Mathematical expressions",delete:"Delete",hide:"Hide",show:"Show",gravity:"Gravity g",amplitude:"Amplitude A",initialSpeed:"Initial speed v₀",angularSpeed:"Angular speed ω",stiffness:"Spring constant k",phase:"Angle/phase θ (rad)",add:"Add equation",play:"Run",pause:"Pause",reset:"Reset",time:"Time",duration:"Duration (s)",mass:"Mass (kg)",object:"Object",grid:"Grid",axes:"Axes",trail:"Trail",velocity:"Velocity vector",acceleration:"Acceleration vector",force:"Force vector",energy:"Energy quantities",labels:"Labels",view:"Graph range",xmin:"x minimum",xmax:"x maximum",ymin:"y minimum",ymax:"y maximum",examples:"Quick examples",syntax:"Syntax",syntaxText:"+, −, ×, ÷, powers, parentheses; sin, cos, tan, asin, acos, atan; sqrt, cbrt, abs, exp, ln, log, log2, floor, ceil, round, min, max, clamp, hypot; int(f,x) = accumulation from 0 to x; int(f,x,a,b) = definite integral; sum(f,i,a,b); prod(f,i,a,b) = indexed product; diff(f,x); θ, ω, α, β, γ, δ, ε, φ, ψ, μ, σ, ρ, λ, τ, π. Direct LaTeX input: \\frac{a}{b}, \\sqrt{x}, x^{2}, v_{x}, \\sin(x). Angles are in radians.",status:"Model validation",ok:"Expressions pass syntax and numerical-stability checks at sampled points. This does not prove dimensional consistency or compliance with every physics law; check the model and SI units.",bad:"Syntax errors, SI dimensional mismatches, or non-finite/unstable values were found. Check units and the model.",empty:"Add an equation in the left panel to start plotting.",inspector:"Move the pointer over the graph to inspect coordinates.",motion:"Live motion analysis",notMotion:"Add x(t) and/or y(t) to create a moving object.",parametric:"Parametric trajectory",function:"Curve y = f(x)",particle:"Particle",ball:"Ball",cart:"Cart",satellite:"Satellite",rocket:"Rocket",export:"Export CSV",zoom:"Zoom",noBackend:"Runs locally in your browser; no data is sent to a backend.",warning:"Derivatives use central finite differences. Dimensional analysis and enforcement of all physics laws are not automatic; check model and unit consistency.",tabEquations:"Equations",tabObjects:"Mechanics objects",tabExamples:"Examples",tabGraph:"Graph",variables:"Equation variables",noVariables:"Variables used in the equations will appear here.",addObject:"Add object",objectPosition:"Object position",objectMass:"Mass",objectRadius:"Radius / size",objectSpring:"Spring constant",objectAngle:"Angle",enabled:"Visible",objectNames:{box:"Box / block",circle:"Circle",spring:"Spring",rope:"Rope",pulley:"Pulley",wheel:"Wheel",beam:"Beam",ramp:"Inclined plane",pendulum:"Pendulum",mass:"Mass block"},panHint:"Drag the graph to pan. Use the mouse wheel to zoom."}
 };
 
-function tokenize(source:string):string[] {
+export function tokenize(source:string):string[] {
  const aliases:[RegExp,string][]=[
   [/\\(?:theta|vartheta)\b/gi,"theta"],[/\\omega\b/gi,"omega"],[/\\alpha\b/gi,"alpha"],[/\\beta\b/gi,"beta"],[/\\gamma\b/gi,"gamma"],[/\\delta\b/gi,"delta"],[/\\(?:epsilon|varepsilon)\b/gi,"epsilon"],[/\\(?:phi|varphi)\b/gi,"phi"],[/\\psi\b/gi,"psi"],[/\\mu\b/gi,"mu"],[/\\pi\b/gi,"pi"],[/\\rho\b/gi,"rho"],[/\\lambda\b/gi,"lambda"],[/\\Sigma\b/g,"sum"],[/\\sigma\b/gi,"sigma"],[/\\sin\b/gi,"sin"],[/\\cos\b/gi,"cos"],[/\\tan\b/gi,"tan"],[/\\ln\b/gi,"ln"],[/\\log\b/gi,"log"],[/\\exp\b/gi,"exp"],[/\\min\b/gi,"min"],[/\\max\b/gi,"max"],[/\\tau\b/gi,"tau"],[/\\nu\b/gi,"nu"],[/\\xi\b/gi,"xi"],[/\\sum\b/gi,"sum"],[/\\prod\b/gi,"prod"],[/\\int\b/gi,"int"],[/\\frac\b/gi,"frac"],[/\\(?:cdot|times)\b/gi,"*"],[/\\div\b/gi,"/"],
   [/[θϑ]/g,"theta"],[/[ωΩ]/g,"omega"],[/α/g,"alpha"],[/β/g,"beta"],[/[γΓ]/g,"gamma"],[/[δΔ]/g,"delta"],[/[εϵ]/g,"epsilon"],[/ζ/g,"zeta"],[/η/g,"eta"],[/κ/g,"kappa"],[/λ/g,"lambda"],[/μ/g,"mu"],[/ν/g,"nu"],[/ξ/g,"xi"],[/π/g,"pi"],[/ρ/g,"rho"],[/[σς]/g,"sigma"],[/τ/g,"tau"],[/[φϕ]/g,"phi"],[/χ/g,"chi"],[/ψ/g,"psi"],[/[Σ∑]/g,"sum"],[/∏/g,"prod"],[/∫/g,"int"],[/[×·]/g,"*"],[/÷/g,"/"],[/−/g,"-"]
@@ -61,7 +61,7 @@ function tokenize(source:string):string[] {
  }
  return out;
 }
-function parse(source:string):Node {
+export function parse(source:string):Node {
  const tokens=tokenize(source);let i=0;const peek=()=>tokens[i];const take=()=>tokens[i++];
  const need=(token:string)=>{if(take()!==token)throw new Error("Diharapkan "+token);};
  const primary=():Node=>{
@@ -81,7 +81,7 @@ function parse(source:string):Node {
  const add=():Node=>{let n=mul();while(peek()==="+"||peek()==="-"){const op=take();n={kind:"binary",op,a:n,b:mul()};}return n;};
  const root=add();if(i!==tokens.length)throw new Error("Bagian ekspresi tidak terbaca");return root;
 }
-function calc(n:Node,v:Vars):number {
+export function calc(n:Node,v:Vars):number {
  if(n.kind==="num")return n.n;
  if(n.kind==="var")return n.name==="pi"?Math.PI:n.name==="e"?Math.E:(v[n.name]??Number.NaN);
  if(n.kind==="unary"){const q=calc(n.child,v);return n.op==="-"?-q:q;}
@@ -132,7 +132,7 @@ function calc(n:Node,v:Vars):number {
  const a=n.args.map(x=>calc(x,v)),q=a[0];
  switch(n.name){case "sin":return Math.sin(q);case "cos":return Math.cos(q);case "tan":return Math.tan(q);case "asin":return Math.asin(q);case "acos":return Math.acos(q);case "atan":return Math.atan(q);case "sec":return 1/Math.cos(q);case "csc":return 1/Math.sin(q);case "cot":return 1/Math.tan(q);case "sinh":return Math.sinh(q);case "cosh":return Math.cosh(q);case "tanh":return Math.tanh(q);case "sqrt":return Math.sqrt(q);case "cbrt":return Math.cbrt(q);case "abs":return Math.abs(q);case "exp":return Math.exp(q);case "ln":return Math.log(q);case "log":case "log10":return Math.log10(q);case "log2":return Math.log2(q);case "min":return Math.min(...a);case "max":return Math.max(...a);case "hypot":return Math.hypot(...a);case "floor":return Math.floor(q);case "ceil":return Math.ceil(q);case "round":return Math.round(q);case "sign":return Math.sign(q);case "atan2":return Math.atan2(a[0],a[1]);case "mod":return a[1]===0?NaN:((a[0]%a[1])+a[1])%a[1];case "clamp":return Math.max(a[1],Math.min(a[2],a[0]));case "frac":return a[1]===0?NaN:a[0]/a[1];default:return NaN;}
 }
-function compile(rows:Row[]):Compiled[]{
+export function compile(rows:Row[]):Compiled[]{
  return rows.filter(r=>r.enabled&&r.text.trim()).map(row=>{
   try{
    const source=row.text.trim();
@@ -381,7 +381,7 @@ function isZeroDimensionNode(node:Node):boolean{
 function sameDimension(a:Dimension,b:Dimension):boolean{
  return a.every((value,index)=>Math.abs(value-b[index])<1e-9);
 }
-function dimensionOf(node:Node):Dimension|null{
+export function dimensionOf(node:Node):Dimension|null{
  const zero:Dimension=[0,0,0];
  if(node.kind==="num")return zero;
  if(node.kind==="var")return node.name==="pi"||node.name==="e"?zero:variableDimensions[node.name]??null;
@@ -446,8 +446,9 @@ function hasDimensionConflict(node:Node):boolean{
  }
  return false;
 }
-function equationDimensionIssue(item:Compiled):boolean{
- if(hasDimensionConflict(item.root))return true;
+export type EquationDimensionStatus="valid"|"invalid"|"unverified";
+export function equationDimensionStatus(item:Compiled):EquationDimensionStatus{
+ if(hasDimensionConflict(item.root))return "invalid";
  const rhs=dimensionOf(item.root);
  let lhs:Dimension|null=null;
  if(item.target!=="scalar")lhs=[0,1,0];
@@ -455,7 +456,13 @@ function equationDimensionIssue(item:Compiled):boolean{
   const match=item.text.trim().match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=/);
   if(match)lhs=variableDimensions[match[1]]??null;
  }
- return !!lhs&&!!rhs&&!sameDimension(lhs,rhs);
+ if(!lhs||!rhs)return "unverified";
+ // The literal zero is valid for any physical dimension (e.g. y(t)=0).
+ if(isZeroDimensionNode(item.root))return "valid";
+ return sameDimension(lhs,rhs)?"valid":"invalid";
+}
+export function equationDimensionIssue(item:Compiled):boolean{
+ return equationDimensionStatus(item)==="invalid";
 }
 function dimensionUnitLatex(dimension:Dimension|null):string{
  if(!dimension)return "";
@@ -596,7 +603,8 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
  const current=useMemo(()=>motionAt(valid,time,parameterSet),[valid,time,parameterSet]);const constrainedDevice=typeof navigator!=="undefined"&&((Number((navigator as Navigator&{deviceMemory?:number}).deviceMemory)||8)<=4||(navigator.hardwareConcurrency||8)<=4);const effectiveMotionLevel=constrainedDevice&&motionLevel==="high"?"medium":motionLevel;const motionBudget=effectiveMotionLevel==="low"?{fps:16,trail:48}:effectiveMotionLevel==="medium"?{fps:22,trail:64}:{fps:28,trail:82};const renderQuality={...motionBudget,dpr:renderMode==="performance"?1:renderMode==="detail"?(constrainedDevice?1:1.1):1,samples:renderMode==="performance"?48:renderMode==="detail"?(constrainedDevice?72:90):effectiveMotionLevel==="low"?55:effectiveMotionLevel==="medium"?72:85};const functionCurves=useMemo(()=>{const halfSpan=(view.xmax-view.xmin)/(2*scale),mid=(view.xmin+view.xmax)/2,lo=mid-halfSpan,hi=mid+halfSpan;return valid.filter(item=>item.target==="y(x)").map((item,index)=>({id:item.id,color:["#347fd5","#4da786","#d99a46","#8b6bd6"][index%4],points:Array.from({length:renderQuality.samples+1},(_,i)=>{const x=lo+(hi-lo)*i/renderQuality.samples;return {x,y:calc(item.root,{...parameterSet,x,t:0})};})}));},[valid,parameterSet,view,scale,renderQuality.samples]);const motionTrail=useMemo(()=>hasMotion?Array.from({length:renderQuality.trail+1},(_,i)=>{const t=duration*i/renderQuality.trail,p=motionAt(valid,t,{...parameterSet,t});return p?{x:p.x,y:p.y}:{x:Number.NaN,y:Number.NaN};}):[],[hasMotion,valid,duration,parameterSet,renderQuality.trail]);
  const badSample=useMemo(()=>{for(const item of valid){for(let i=0;i<=60;i++){const q=item.target==="y(x)"?calc(item.root,{...parameterSet,x:view.xmin+(view.xmax-view.xmin)*i/60,t:0}):calc(item.root,{...parameterSet,x:0,t:duration*i/60});if(!Number.isFinite(q)||Math.abs(q)>1e6)return true;}}return false;},[valid,view,duration,parameterSet]);
  const dimensionErrors=useMemo(()=>valid.filter(equationDimensionIssue),[valid]);
- const warning=errors.length>0||badSample||(hasMotion&&!current)||dimensionErrors.length>0;
+ const dimensionUnverified=useMemo(()=>valid.filter(item=>equationDimensionStatus(item)==="unverified"),[valid]);
+ const warning=errors.length>0||badSample||(hasMotion&&!current)||dimensionErrors.length>0||dimensionUnverified.length>0;
  useEffect(()=>{if(!playing)return;let frame=0,last=0,lastUi=0;const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false;const fps=reduced||motionLevel==="low"?8:12;const interval=1000/fps;const tick=(now:number)=>{if(!last)last=now;const next=timeRef.current+Math.min((now-last)/1000,.1);last=now;timeRef.current=Math.min(duration,next);if(now-lastUi>=interval||next>=duration){lastUi=now;setTime(timeRef.current);}if(next>=duration){setPlaying(false);return;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing,duration,motionLevel]);
  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)return;const draw=()=>{try{const renderTime=timeRef.current;const renderCurrent=motionAt(valid,renderTime,parameterSet);const rect=canvas.getBoundingClientRect();if(rect.width<1||rect.height<1)return;const dpr=Math.min(window.devicePixelRatio||1,renderQuality.dpr),width=rect.width,height=rect.height;const backingWidth=Math.round(width*dpr),backingHeight=Math.round(height*dpr);if(canvas.width!==backingWidth||canvas.height!==backingHeight){canvas.width=backingWidth;canvas.height=backingHeight;}ctx.setTransform(dpr,0,0,dpr,0,0);const canvasStyle=getComputedStyle(canvas),plotBg=canvasStyle.getPropertyValue("--plot-bg").trim()||(theme==="dark"?"#111d2b":"#fff"),gridMajor=canvasStyle.getPropertyValue("--plot-grid").trim()||(theme==="dark"?"#26384b":"#edf1f5"),axisColor=canvasStyle.getPropertyValue("--plot-axis").trim()||(theme==="dark"?"#70869d":"#627b94");ctx.clearRect(0,0,width,height);ctx.fillStyle=plotBg;ctx.fillRect(0,0,width,height);
   const spanX=(view.xmax-view.xmin)/scale,spanY=(view.ymax-view.ymin)/scale,mx=(view.xmax+view.xmin)/2,my=(view.ymax+view.ymin)/2,xmin=mx-spanX/2,xmax=mx+spanX/2,ymin=my-spanY/2,ymax=my+spanY/2;const left=58,right=20,top=22,bottom=40,pw=width-left-right,ph=height-top-bottom;const X=(x:number)=>left+(x-xmin)/(xmax-xmin)*pw,Y=(y:number)=>top+ph-(y-ymin)/(ymax-ymin)*ph;
@@ -915,7 +923,7 @@ export default function PhysicsSandbox({language,theme,motionLevel,renderMode}:{
         <Toggle label={w.trail} value={showTrail} onClick={()=>setShowTrail(v=>!v)}/>
       </div>
     </>}
-    <div className="sandbox-validation"><span className="eyebrow">{w.status}</span><p className={warning?"bad":"good"}>{warning?<><AlertTriangle size={14}/>{w.bad}</>:<><Sparkles size={14}/>{w.ok}</>}</p>{errors.map(e=><small key={e.id}>{e.text}: {e.error}</small>)}{dimensionErrors.map(e=><small key={"dimension-"+e.id}>{e.text}: {language==="ID"?"ketidaksesuaian dimensi SI atau argumen fungsi berdimensi":"SI dimensional mismatch or a dimensioned function argument"}</small>)}{parsed.length===0&&<small>{w.empty}</small>}</div>
+    <div className="sandbox-validation"><span className="eyebrow">{w.status}</span><p className={warning?"bad":"good"}>{warning?<><AlertTriangle size={14}/>{w.bad}</>:<><Sparkles size={14}/>{w.ok}</>}</p>{errors.map(e=><small key={e.id}>{e.text}: {e.error}</small>)}{dimensionErrors.map(e=><small key={"dimension-"+e.id}>{e.text}: {language==="ID"?"ketidaksesuaian dimensi SI atau argumen fungsi berdimensi":"SI dimensional mismatch or a dimensioned function argument"}</small>)}{dimensionUnverified.map(e=><small key={"unverified-"+e.id}>{e.text}: {language==="ID"?"dimensi belum dapat diverifikasi; periksa satuan setiap variabel":"dimensions could not be verified; check every variable unit"}</small>)}{parsed.length===0&&<small>{w.empty}</small>}</div>
    </aside>   <section className="sandbox-main">
     <div className="sandbox-toolbar"><div className="sandbox-switches">
      <Toggle label={w.grid} value={showGrid} onClick={()=>setShowGrid(v=>!v)}/><Toggle label={w.axes} value={showAxes} onClick={()=>setShowAxes(v=>!v)}/><Toggle label={w.trail} value={showTrail} onClick={()=>setShowTrail(v=>!v)}/><Toggle label={w.velocity} value={showVelocity} onClick={()=>setShowVelocity(v=>!v)}/><Toggle label={w.acceleration} value={showAcceleration} onClick={()=>setShowAcceleration(v=>!v)}/><Toggle label={w.force} value={showForce} onClick={()=>setShowForce(v=>!v)}/><Toggle label={language==="ID"?"Berat":"Weight"} value={showWeight} onClick={()=>setShowWeight(v=>!v)}/><Toggle label={language==="ID"?"Momentum":"Momentum"} value={showMomentum} onClick={()=>setShowMomentum(v=>!v)}/><Toggle label={w.energy} value={showEnergy} onClick={()=>setShowEnergy(v=>!v)}/><Toggle label={w.labels} value={showLabels} onClick={()=>setShowLabels(v=>!v)}/>

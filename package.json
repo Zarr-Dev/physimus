@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "katex": "^0.16.22",
@@ -21,6 +23,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "~5.7.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^2.1.9"
   }
 }
